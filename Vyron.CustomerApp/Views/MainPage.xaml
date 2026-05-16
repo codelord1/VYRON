@@ -2,100 +2,91 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Vyron.CustomerApp.Views.MainPage"
+             Shell.NavBarIsVisible="False"
+             Shell.TabBarIsVisible="False"
              BackgroundColor="{StaticResource Bg}">
 
-    <ScrollView>
-        <VerticalStackLayout Padding="24,40" Spacing="20">
-
-            <!-- ── Brand header ── -->
-            <Label Text="VYRON"
-                   TextColor="{StaticResource Teal}"
-                   FontFamily="OpenSansSemibold"
-                   FontSize="44"
-                   HorizontalOptions="Center" />
-            <Label Text="Laundry, simplified."
+    <Grid RowDefinitions="Auto,*,Auto" Padding="24,30,24,34">
+        <Grid ColumnDefinitions="*,Auto">
+            <HorizontalStackLayout x:Name="DotsHost" Spacing="6" VerticalOptions="Center">
+                <BoxView x:Name="Dot0" WidthRequest="24" HeightRequest="5" CornerRadius="3" Color="{StaticResource TealDark}" />
+                <BoxView x:Name="Dot1" WidthRequest="5" HeightRequest="5" CornerRadius="3" Color="{StaticResource CardStroke}" />
+                <BoxView x:Name="Dot2" WidthRequest="5" HeightRequest="5" CornerRadius="3" Color="{StaticResource CardStroke}" />
+                <BoxView x:Name="Dot3" WidthRequest="5" HeightRequest="5" CornerRadius="3" Color="{StaticResource CardStroke}" />
+            </HorizontalStackLayout>
+            <Label Grid.Column="1"
+                   Text="Skip"
+                   TextColor="{StaticResource Gray5}"
                    FontSize="14"
-                   TextColor="{StaticResource Gray3}"
-                   HorizontalOptions="Center"
-                   Margin="0,-8,0,0" />
+                   VerticalOptions="Center">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnSkipTapped" />
+                </Label.GestureRecognizers>
+            </Label>
+        </Grid>
 
-            <!-- ── Hero card (modern Border, no Frame) ── -->
-            <Border BackgroundColor="{StaticResource Dark}"
+        <VerticalStackLayout Grid.Row="1"
+                             Spacing="34"
+                             VerticalOptions="Center">
+            <Border BackgroundColor="{StaticResource Mint}"
+                    WidthRequest="256"
+                    HeightRequest="256"
                     Stroke="Transparent"
-                    StrokeShape="RoundRectangle 16"
-                    Padding="22"
-                    Margin="0,16,0,0">
-                <VerticalStackLayout Spacing="10">
-                    <Label Text="🧺 Trusted laundry, on demand."
-                           TextColor="White"
-                           FontFamily="OpenSansSemibold"
-                           FontSize="20" />
-                    <Label Text="Compare nearby stores, pay a small pickup fee, and track every step from pickup to delivery."
-                           TextColor="{StaticResource Gray3}"
-                           FontSize="13" />
-                </VerticalStackLayout>
+                    StrokeShape="RoundRectangle 48"
+                    HorizontalOptions="Center">
+                <Border BackgroundColor="#EAFBF4"
+                        WidthRequest="178"
+                        HeightRequest="178"
+                        Stroke="Transparent"
+                        StrokeShape="RoundRectangle 42"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center">
+                    <Border BackgroundColor="White"
+                            WidthRequest="112"
+                            HeightRequest="112"
+                            Stroke="Transparent"
+                            StrokeShape="RoundRectangle 30"
+                            HorizontalOptions="Center"
+                            VerticalOptions="Center">
+                        <Label x:Name="IconLabel"
+                               Text="Truck"
+                               FontSize="15"
+                               TextColor="{StaticResource TealDark}"
+                               FontFamily="OpenSansSemibold"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center" />
+                    </Border>
+                </Border>
             </Border>
 
-            <!-- ── Feature tiles ── -->
-            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
-
-                <Border Grid.Row="0" Grid.Column="0"
-                        BackgroundColor="White" Stroke="#E8E8E2"
-                        StrokeShape="RoundRectangle 14" Padding="16">
-                    <VerticalStackLayout Spacing="6">
-                        <Label Text="🏪" FontSize="24" />
-                        <Label Text="Browse Stores" FontFamily="OpenSansSemibold" FontSize="14" />
-                        <Label Text="By rating, price, distance, speed."
-                               FontSize="11" TextColor="{StaticResource Gray3}" />
-                    </VerticalStackLayout>
-                </Border>
-
-                <Border Grid.Row="0" Grid.Column="1"
-                        BackgroundColor="White" Stroke="#E8E8E2"
-                        StrokeShape="RoundRectangle 14" Padding="16">
-                    <VerticalStackLayout Spacing="6">
-                        <Label Text="💸" FontSize="24" />
-                        <Label Text="Transparent Pricing" FontFamily="OpenSansSemibold" FontSize="14" />
-                        <Label Text="Pay pickup fee now, balance on delivery."
-                               FontSize="11" TextColor="{StaticResource Gray3}" />
-                    </VerticalStackLayout>
-                </Border>
-
-                <Border Grid.Row="1" Grid.Column="0"
-                        BackgroundColor="White" Stroke="#E8E8E2"
-                        StrokeShape="RoundRectangle 14" Padding="16">
-                    <VerticalStackLayout Spacing="6">
-                        <Label Text="📍" FontSize="24" />
-                        <Label Text="Live Tracking" FontFamily="OpenSansSemibold" FontSize="14" />
-                        <Label Text="From pickup to delivery, in real time."
-                               FontSize="11" TextColor="{StaticResource Gray3}" />
-                    </VerticalStackLayout>
-                </Border>
-
-                <Border Grid.Row="1" Grid.Column="1"
-                        BackgroundColor="White" Stroke="#E8E8E2"
-                        StrokeShape="RoundRectangle 14" Padding="16">
-                    <VerticalStackLayout Spacing="6">
-                        <Label Text="⭐" FontSize="24" />
-                        <Label Text="Reviews &amp; Trust" FontFamily="OpenSansSemibold" FontSize="14" />
-                        <Label Text="Verified stores, rated by real customers."
-                               FontSize="11" TextColor="{StaticResource Gray3}" />
-                    </VerticalStackLayout>
-                </Border>
-            </Grid>
-
-            <!-- ── CTA ── -->
-            <Button x:Name="GetStartedBtn"
-                    Text="Get Started"
-                    Clicked="OnGetStartedClicked"
-                    Margin="0,16,0,0" />
-
-            <Label Text="v3.0  ·  Lagos, Nigeria"
-                   FontSize="11"
-                   TextColor="{StaticResource Gray3}"
-                   HorizontalOptions="Center"
-                   Margin="0,8,0,0" />
-
+            <VerticalStackLayout Spacing="14">
+                <Label x:Name="TitleLabel"
+                       Text="Book laundry pickup from your phone"
+                       FontFamily="OpenSansSemibold"
+                       FontSize="24"
+                       TextColor="{StaticResource Gray5}"
+                       HorizontalTextAlignment="Center" />
+                <Label x:Name="SubtitleLabel"
+                       Text="Schedule pickup in under a minute. No more hauling baskets across town."
+                       FontSize="15"
+                       TextColor="{StaticResource Gray3}"
+                       HorizontalTextAlignment="Center"
+                       Margin="8,0" />
+            </VerticalStackLayout>
         </VerticalStackLayout>
-    </ScrollView>
+
+        <Grid Grid.Row="2" ColumnDefinitions="Auto,*" ColumnSpacing="18">
+            <Button x:Name="BackButton"
+                    Text="Back"
+                    Clicked="OnBackClicked"
+                    BackgroundColor="Transparent"
+                    TextColor="{StaticResource Gray5}"
+                    WidthRequest="62"
+                    IsVisible="False" />
+            <Button x:Name="NextButton"
+                    Grid.Column="1"
+                    Text="Next"
+                    Clicked="OnNextClicked" />
+        </Grid>
+    </Grid>
 </ContentPage>

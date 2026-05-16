@@ -8,74 +8,84 @@
              BackgroundColor="{StaticResource Bg}">
 
     <ScrollView>
-        <VerticalStackLayout Padding="20" Spacing="16">
-
-            <!-- Avatar -->
-            <Border BackgroundColor="{StaticResource Teal}"
-                    WidthRequest="80" HeightRequest="80"
-                    StrokeShape="RoundRectangle 40"
-                    HorizontalOptions="Center"
-                    Margin="0,20,0,0">
-                <Label Text="{Binding FullName, Converter={StaticResource InitialsConverter}}"
-                       TextColor="White"
-                       FontFamily="OpenSansSemibold"
-                       FontSize="28"
-                       HorizontalOptions="Center"
-                       VerticalOptions="Center" />
+        <VerticalStackLayout Padding="22,24,22,30" Spacing="16">
+            <Border BackgroundColor="{StaticResource TealDark}"
+                    Stroke="Transparent"
+                    StrokeShape="RoundRectangle 28"
+                    Padding="20">
+                <Grid ColumnDefinitions="70,*" ColumnSpacing="14">
+                    <Border BackgroundColor="White"
+                            WidthRequest="64"
+                            HeightRequest="64"
+                            Stroke="Transparent"
+                            StrokeShape="RoundRectangle 22">
+                        <Label Text="{Binding FullName, Converter={StaticResource InitialsConverter}}"
+                               TextColor="{StaticResource TealDark}"
+                               FontFamily="OpenSansSemibold"
+                               FontSize="22"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center" />
+                    </Border>
+                    <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                        <Label Text="{Binding FullName}"
+                               TextColor="White"
+                               FontFamily="OpenSansSemibold"
+                               FontSize="22" />
+                        <Label Text="{Binding Phone}"
+                               TextColor="#D9F8EC"
+                               FontSize="13" />
+                    </VerticalStackLayout>
+                </Grid>
             </Border>
 
-            <Label Text="{Binding FullName}"
-                   FontFamily="OpenSansSemibold" FontSize="20"
-                   HorizontalOptions="Center" />
-            <Label Text="{Binding Phone}"
-                   FontSize="13" TextColor="{StaticResource Gray3}"
-                   HorizontalOptions="Center" />
-
-            <!-- Success / Error -->
-            <Border BackgroundColor="#F0FFF8" Stroke="#00C9A7"
-                    StrokeShape="RoundRectangle 10" Padding="12,10"
+            <Border BackgroundColor="#EFFFF8"
+                    Stroke="#A5E7D1"
+                    StrokeShape="RoundRectangle 16"
+                    Padding="14,12"
                     IsVisible="{Binding SuccessMessage, Converter={StaticResource NotNullToBool}}">
-                <Label Text="{Binding SuccessMessage}" TextColor="#007A58" FontSize="13" />
+                <Label Text="{Binding SuccessMessage}" TextColor="{StaticResource TealDark}" FontSize="13" />
             </Border>
-            <Border BackgroundColor="#FFF1F0" Stroke="#FFB8B0"
-                    StrokeShape="RoundRectangle 10" Padding="12,10"
+            <Border BackgroundColor="#FFF4F3"
+                    Stroke="#FFD4D1"
+                    StrokeShape="RoundRectangle 16"
+                    Padding="14,12"
                     IsVisible="{Binding ErrorMessage, Converter={StaticResource NotNullToBool}}">
-                <Label Text="{Binding ErrorMessage}" TextColor="#C0392B" FontSize="13" />
+                <Label Text="{Binding ErrorMessage}" TextColor="#C73535" FontSize="13" />
             </Border>
 
-            <!-- Profile card -->
-            <Border BackgroundColor="White" Stroke="#EDEDEA"
-                    StrokeShape="RoundRectangle 14" Padding="18,16">
-                <VerticalStackLayout Spacing="14">
+            <Border Style="{StaticResource CardBorderStyle}">
+                <VerticalStackLayout Spacing="16">
+                    <Label Text="Profile details"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="18" />
 
-                    <Label Text="Full Name" FontFamily="OpenSansSemibold" FontSize="13" />
-                    <Border BackgroundColor="{StaticResource Bg}" Stroke="#D0D0C8"
-                            StrokeShape="RoundRectangle 12"
-                            IsEnabled="{Binding EditMode}">
-                        <Entry Text="{Binding FullName}"
-                               IsReadOnly="{Binding EditMode, Converter={StaticResource InvertBool}}"
-                               BackgroundColor="Transparent"
-                               Margin="14,0" />
-                    </Border>
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Full name" FontSize="13" TextColor="{StaticResource Gray3}" />
+                        <Border BackgroundColor="White" Stroke="{StaticResource CardStroke}" StrokeShape="RoundRectangle 22" HeightRequest="52">
+                            <Entry Text="{Binding FullName}"
+                                   IsReadOnly="{Binding EditMode, Converter={StaticResource InvertBool}}"
+                                   Margin="16,0" />
+                        </Border>
+                    </VerticalStackLayout>
 
-                    <Label Text="Email" FontFamily="OpenSansSemibold" FontSize="13" />
-                    <Border BackgroundColor="{StaticResource Bg}" Stroke="#D0D0C8"
-                            StrokeShape="RoundRectangle 12">
-                        <Entry Text="{Binding Email}"
-                               Placeholder="your@email.com"
-                               Keyboard="Email"
-                               IsReadOnly="{Binding EditMode, Converter={StaticResource InvertBool}}"
-                               BackgroundColor="Transparent"
-                               Margin="14,0" />
-                    </Border>
-
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Email" FontSize="13" TextColor="{StaticResource Gray3}" />
+                        <Border BackgroundColor="White" Stroke="{StaticResource CardStroke}" StrokeShape="RoundRectangle 22" HeightRequest="52">
+                            <Entry Text="{Binding Email}"
+                                   Placeholder="your@email.com"
+                                   Keyboard="Email"
+                                   IsReadOnly="{Binding EditMode, Converter={StaticResource InvertBool}}"
+                                   Margin="16,0" />
+                        </Border>
+                    </VerticalStackLayout>
                 </VerticalStackLayout>
             </Border>
 
-            <!-- Edit / Save button -->
             <Button Text="Edit Profile"
-                    BackgroundColor="{StaticResource Bg}"
-                    TextColor="{StaticResource Teal}"
+                    BackgroundColor="White"
+                    TextColor="{StaticResource TealDark}"
+                    BorderColor="{StaticResource Teal}"
+                    BorderWidth="1"
                     IsVisible="{Binding EditMode, Converter={StaticResource InvertBool}}"
                     Clicked="OnEditClicked" />
 
@@ -84,17 +94,17 @@
                     IsVisible="{Binding EditMode}"
                     IsEnabled="{Binding IsNotBusy}" />
 
-            <ActivityIndicator IsRunning="{Binding IsBusy}" Color="{StaticResource Teal}"
-                               IsVisible="{Binding IsBusy}" HorizontalOptions="Center" />
+            <ActivityIndicator IsRunning="{Binding IsBusy}"
+                               Color="{StaticResource Teal}"
+                               IsVisible="{Binding IsBusy}"
+                               HorizontalOptions="Center" />
 
-            <!-- Sign out -->
             <Button Text="Sign Out"
                     Command="{Binding LogoutCommand}"
                     BackgroundColor="Transparent"
-                    TextColor="#C0392B"
+                    TextColor="{StaticResource Danger}"
                     FontSize="14"
-                    Margin="0,20,0,0" />
-
+                    Margin="0,12,0,0" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

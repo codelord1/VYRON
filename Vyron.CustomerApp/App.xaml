@@ -6,12 +6,16 @@
     <Application.Resources>
         <ResourceDictionary>
             <!-- ── Brand Colours ── -->
-            <Color x:Key="Teal">#00C9A7</Color>
-            <Color x:Key="TealDark">#007A58</Color>
-            <Color x:Key="Dark">#0A0A0A</Color>
-            <Color x:Key="Bg">#F4F4F0</Color>
-            <Color x:Key="Gray3">#B0AFA8</Color>
-            <Color x:Key="Gray5">#2C2C2A</Color>
+            <Color x:Key="Teal">#008866</Color>
+            <Color x:Key="TealDark">#006B50</Color>
+            <Color x:Key="Mint">#D9F8EC</Color>
+            <Color x:Key="MintSoft">#EEF8F4</Color>
+            <Color x:Key="Dark">#061F1A</Color>
+            <Color x:Key="Bg">#F4FAF7</Color>
+            <Color x:Key="CardStroke">#DCE9E4</Color>
+            <Color x:Key="Gray3">#697780</Color>
+            <Color x:Key="Gray5">#071A1F</Color>
+            <Color x:Key="Danger">#F04452</Color>
 
             <!-- ── Converters (global) ── -->
             <conv:NotNullToBoolConverter   x:Key="NotNullToBool" />
@@ -24,20 +28,24 @@
             <Style TargetType="Label">
                 <Setter Property="TextColor" Value="{StaticResource Gray5}" />
                 <Setter Property="FontFamily" Value="OpenSansRegular" />
+                <Setter Property="LineBreakMode" Value="WordWrap" />
             </Style>
 
             <Style TargetType="Button">
                 <Setter Property="FontFamily" Value="OpenSansSemibold" />
-                <Setter Property="CornerRadius" Value="12" />
-                <Setter Property="HeightRequest" Value="50" />
+                <Setter Property="CornerRadius" Value="24" />
+                <Setter Property="HeightRequest" Value="52" />
                 <Setter Property="BackgroundColor" Value="{StaticResource Teal}" />
                 <Setter Property="TextColor" Value="White" />
+                <Setter Property="Padding" Value="18,0" />
             </Style>
 
             <Style TargetType="Entry">
                 <Setter Property="FontFamily" Value="OpenSansRegular" />
-                <Setter Property="BackgroundColor" Value="White" />
+                <Setter Property="BackgroundColor" Value="Transparent" />
                 <Setter Property="HeightRequest" Value="48" />
+                <Setter Property="TextColor" Value="{StaticResource Gray5}" />
+                <Setter Property="PlaceholderColor" Value="{StaticResource Gray3}" />
             </Style>
 
             <Style TargetType="Editor">
@@ -51,13 +59,20 @@
             </Style>
 
             <Style TargetType="Shell" ApplyToDerivedTypes="True">
-                <Setter Property="Shell.BackgroundColor" Value="{StaticResource Dark}" />
-                <Setter Property="Shell.ForegroundColor" Value="White" />
-                <Setter Property="Shell.TitleColor" Value="White" />
+                <Setter Property="Shell.BackgroundColor" Value="{StaticResource Bg}" />
+                <Setter Property="Shell.ForegroundColor" Value="{StaticResource Gray5}" />
+                <Setter Property="Shell.TitleColor" Value="{StaticResource Gray5}" />
                 <Setter Property="Shell.TabBarBackgroundColor" Value="White" />
                 <Setter Property="Shell.TabBarForegroundColor" Value="{StaticResource Teal}" />
                 <Setter Property="Shell.TabBarUnselectedColor" Value="{StaticResource Gray3}" />
                 <Setter Property="Shell.TabBarTitleColor" Value="{StaticResource Teal}" />
+            </Style>
+
+            <Style x:Key="CardBorderStyle" TargetType="Border">
+                <Setter Property="BackgroundColor" Value="White" />
+                <Setter Property="Stroke" Value="{StaticResource CardStroke}" />
+                <Setter Property="StrokeShape" Value="RoundRectangle 22" />
+                <Setter Property="Padding" Value="18" />
             </Style>
 
         </ResourceDictionary>

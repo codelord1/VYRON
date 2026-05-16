@@ -20,7 +20,14 @@ public partial class App : Application
         // Returning users with a valid token go straight to Home/Stores.
         // Everyone else lands on the login screen.
         var restored = await _auth.TryRestoreSessionAsync();
-        // Navigate to the Stores tab root (not just //main) so tab state is always clean
-        await Shell.Current.GoToAsync(restored ? AppRoutes.Stores : AppRoutes.Login, animate: false);
+        // Navigate to the Stores tab root (not just //main) so tab state is always clean.
+        if (restored)
+        {
+            await Shell.Current.GoToAsync(AppRoutes.Stores, animate: false);
+            return;
+        }
+
+        var onboardingDone = Preferences.Default.Get("Vyron.Customer.OnboardingDone", false);
+        await Shell.Current.GoToAsync(onboardingDone ? AppRoutes.Login : "//onboarding", animate: false);
     }
 }

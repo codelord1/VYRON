@@ -111,7 +111,7 @@ public partial class TrackViewModel : BaseViewModel
 
     [RelayCommand]
     private async Task GoToStoresAsync()
-        => await Shell.Current.GoToAsync("//main/stores");
+        => await Shell.Current.GoToAsync(AppRoutes.Stores);
 
     /// <summary>Open native phone dialer to call the store.</summary>
     [RelayCommand]

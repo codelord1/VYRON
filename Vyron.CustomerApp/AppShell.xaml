@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <Shell xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+       xmlns:views="clr-namespace:Vyron.CustomerApp.Views"
        xmlns:auth="clr-namespace:Vyron.CustomerApp.Views.Auth"
        xmlns:stores="clr-namespace:Vyron.CustomerApp.Views.Stores"
        xmlns:orders="clr-namespace:Vyron.CustomerApp.Views.Orders"
@@ -8,44 +9,37 @@
        x:Class="Vyron.CustomerApp.AppShell"
        Shell.FlyoutBehavior="Disabled">
 
-    <!-- ── Auth (no tab bar) ── -->
+    <ShellContent x:Name="OnboardingShell"
+                  Route="onboarding"
+                  ContentTemplate="{DataTemplate views:MainPage}"
+                  Shell.NavBarIsVisible="False"
+                  Shell.TabBarIsVisible="False" />
+
     <ShellContent x:Name="LoginShell"
                   Route="login"
                   ContentTemplate="{DataTemplate auth:LoginPage}"
                   Shell.NavBarIsVisible="False"
                   Shell.TabBarIsVisible="False" />
 
-    <!-- ── Main app (4-tab) ── -->
-    <!-- Route MUST be on Tab, not ShellContent.  With Route on Tab, the absolute
-         URI is //main/<tab-route> (two segments).  If Route is only on ShellContent,
-         MAUI auto-names the Tab (shellsection0 etc.) and //main/stores is unresolvable. -->
-
     <TabBar x:Name="MainTabs" Route="main">
-
         <Tab Route="storesTab" Title="Stores" Icon="store_tab.png">
-            <ShellContent
-            Route="stores"
-            ContentTemplate="{DataTemplate stores:StoresPage}" />
+            <ShellContent Route="stores"
+                          ContentTemplate="{DataTemplate stores:StoresPage}" />
         </Tab>
 
         <Tab Route="ordersTab" Title="Order" Icon="orders_tab.png">
-            <ShellContent
-            Route="orders"
-            ContentTemplate="{DataTemplate orders:OrdersPage}" />
+            <ShellContent Route="orders"
+                          ContentTemplate="{DataTemplate orders:OrdersPage}" />
         </Tab>
 
         <Tab Route="trackTab" Title="Track" Icon="track_tab.png">
-            <ShellContent
-            Route="track"
-            ContentTemplate="{DataTemplate orders:TrackPage}" />
+            <ShellContent Route="track"
+                          ContentTemplate="{DataTemplate orders:TrackPage}" />
         </Tab>
 
         <Tab Route="moreTab" Title="More" Icon="more_tab.png">
-            <ShellContent
-            Route="more"
-            ContentTemplate="{DataTemplate more:MorePage}" />
+            <ShellContent Route="more"
+                          ContentTemplate="{DataTemplate more:MorePage}" />
         </Tab>
-
     </TabBar>
-
 </Shell>
