@@ -1,0 +1,90 @@
+@model Rider
+@{ ViewData["Title"] = "Rider Details — " + Model.User.FullName; }
+
+<div class="page-header">
+    <h1>@Model.User.FullName</h1>
+    <div>
+        <a href="/Riders/Edit/@Model.Id" class="btn btn-secondary btn-sm">Edit</a>
+        <a href="/Riders" class="btn btn-secondary btn-sm" style="margin-left:6px">← Back</a>
+    </div>
+</div>
+
+<div class="flex" style="gap:20px;align-items:flex-start;flex-wrap:wrap">
+    <div class="card" style="min-width:220px;text-align:center">
+        @if (!string.IsNullOrEmpty(Model.User.ProfilePhoto))
+        {
+            <img src="@Model.User.ProfilePhoto" style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--teal)" />
+        }
+        else
+        {
+            <div style="width:100px;height:100px;border-radius:50%;background:var(--gray-2);display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:800;color:var(--gray-4);margin:0 auto">
+                @Model.User.FullName.Substring(0,1).ToUpper()
+            </div>
+        }
+        <h3 style="margin:10px 0 4px">@Model.User.FullName</h3>
+        <div class="text-muted">@Model.User.Phone</div>
+        <div style="margin-top:8px">
+            @switch (Model.Status)
+            {
+                case RiderStatus.OnlineAvailable: <span class="badge badge-success">Online Available</span> break;
+                case RiderStatus.Offline: <span class="badge badge-gray">Offline</span> break;
+                case RiderStatus.Pending: <span class="badge badge-warning">Pending Approval</span> break;
+                case RiderStatus.Suspended: <span class="badge badge-danger">Suspended</span> break;
+                case RiderStatus.Rejected: <span class="badge badge-dark">Rejected</span> break;
+                case RiderStatus.Assigned: <span class="badge badge-info">Assigned</span> break;
+                case RiderStatus.PickingUp: <span class="badge badge-purple">Picking Up</span> break;
+                case RiderStatus.OutForDelivery: <span class="badge badge-purple">Out for Delivery</span> break;
+                default: <span class="badge badge-gray">@Model.Status</span> break;
+            }
+        </div>
+    </div>
+
+    <div class="card flex-1" style="min-width:280px">
+        <div class="card-title">Rider Information</div>
+        <table style="width:100%;font-size:13px">
+            <tr><td class="text-muted" style="width:140px;padding:6px 0">Vehicle Type</td><td>@Model.VehicleType</td></tr>
+            <tr><td class="text-muted" style="padding:6px 0">Vehicle Plate</td><td>@(Model.VehiclePlate ?? "—")</td></tr>
+            <tr><td class="text-muted" style="padding:6px 0">Total Deliveries</td><td>@Model.TotalDeliveries</td></tr>
+            <tr><td class="text-muted" style="padding:6px 0">Total Earnings</td><td>₦@Model.TotalEarnings.ToString("N2")</td></tr>
+            <tr><td class="text-muted" style="padding:6px 0">Approved</td><td>@(Model.IsApproved ? "Yes — " + (Model.ApprovedAt?.ToString("dd MMM yyyy") ?? "") : "No")</td></tr>
+            <tr><td class="text-muted" style="padding:6px 0">Joined</td><td>@Model.CreatedAt.ToString("dd MMM yyyy")</td></tr>
+        </table>
+
+        @if (!Model.IsApproved)
+        {
+            <div style="margin-top:16px">
+                @if (string.IsNullOrEmpty(Model.User.ProfilePhoto))
+                {
+                    <div class="alert alert-danger">Profile picture required before approval. <a href="/Riders/Edit/@Model.Id">Upload photo →</a></div>
+                }
+                else
+                {
+                    <form asp-action="Approve" asp-route-id="@Model.Id" method="post" style="display:inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-success btn-sm">✓ Approve Rider</button>
+                    </form>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@if (Model.Orders.Any())
+{
+    <div class="card" style="margin-top:20px">
+        <div class="card-title">Recent Orders</div>
+        <table>
+            <thead><tr><th>Order #</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody>
+                @foreach (var o in Model.Orders.OrderByDescending(x => x.CreatedAt).Take(10))
+                {
+                    <tr>
+                        <td><a href="/Orders/Detail/@o.Id">@o.OrderNumber</a></td>
+                        <td><span class="badge badge-info">@o.Status</span></td>
+                        <td>@o.CreatedAt.ToString("dd MMM yyyy")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

@@ -1,0 +1,167 @@
+@model List<ServiceOffering>
+@{
+    ViewData["Title"] = "Service Offerings";
+    ViewData["Subtitle"] = "Manage service catalog pricing and availability";
+    var activeCount = Model.Count(s => s.IsActive);
+}
+
+<div class="service-page">
+    <div class="service-page-header">
+        <div>
+            <h1>Service Offerings</h1>
+            <p>Manage laundry services, pricing, and turnaround details. @activeCount active.</p>
+        </div>
+        <a href="/Services/Create" class="btn btn-primary service-add-btn">+ Add Service</a>
+    </div>
+
+    <div class="filters service-filter-card">
+        <div class="form-group">
+            <label>Filter by Store</label>
+            <select onchange="window.location.href='/Services?storeId='+this.value" class="form-control">
+                <option value="">All Stores</option>
+                @foreach (var store in (IEnumerable<LaundryStore>)(ViewBag.Stores ?? new List<LaundryStore>()))
+                {
+                    <option value="@store.Id" selected="@(ViewBag.StoreId?.ToString() == store.Id.ToString())">@store.Name</option>
+                }
+            </select>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="empty-state service-empty">
+            <div>
+                <div class="empty-icon">S</div>
+                <h3>No service offerings found</h3>
+                <p>Add a service offering or choose another store filter.</p>
+                <div class="mt-2">
+                    <a href="/Services/Create" class="btn btn-primary">Add Service</a>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Desktop table -->
+        <div class="table-responsive admin-table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Service Name</th>
+                        <th>Store</th>
+                        <th>Type</th>
+                        <th>Pricing</th>
+                        <th class="text-right">Base Price</th>
+                        <th class="text-right">Min Charge</th>
+                        <th class="text-right">Est. Hours</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model)
+                    {
+                        var typeLabel = s.Category ?? s.ServiceType.ToString();
+                        <tr>
+                            <td>
+                                <strong>@s.Name</strong>
+                                @if (!string.IsNullOrEmpty(s.Description))
+                                {
+                                    <br /><small class="text-muted">@(s.Description.Length > 60 ? s.Description[..60] + "…" : s.Description)</small>
+                                }
+                            </td>
+                            <td>@s.Store.Name</td>
+                            <td><span class="badge badge-secondary">@typeLabel</span></td>
+                            <td>@s.PricingMode</td>
+                            <td class="text-right">&#8358;@s.BasePrice.ToString("N0")</td>
+                            <td class="text-right">&#8358;@s.MinimumCharge.ToString("N0")</td>
+                            <td class="text-right">@s.EstimatedHours h</td>
+                            <td class="text-center">
+                                @if (s.IsActive)
+                                { <span class="badge badge-success">Active</span> }
+                                else
+                                { <span class="badge badge-warning">Inactive</span> }
+                            </td>
+                            <td class="text-center">
+                                <div class="action-row">
+                                    <a href="/Services/Edit/@s.Id" class="btn btn-sm btn-outline">Edit</a>
+                                    <form asp-action="ToggleActive" asp-route-id="@s.Id" method="post" style="display:inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-sm @(s.IsActive ? "btn-warning" : "btn-success")">
+                                            @(s.IsActive ? "Deactivate" : "Activate")
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Mobile card list (shown only on small screens via CSS) -->
+        <div class="service-card-list admin-service-grid service-mobile-only">
+            @foreach (var s in Model)
+            {
+                var typeLabel = s.Category ?? s.ServiceType.ToString();
+                <article class="service-offering-card">
+                    <div class="service-card-top">
+                        <div class="service-hero-icon">@ServiceIcon(s.ServiceType.ToString())</div>
+                        <div class="service-card-title">
+                            <h2>@s.Name</h2>
+                            <div class="service-meta-line">
+                                <span class="mini-store-icon">S</span>
+                                <span>@s.Store.Name</span>
+                                <span class="service-separator">|</span>
+                                <span class="service-type-pill">@typeLabel</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="service-detail-grid">
+                        <div class="service-detail">
+                            <span class="service-detail-label">Price</span>
+                            <strong>&#8358;@s.BasePrice.ToString("N0")</strong>
+                        </div>
+                        <div class="service-detail">
+                            <span class="service-detail-label">Hours</span>
+                            <strong>@s.EstimatedHours h</strong>
+                        </div>
+                        <div class="service-detail">
+                            <span class="service-detail-label">Pricing</span>
+                            <strong>@s.PricingMode</strong>
+                        </div>
+                        <div class="service-detail">
+                            <span class="service-detail-label">Type</span>
+                            <strong>@typeLabel</strong>
+                        </div>
+                    </div>
+                    <div class="service-card-footer">
+                        <div class="service-status-block">
+                            @if (s.IsActive) { <span class="service-status active">Active</span> }
+                            else { <span class="service-status inactive">Inactive</span> }
+                        </div>
+                        <div class="service-actions">
+                            <a href="/Services/Edit/@s.Id" class="btn service-edit-btn btn-inline">Edit</a>
+                            <form asp-action="ToggleActive" asp-route-id="@s.Id" method="post">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-inline @(s.IsActive ? "btn-warning" : "btn-success")">
+                                    @(s.IsActive ? "Deactivate" : "Activate")
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </article>
+            }
+        </div>
+    }
+</div>
+
+@functions {
+    string ServiceIcon(string value)
+    {
+        if (value.Contains("Iron", StringComparison.OrdinalIgnoreCase)) return "I";
+        if (value.Contains("Wash", StringComparison.OrdinalIgnoreCase)) return "W";
+        if (value.Contains("Dry", StringComparison.OrdinalIgnoreCase)) return "D";
+        return "S";
+    }
+}

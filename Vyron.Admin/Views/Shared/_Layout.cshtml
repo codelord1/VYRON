@@ -1,0 +1,130 @@
+@using Vyron.Shared.Enums
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#071416" />
+    <title>@ViewData["Title"] - VYRON Admin</title>
+    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+    <meta name="idle-timeout" content="@(ViewBag.IdleTimeoutMinutes ?? 15)" />
+</head>
+<body>
+@{
+    var isAdmin = User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+    var isOwner = User.IsInRole("StoreOwner");
+    var ctrl = (string?)ViewContext.RouteData.Values["controller"] ?? "";
+    var action = (string?)ViewContext.RouteData.Values["action"] ?? "";
+    var displayName = User.Identity?.Name ?? "VYRON User";
+    var initials = string.Join("", displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(n => n[0])).ToUpperInvariant();
+    if (string.IsNullOrWhiteSpace(initials)) { initials = "V"; }
+    var subtitle = (string?)ViewData["Subtitle"];
+    string ActiveIf(string controller, params string[] actions)
+    {
+        var controllerMatch = string.Equals(ctrl, controller, StringComparison.OrdinalIgnoreCase);
+        if (!controllerMatch) return "";
+        if (actions.Length == 0) return "active";
+        return actions.Contains(action, StringComparer.OrdinalIgnoreCase) ? "active" : "";
+    }
+}
+
+<div class="app-shell">
+    <aside class="sidebar" aria-label="Primary navigation">
+        <div class="sidebar-header">
+            <div class="brand"><span>VY</span>RON</div>
+            <button class="sidebar-mini-toggle" type="button" aria-label="Toggle menu">☰</button>
+            <div class="role">@(isAdmin ? "Marketplace Console V2" : isOwner ? "Marketplace Console" : "Console")</div>
+        </div>
+
+        <nav class="sidebar-nav">
+            @if (isAdmin)
+            {
+                <div class="nav-section">Operations</div>
+                <a href="/Home" class="@ActiveIf("Home")"><span class="nav-icon">▦</span><span>Dashboard</span></a>
+                <a href="/Orders" class="@ActiveIf("Orders")"><span class="nav-icon">◧</span><span>Orders</span></a>
+                <a href="/Stores" class="@ActiveIf("Stores")"><span class="nav-icon">▣</span><span>Stores</span></a>
+                <a href="/Riders" class="@ActiveIf("Riders")"><span class="nav-icon">◌</span><span>Riders</span></a>
+                <a href="/Services" class="@ActiveIf("Services")"><span class="nav-icon">◇</span><span>Services</span></a>
+                <a href="/ServiceTypes" class="@ActiveIf("ServiceTypes")"><span class="nav-icon">◈</span><span>Service Types</span></a>
+                <div class="nav-section">Finance &amp; Trust</div>
+                <a href="/Payments" class="@ActiveIf("Payments")"><span class="nav-icon">▰</span><span>Payments</span></a>
+                <a href="/Disputes" class="@ActiveIf("Disputes")"><span class="nav-icon">△</span><span>Disputes</span></a>
+                <a href="/Reviews" class="@ActiveIf("Reviews")"><span class="nav-icon">★</span><span>Reviews</span></a>
+                <div class="nav-section">People</div>
+                <a href="/Users" class="@ActiveIf("Users")"><span class="nav-icon">◉</span><span>Users</span></a>
+                <a href="/CommunicationLogs" class="@ActiveIf("CommunicationLogs")"><span class="nav-icon">✉</span><span>Messages</span></a>
+                <div class="nav-section">System</div>
+                <a href="/Settings" class="@ActiveIf("Settings")"><span class="nav-icon">⚙</span><span>Settings</span></a>
+            }
+            else if (isOwner)
+            {
+                <div class="nav-section">Operations</div>
+                <a href="/StoreOwner/Dashboard" class="@ActiveIf("StoreOwner", "Dashboard")"><span class="nav-icon">▦</span><span>Dashboard</span></a>
+                <a href="/StoreOwner/Orders" class="@ActiveIf("StoreOwner", "Orders", "OrderDetail")"><span class="nav-icon">◧</span><span>My Orders</span></a>
+                <a href="/StoreOwner/Stores" class="@ActiveIf("StoreOwner", "Stores", "StoreCreate", "StoreEdit")"><span class="nav-icon">▣</span><span>My Stores</span></a>
+                <a href="/StoreOwner/ServiceOfferings" class="@ActiveIf("StoreOwner", "ServiceOfferings", "ServiceCreate", "ServiceEdit")"><span class="nav-icon">◇</span><span>Services</span></a>
+                <div class="nav-section">Finance &amp; Trust</div>
+                <a href="/StoreOwner/Disputes" class="@ActiveIf("StoreOwner", "Disputes", "DisputeDetail")"><span class="nav-icon">△</span><span>Disputes</span></a>
+                <a href="/StoreOwner/Reviews" class="@ActiveIf("StoreOwner", "Reviews")"><span class="nav-icon">★</span><span>Reviews</span></a>
+            }
+        </nav>
+
+        <div class="sidebar-actions">
+            <form asp-controller="Account" asp-action="Logout" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-ghost btn-block">Log out</button>
+            </form>
+        </div>
+
+        <a class="sidebar-user" href="/Account/Profile">
+            <span class="avatar">@initials</span>
+            <span>
+                <strong>@displayName</strong>
+                <small>@(isAdmin ? "Administrator" : "Store Owner")</small>
+            </span>
+            <span class="sidebar-user-caret">⌄</span>
+        </a>
+    </aside>
+
+    <div class="sidebar-backdrop" aria-hidden="true"></div>
+
+    <main class="main-shell">
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="hamburger" type="button" aria-label="Open menu" aria-expanded="false">
+                    <span></span><span></span><span></span>
+                </button>
+                <div class="topbar-heading">
+                    <h1 class="page-title">@(ViewData["Title"] ?? "Dashboard")</h1>
+                    @if (!string.IsNullOrWhiteSpace(subtitle))
+                    {
+                        <p>@subtitle</p>
+                    }
+                </div>
+            </div>
+
+            <div class="topbar-actions">
+                <span class="topbar-date">@DateTime.Now.ToString("ddd, MMM dd yyyy")</span>
+                <button class="icon-button has-badge" type="button" aria-label="Notifications"><span>♧</span></button>
+                <a class="user-chip" href="/Account/Profile">
+                    <span class="chip-store">@initials.Substring(0, 1)</span>
+                    <span>@displayName</span>
+                    <span class="chip-caret">⌄</span>
+                </a>
+            </div>
+        </header>
+
+        <section class="content">
+            @if (TempData["Success"] is string s) { <div class="alert alert-success">@s</div> }
+            @if (TempData["Error"] is string e) { <div class="alert alert-danger">@e</div> }
+
+            @RenderBody()
+        </section>
+    </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="~/js/admin.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

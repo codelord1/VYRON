@@ -1,0 +1,70 @@
+@model ProfileEditVm
+@{ ViewData["Title"] = "My Profile"; }
+
+<div class="page-header">
+    <h1>My Profile</h1>
+    <a href="/Account/ChangePassword" class="btn btn-secondary btn-sm">Change Password</a>
+</div>
+
+<div class="flex" style="gap:20px;align-items:flex-start;flex-wrap:wrap">
+    <div class="card" style="min-width:220px;text-align:center;padding:24px">
+        @if (!string.IsNullOrEmpty(Model.CurrentProfilePhoto))
+        {
+            <img src="@Model.CurrentProfilePhoto" id="imgPreview" style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--teal)" />
+        }
+        else
+        {
+            <div id="avatarPlaceholder" style="width:100px;height:100px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:800;color:var(--dark);margin:0 auto">
+                @(Model.FullName.Length > 0 ? Model.FullName.Substring(0,1).ToUpper() : "?")
+            </div>
+            <img id="imgPreview" src="" style="display:none;width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--teal)" />
+        }
+        <div style="margin-top:8px;font-size:12px;color:var(--gray-3)">@User.IsInRole("Admin") ? "Admin" : "Store Owner"</div>
+    </div>
+
+    <div class="card flex-1" style="min-width:320px;max-width:580px">
+        <div class="card-title">Edit Profile</div>
+        <form asp-action="Profile" enctype="multipart/form-data" method="post">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" style="display:@(ViewData.ModelState.IsValid ? "none" : "block")"></div>
+
+            <div class="form-group">
+                <label asp-for="FullName">Full Name *</label>
+                <input asp-for="FullName" class="form-control" />
+                <span asp-validation-for="FullName" class="text-red" style="font-size:11px"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Email">Email</label>
+                <input asp-for="Email" type="email" class="form-control" />
+                <span asp-validation-for="Email" class="text-red" style="font-size:11px"></span>
+            </div>
+            <div class="flex" style="gap:8px">
+                <div class="form-group" style="width:160px">
+                    <label asp-for="CountryCode">Country Code</label>
+                    <select asp-for="CountryCode" class="form-control">
+                        <option value="+234">+234 Nigeria</option>
+                        <option value="+233">+233 Ghana</option>
+                        <option value="+254">+254 Kenya</option>
+                        <option value="+27">+27 South Africa</option>
+                        <option value="+44">+44 United Kingdom</option>
+                        <option value="+1">+1 USA/Canada</option>
+                    </select>
+                </div>
+                <div class="form-group flex-1">
+                    <label asp-for="LocalPhone">Phone Number</label>
+                    <input asp-for="LocalPhone" class="form-control" placeholder="8012345678" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Profile Photo</label>
+                <input type="file" name="ProfileImageFile" accept=".jpg,.jpeg,.png,.webp" class="form-control" data-preview="imgPreview" />
+                <small class="text-muted">Max 2 MB. Formats: jpg, jpeg, png, webp</small>
+            </div>
+            <div style="margin-top:18px">
+                <button type="submit" class="btn btn-primary">Save Profile</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

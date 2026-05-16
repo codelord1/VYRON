@@ -1,0 +1,105 @@
+@model List<ServiceOffering>
+@{
+    ViewData["Title"] = "My Service Offerings";
+    ViewData["Subtitle"] = "Manage your laundry services and details";
+    var activeCount = Model.Count(s => s.IsActive);
+}
+
+<div class="service-page">
+    <div class="service-page-header">
+        <div>
+            <h1>Service Offerings</h1>
+            <p>Manage your laundry services and details</p>
+        </div>
+        <a href="/StoreOwner/ServiceCreate" class="btn btn-primary service-add-btn">+ Add Service</a>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="empty-state service-empty">
+            <div>
+                <div class="empty-icon">S</div>
+                <h3>No service offerings yet</h3>
+                <p>Add your first laundry service to start accepting orders.</p>
+                <div class="mt-2">
+                    <a href="/StoreOwner/ServiceCreate" class="btn btn-primary">Add Service</a>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="service-card-list">
+            @foreach (var s in Model)
+            {
+                var typeLabel = s.Category ?? s.ServiceType.ToString();
+                <article class="service-offering-card">
+                    <div class="service-card-top">
+                        <div class="service-hero-icon">@ServiceIcon(s.ServiceType.ToString())</div>
+                        <div class="service-card-title">
+                            <h2>@s.Name</h2>
+                            <div class="service-meta-line">
+                                <span class="mini-store-icon">S</span>
+                                <span>@(s.Store?.Name ?? "Store")</span>
+                                <span class="service-separator">|</span>
+                                <span class="service-type-pill">@typeLabel</span>
+                            </div>
+                        </div>
+                        <button class="service-menu-btn" type="button" aria-label="More actions">&vellip;</button>
+                    </div>
+
+                    <div class="service-detail-grid">
+                        <div class="service-detail">
+                            <span class="service-detail-icon">P</span>
+                            <span class="service-detail-label">Price</span>
+                            <strong>&#8358;@s.BasePrice.ToString("N0")</strong>
+                        </div>
+                        <div class="service-detail">
+                            <span class="service-detail-icon">H</span>
+                            <span class="service-detail-label">Est. Hours</span>
+                            <strong>@s.EstimatedHours h</strong>
+                        </div>
+                        <div class="service-detail">
+                            <span class="service-detail-icon">S</span>
+                            <span class="service-detail-label">Store</span>
+                            <strong>@(s.Store?.Name ?? "Store")</strong>
+                        </div>
+                        <div class="service-detail">
+                            <span class="service-detail-icon">T</span>
+                            <span class="service-detail-label">Type</span>
+                            <strong>@typeLabel</strong>
+                        </div>
+                    </div>
+
+                    <div class="service-card-footer">
+                        <div class="service-status-block">
+                            <span>Status</span>
+                            @if (s.IsActive) { <span class="service-status active">Active</span> }
+                            else { <span class="service-status inactive">Inactive</span> }
+                        </div>
+                        <a href="/StoreOwner/ServiceEdit/@s.Id" class="btn service-edit-btn btn-inline">Edit</a>
+                    </div>
+                </article>
+            }
+        </div>
+
+        <a class="service-summary-card" href="/StoreOwner/ServiceOfferings">
+            <span class="summary-icon">A</span>
+            <span>
+                <strong>Active Services</strong>
+                <small>@activeCount services are currently active</small>
+            </span>
+            <span class="summary-arrow">></span>
+        </a>
+    }
+</div>
+
+@functions {
+    string ServiceIcon(string value)
+    {
+        if (value.Contains("Iron", StringComparison.OrdinalIgnoreCase)) return "I";
+        if (value.Contains("Wash", StringComparison.OrdinalIgnoreCase)) return "W";
+        if (value.Contains("Dry", StringComparison.OrdinalIgnoreCase)) return "D";
+        return "S";
+    }
+}

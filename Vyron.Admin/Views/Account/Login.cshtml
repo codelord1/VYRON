@@ -1,0 +1,75 @@
+@{
+    ViewData["Title"] = "Sign In";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sign In · VYRON Admin</title>
+    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+</head>
+<body>
+<div class="login-wrapper">
+    <div class="login-card">
+        <div class="login-logo">VYRON</div>
+        <div class="login-tag">Admin &amp; Store Owner Console</div>
+
+        @if (ViewData["Expired"] is true)
+        {
+            <div class="alert alert-danger">Your session expired due to inactivity. Please log in again.</div>
+        }
+        @if (TempData["Success"] is string ok) { <div class="alert alert-success">@ok</div> }
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger">
+                @foreach (var err in ViewData.ModelState.SelectMany(s => s.Value!.Errors))
+                { <div>@err.ErrorMessage</div> }
+            </div>
+        }
+
+        <form method="post" asp-controller="Account" asp-action="Login">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+
+            <div class="form-group">
+                <label>Identifier</label>
+                <input type="text" name="identifier" placeholder="admin or +234..." required autofocus />
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" placeholder="Your password" required />
+            </div>
+
+            <div class="form-group" style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                <input type="checkbox" name="rememberMe" id="rememberMe" value="true" style="width:16px;height:16px;cursor:pointer" />
+                <label for="rememberMe" style="margin:0;font-size:13px;font-weight:400;cursor:pointer">Remember me</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" style="margin-top: 8px;">
+                Sign In →
+            </button>
+            <div style="text-align:right;margin-top:8px">
+                <a href="/Account/ForgotPassword" style="font-size:12px;color:var(--gray-3)">Forgot password?</a>
+            </div>
+        </form>
+
+        <div style="margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--gray-2);">
+            <div style="font-size: 11px; color: var(--gray-3); margin-bottom: 8px; text-transform: uppercase; font-weight: 700;">
+                Demo Credentials
+            </div>
+            <div style="font-size: 12px; color: var(--gray-4); line-height: 1.7;">
+                <strong>Admin:</strong> <code style="background:var(--gray-1);padding:2px 6px;border-radius:3px;">admin</code>
+                /
+                <code style="background:var(--gray-1);padding:2px 6px;border-radius:3px;">Vyron@@Admin2024!</code><br>
+                <strong>Owner:</strong> <code style="background:var(--gray-1);padding:2px 6px;border-radius:3px;">+2348022222222</code>
+                /
+                <code style="background:var(--gray-1);padding:2px 6px;border-radius:3px;">StoreOwner@@2024</code>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

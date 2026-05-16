@@ -1,0 +1,37 @@
+@model List<Payment>
+@{ ViewData["Title"] = "Payments"; }
+
+<div class="page-header">
+    <h1>Payments</h1>
+    <span class="text-muted">Page @ViewBag.Page</span>
+</div>
+
+<div class="table-wrap">
+    <table class="table-mobile-card">
+        <thead>
+            <tr><th>Ref</th><th>Order</th><th>Customer</th><th>Amount</th><th>Method</th><th>Type</th><th>Status</th><th>When</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var p in Model)
+            {
+                <tr>
+                    <td class="text-bold"><small>@p.PaymentRef</small></td>
+                    <td><a href="/Orders/Detail/@p.OrderId">@p.Order.OrderNumber</a></td>
+                    <td>@p.Order.Customer.FullName</td>
+                    <td class="text-bold">₦@p.Amount.ToString("N0")</td>
+                    <td>@p.Method</td>
+                    <td><span class="badge badge-info">@p.Type</span></td>
+                    <td>
+                        @if (p.IsSuccessful) { <span class="badge badge-success">✓ Paid</span> }
+                        else { <span class="badge badge-danger">Failed</span> }
+                    </td>
+                    <td><small>@p.CreatedAt.ToString("MMM dd HH:mm")</small></td>
+                </tr>
+            }
+            @if (!Model.Any())
+            {
+                <tr><td colspan="8" class="text-center text-muted" style="padding:30px;">No payments yet.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>

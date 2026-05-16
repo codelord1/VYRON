@@ -1,0 +1,78 @@
+@model ServiceOfferingEditVm
+@{
+    ViewData["Title"] = "Edit Service Offering";
+    ViewData["Subtitle"] = "Update service details and availability";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Edit Service Offering</h1>
+        <p>Keep your service price, description, and turnaround time current.</p>
+    </div>
+    <a href="/StoreOwner/ServiceOfferings" class="btn btn-secondary btn-sm">Back</a>
+</div>
+
+<div class="card service-form-card">
+    <form asp-controller="StoreOwner" asp-action="ServiceEdit" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="StoreId" />
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" style="display:@(ViewData.ModelState.IsValid ? "none" : "block")"></div>
+
+        <div class="form-group">
+            <label asp-for="Name">Service Name *</label>
+            <input asp-for="Name" class="form-control" />
+            <span asp-validation-for="Name" class="text-red"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Description">Description</label>
+            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+        </div>
+
+        <div class="form-grid-2">
+            <div class="form-group">
+                <label asp-for="ServiceType">Service Type</label>
+                <select asp-for="ServiceType" class="form-control">
+                    @foreach (ServiceType v in Enum.GetValues(typeof(ServiceType)))
+                    { <option value="@((int)v)">@v</option> }
+                </select>
+            </div>
+            <div class="form-group">
+                <label asp-for="PricingMode">Pricing Mode</label>
+                <select asp-for="PricingMode" class="form-control">
+                    @foreach (PricingMode v in Enum.GetValues(typeof(PricingMode)))
+                    { <option value="@((int)v)">@v</option> }
+                </select>
+            </div>
+        </div>
+
+        <div class="form-grid-3">
+            <div class="form-group">
+                <label asp-for="BasePrice">Base Price (&#8358;) *</label>
+                <input asp-for="BasePrice" type="number" step="0.01" min="0" class="form-control" />
+                <span asp-validation-for="BasePrice" class="text-red"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="MinimumCharge">Min. Charge (&#8358;)</label>
+                <input asp-for="MinimumCharge" type="number" step="0.01" min="0" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label asp-for="EstimatedHours">Est. Hours</label>
+                <input asp-for="EstimatedHours" type="number" min="1" class="form-control" />
+            </div>
+        </div>
+
+        <label class="toggle-row">
+            <input asp-for="IsActive" type="checkbox" />
+            <span>Active (available for new orders)</span>
+        </label>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a href="/StoreOwner/ServiceOfferings" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

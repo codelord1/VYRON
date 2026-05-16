@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.CustomerApp.ViewModels"
+             x:Class="Vyron.CustomerApp.Views.Auth.SignupPage"
+             x:DataType="vm:SignupViewModel"
+             Shell.NavBarIsVisible="False"
+             Shell.TabBarIsVisible="False"
+             BackgroundColor="{StaticResource Bg}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="28,64,28,48" Spacing="0">
+
+            <!-- ── Brand ───────────────────────────────────────────── -->
+            <Label Text="VYRON"
+                   TextColor="{StaticResource Teal}"
+                   FontFamily="OpenSansSemibold"
+                   FontSize="42"
+                   HorizontalOptions="Center" />
+            <Label Text="Laundry, simplified."
+                   FontSize="13"
+                   TextColor="{StaticResource Gray3}"
+                   HorizontalOptions="Center"
+                   Margin="0,4,0,48" />
+
+            <!-- ── Card ────────────────────────────────────────────── -->
+            <Border BackgroundColor="White"
+                    Stroke="#E8E8E2"
+                    StrokeShape="RoundRectangle 20"
+                    Padding="24,28">
+                <VerticalStackLayout Spacing="0">
+
+                    <Label Text="Create Account"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="22"
+                           Margin="0,0,0,6" />
+                    <Label Text="Enter your phone number to get a verification code."
+                           FontSize="13"
+                           TextColor="{StaticResource Gray3}"
+                           Margin="0,0,0,24" />
+
+                    <!-- Error banner -->
+                    <Border BackgroundColor="#FFF1F0"
+                            Stroke="#FFB8B0"
+                            StrokeShape="RoundRectangle 10"
+                            Padding="12,10"
+                            Margin="0,0,0,16"
+                            IsVisible="{Binding ErrorMessage, Converter={StaticResource NotNullToBool}}">
+                        <Label Text="{Binding ErrorMessage}"
+                               TextColor="#C0392B"
+                               FontSize="12" />
+                    </Border>
+
+                    <!-- Phone Number label -->
+                    <Label Text="Phone Number"
+                           FontSize="13"
+                           FontFamily="OpenSansSemibold"
+                           Margin="0,0,0,8" />
+
+                    <!-- Country picker + local number row -->
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+
+                        <!-- Country code selector -->
+                        <Border BackgroundColor="White"
+                                Stroke="#D0D0C8"
+                                StrokeShape="RoundRectangle 12"
+                                WidthRequest="148">
+                            <Picker ItemsSource="{Binding CountryOptions}"
+                                    SelectedItem="{Binding SelectedCountry}"
+                                    ItemDisplayBinding="{Binding DisplayText}"
+                                    BackgroundColor="Transparent"
+                                    Margin="10,0" />
+                        </Border>
+
+                        <!-- Local phone number -->
+                        <Border Grid.Column="1"
+                                BackgroundColor="White"
+                                Stroke="#D0D0C8"
+                                StrokeShape="RoundRectangle 12">
+                            <Entry Placeholder="8012345678"
+                                   Text="{Binding LocalPhone}"
+                                   Keyboard="Telephone"
+                                   BackgroundColor="Transparent"
+                                   ReturnType="Send"
+                                   ReturnCommand="{Binding RequestOtpCommand}"
+                                   Margin="14,0" />
+                        </Border>
+                    </Grid>
+
+                    <!-- Hint -->
+                    <Label FontSize="11"
+                           TextColor="{StaticResource Gray3}"
+                           Margin="0,8,0,24">
+                        <Label.FormattedText>
+                            <FormattedString>
+                                <Span Text="Selected: " />
+                                <Span Text="{Binding SelectedCountry.ShortLabel}"
+                                      FontFamily="OpenSansSemibold" />
+                                <Span Text=" · Enter local number without country code." />
+                            </FormattedString>
+                        </Label.FormattedText>
+                    </Label>
+
+                    <Button Text="Send Verification Code"
+                            Command="{Binding RequestOtpCommand}"
+                            IsEnabled="{Binding IsNotBusy}" />
+
+                    <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                       Color="{StaticResource Teal}"
+                                       IsVisible="{Binding IsBusy}"
+                                       HorizontalOptions="Center"
+                                       Margin="0,12,0,0" />
+
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- ── Already have an account ─────────────────────────── -->
+            <HorizontalStackLayout HorizontalOptions="Center" Margin="0,20,0,0" Spacing="4">
+                <Label Text="Already have an account?"
+                       FontSize="13"
+                       TextColor="{StaticResource Gray3}"
+                       VerticalOptions="Center" />
+                <Label FontSize="13" VerticalOptions="Center">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnLoginTapped" />
+                    </Label.GestureRecognizers>
+                    <Label.FormattedText>
+                        <FormattedString>
+                            <Span Text="Login"
+                                  TextColor="{StaticResource Teal}"
+                                  FontFamily="OpenSansSemibold" />
+                        </FormattedString>
+                    </Label.FormattedText>
+                </Label>
+            </HorizontalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

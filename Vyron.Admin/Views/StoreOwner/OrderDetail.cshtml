@@ -1,0 +1,145 @@
+@model Order
+@{ ViewData["Title"] = $"Order {Model.OrderNumber}"; }
+
+<div class="page-header">
+    <div>
+        <h1>@Model.OrderNumber</h1>
+        <small class="text-muted">Placed @Model.CreatedAt.ToString("MMM dd, yyyy 'at' HH:mm")</small>
+    </div>
+    <a href="/StoreOwner/Orders" class="btn btn-secondary btn-sm">← Back</a>
+</div>
+
+<!-- Action banner: show only when action available -->
+@if (Model.Status == OrderStatus.PickupFeePaid)
+{
+    <div class="card" style="background:var(--teal-pale);border-left:4px solid var(--teal-dark);">
+        <h3 class="card-title">⚠️ Action Required: Accept this order</h3>
+        <p>The customer has paid the pickup fee. Confirm you can fulfill this order.</p>
+        <form asp-action="AcceptOrder" method="post" data-confirm="Accept this order? The rider will be dispatched next.">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+            <button type="submit" class="btn btn-primary">✓ Accept Order</button>
+        </form>
+    </div>
+}
+else if (Model.Status == OrderStatus.PickedUp)
+{
+    <div class="card" style="background:#FFF3E0;border-left:4px solid var(--amber);">
+        <h3 class="card-title">📦 Laundry received — start processing?</h3>
+        <p>Mark this order as being processed at your laundry.</p>
+        <form asp-action="StartProcessing" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+            <button type="submit" class="btn btn-warning">Start Processing</button>
+        </form>
+    </div>
+}
+else if (Model.Status == OrderStatus.Processing)
+{
+    <div class="card" style="background:var(--teal-pale);border-left:4px solid var(--teal);">
+        <h3 class="card-title">✨ Done? Mark as ready for delivery</h3>
+        <p>This will notify the rider that the laundry is ready for delivery.</p>
+        <form asp-action="MarkReady" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+            <button type="submit" class="btn btn-success">✓ Mark as Ready</button>
+        </form>
+    </div>
+}
+
+<div class="grid-2">
+    <div>
+        <div class="card">
+            <h3 class="card-title">Order Summary</h3>
+            <div class="flex-between mb-2"><span>Status</span><span class="badge badge-@StatusBadge(Model.Status)">@Model.Status</span></div>
+            <div class="flex-between mb-2"><span>Payment</span><span class="badge badge-@PaymentBadge(Model.PaymentState)">@Model.PaymentState</span></div>
+            <hr style="border:none;border-top:1px solid var(--gray-2);margin:10px 0;" />
+            <div class="flex-between mb-1"><span>Service</span><span class="text-bold">@Model.Service.Name</span></div>
+            <div class="flex-between mb-1">
+                <span>Quantity</span>
+                <span>@(Model.EstimatedWeight > 0 ? $"{Model.EstimatedWeight}kg" : $"{Model.EstimatedPieces} pcs")</span>
+            </div>
+            <hr style="border:none;border-top:1px solid var(--gray-2);margin:10px 0;" />
+            <div class="flex-between mb-1"><span>Laundry cost</span><span>₦@Model.EstimatedLaundryCost.ToString("N0")</span></div>
+            <div class="flex-between mb-1"><span>Pickup fee</span><span>₦@Model.PickupFee.ToString("N0")</span></div>
+            <div class="flex-between mb-1"><span>Delivery fee</span><span>₦@Model.DeliveryFee.ToString("N0")</span></div>
+            <hr style="border:none;border-top:1px solid var(--gray-2);margin:10px 0;" />
+            <div class="flex-between"><span class="text-bold">Total estimate</span><span class="text-bold text-teal" style="font-size:16px;">₦@Model.TotalEstimate.ToString("N0")</span></div>
+            @if (Model.AdminPriceOverride)
+            {
+                <div class="alert alert-info mt-2" style="font-size: 11px;">
+                    Admin adjusted laundry cost. Reason: @Model.AdminOverrideReason
+                </div>
+            }
+        </div>
+
+        <div class="card">
+            <h3 class="card-title">Customer</h3>
+            <p class="text-bold mb-0">@Model.Customer.FullName</p>
+            <p class="text-muted mb-0">📞 @Model.Customer.Phone</p>
+            @if (!string.IsNullOrEmpty(Model.Customer.Email)) { <p class="text-muted mb-0">📧 @Model.Customer.Email</p> }
+        </div>
+    </div>
+
+    <div>
+        <div class="card">
+            <h3 class="card-title">Logistics</h3>
+            <div class="mb-2"><strong>📍 Pickup address:</strong><br />@Model.PickupAddress</div>
+            <div class="mb-2"><strong>🏠 Delivery address:</strong><br />@Model.DeliveryAddress</div>
+            <div class="mb-2"><strong>🕐 Pickup window:</strong><br />@Model.RequestedPickupDate.ToString("dddd, MMM dd") · @Model.RequestedPickupSlot</div>
+            @if (!string.IsNullOrEmpty(Model.SpecialInstructions))
+            {
+                <div class="alert alert-info" style="font-size: 12px;">
+                    <strong>📝 Special instructions:</strong><br />@Model.SpecialInstructions
+                </div>
+            }
+        </div>
+
+        @if (Model.Rider != null)
+        {
+            <div class="card">
+                <h3 class="card-title">Rider</h3>
+                <p class="text-bold mb-0">@Model.Rider.User.FullName</p>
+                <p class="text-muted mb-0">📞 @Model.Rider.User.Phone</p>
+                <p class="text-muted mb-0">🏍️ @Model.Rider.VehicleType · @Model.Rider.VehiclePlate</p>
+            </div>
+        }
+
+        <div class="card">
+            <h3 class="card-title">Timeline</h3>
+            <div class="timeline">
+                @foreach (var h in Model.StatusHistory.OrderByDescending(x => x.ChangedAt))
+                {
+                    <div class="timeline-item">
+                        <div class="status-name">@h.Status</div>
+                        <div class="status-time">@h.ChangedAt.ToString("MMM dd 'at' HH:mm")</div>
+                        @if (!string.IsNullOrEmpty(h.Note))
+                        {
+                            <div class="status-note">@h.Note</div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    string StatusBadge(OrderStatus s) => s switch
+    {
+        OrderStatus.Confirmed or OrderStatus.PickupFeePaid or OrderStatus.RiderAssigned => "info",
+        OrderStatus.PickedUp or OrderStatus.OutForDelivery => "purple",
+        OrderStatus.Processing => "warning",
+        OrderStatus.Ready or OrderStatus.Delivered or OrderStatus.BalancePaid or OrderStatus.Completed => "success",
+        OrderStatus.Disputed => "danger",
+        _ => "gray"
+    };
+    string PaymentBadge(PaymentState p) => p switch
+    {
+        PaymentState.FullyPaid => "success",
+        PaymentState.PickupFeePaid => "info",
+        PaymentState.BalancePending => "warning",
+        PaymentState.Refunded => "purple",
+        _ => "gray"
+    };
+}

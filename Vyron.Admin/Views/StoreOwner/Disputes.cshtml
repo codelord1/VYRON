@@ -1,0 +1,42 @@
+@model List<Dispute>
+@{ ViewData["Title"] = "Disputes"; }
+
+<div class="page-header">
+    <h1>Disputes</h1>
+    <span class="text-muted">@Model.Count total · @Model.Count(d => d.Status == DisputeStatus.Open) open</span>
+</div>
+
+<div class="table-wrap">
+    <table class="table-mobile-card">
+        <thead>
+            <tr><th>Order #</th><th>Customer</th><th>Type</th><th>Status</th><th>Raised</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var d in Model)
+            {
+                <tr>
+                    <td><a href="/StoreOwner/DisputeDetail/@d.Id" class="text-bold">@d.Order.OrderNumber</a></td>
+                    <td>@d.RaisedBy.FullName<br /><small class="text-muted">@d.RaisedBy.Phone</small></td>
+                    <td><span class="badge badge-warning">@d.Type</span></td>
+                    <td><span class="badge badge-@StatusBadge(d.Status)">@d.Status</span></td>
+                    <td>@d.CreatedAt.ToString("MMM dd")</td>
+                    <td><a href="/StoreOwner/DisputeDetail/@d.Id" class="btn btn-secondary btn-sm">View →</a></td>
+                </tr>
+            }
+            @if (!Model.Any())
+            {
+                <tr><td colspan="6" class="text-center text-muted" style="padding:30px;">✨ No disputes — great work!</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@functions {
+    string StatusBadge(DisputeStatus s) => s switch
+    {
+        DisputeStatus.Open => "danger",
+        DisputeStatus.UnderReview or DisputeStatus.AwaitingResponse => "warning",
+        DisputeStatus.Resolved or DisputeStatus.Refunded => "success",
+        _ => "gray"
+    };
+}

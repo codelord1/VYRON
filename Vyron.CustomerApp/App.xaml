@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:conv="clr-namespace:Vyron.CustomerApp.Helpers"
+             x:Class="Vyron.CustomerApp.App">
+    <Application.Resources>
+        <ResourceDictionary>
+            <!-- ── Brand Colours ── -->
+            <Color x:Key="Teal">#00C9A7</Color>
+            <Color x:Key="TealDark">#007A58</Color>
+            <Color x:Key="Dark">#0A0A0A</Color>
+            <Color x:Key="Bg">#F4F4F0</Color>
+            <Color x:Key="Gray3">#B0AFA8</Color>
+            <Color x:Key="Gray5">#2C2C2A</Color>
+
+            <!-- ── Converters (global) ── -->
+            <conv:NotNullToBoolConverter   x:Key="NotNullToBool" />
+            <conv:NullToBoolConverter      x:Key="NullToBool" />
+            <conv:InvertBoolConverter      x:Key="InvertBool" />
+            <conv:NotEmptyBoolConverter    x:Key="NotEmptyBool" />
+            <conv:InitialsConverter        x:Key="InitialsConverter" />
+
+            <!-- ── Global Styles ── -->
+            <Style TargetType="Label">
+                <Setter Property="TextColor" Value="{StaticResource Gray5}" />
+                <Setter Property="FontFamily" Value="OpenSansRegular" />
+            </Style>
+
+            <Style TargetType="Button">
+                <Setter Property="FontFamily" Value="OpenSansSemibold" />
+                <Setter Property="CornerRadius" Value="12" />
+                <Setter Property="HeightRequest" Value="50" />
+                <Setter Property="BackgroundColor" Value="{StaticResource Teal}" />
+                <Setter Property="TextColor" Value="White" />
+            </Style>
+
+            <Style TargetType="Entry">
+                <Setter Property="FontFamily" Value="OpenSansRegular" />
+                <Setter Property="BackgroundColor" Value="White" />
+                <Setter Property="HeightRequest" Value="48" />
+            </Style>
+
+            <Style TargetType="Editor">
+                <Setter Property="FontFamily" Value="OpenSansRegular" />
+                <Setter Property="BackgroundColor" Value="White" />
+            </Style>
+
+            <Style TargetType="Picker">
+                <Setter Property="FontFamily" Value="OpenSansRegular" />
+                <Setter Property="TextColor" Value="{StaticResource Gray5}" />
+            </Style>
+
+            <Style TargetType="Shell" ApplyToDerivedTypes="True">
+                <Setter Property="Shell.BackgroundColor" Value="{StaticResource Dark}" />
+                <Setter Property="Shell.ForegroundColor" Value="White" />
+                <Setter Property="Shell.TitleColor" Value="White" />
+                <Setter Property="Shell.TabBarBackgroundColor" Value="White" />
+                <Setter Property="Shell.TabBarForegroundColor" Value="{StaticResource Teal}" />
+                <Setter Property="Shell.TabBarUnselectedColor" Value="{StaticResource Gray3}" />
+                <Setter Property="Shell.TabBarTitleColor" Value="{StaticResource Teal}" />
+            </Style>
+
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

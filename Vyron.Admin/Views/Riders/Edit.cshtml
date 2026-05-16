@@ -1,0 +1,60 @@
+@model RiderEditVm
+@{ ViewData["Title"] = "Edit Rider"; }
+
+<div class="page-header">
+    <h1>Edit Rider</h1>
+    <a href="/Riders/Details/@Model.Id" class="btn btn-secondary btn-sm">← Back</a>
+</div>
+
+<div class="card" style="max-width:600px">
+    <form asp-action="Edit" enctype="multipart/form-data" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" style="display:@(ViewData.ModelState.IsValid ? "none" : "block")"></div>
+
+        <div class="form-group">
+            <label asp-for="FullName">Full Name *</label>
+            <input asp-for="FullName" class="form-control" />
+            <span asp-validation-for="FullName" class="text-red" style="font-size:11px"></span>
+        </div>
+        <div class="flex" style="gap:14px">
+            <div class="form-group flex-1">
+                <label asp-for="VehicleType">Vehicle Type *</label>
+                <input asp-for="VehicleType" class="form-control" />
+                <span asp-validation-for="VehicleType" class="text-red" style="font-size:11px"></span>
+            </div>
+            <div class="form-group flex-1">
+                <label asp-for="VehiclePlate">Vehicle Plate</label>
+                <input asp-for="VehiclePlate" class="form-control" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label asp-for="Status">Status</label>
+            <select asp-for="Status" class="form-control">
+                @foreach (RiderStatus v in Enum.GetValues(typeof(RiderStatus)))
+                { <option value="@((int)v)">@v</option> }
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Profile Photo</label>
+            @if (!string.IsNullOrEmpty(Model.CurrentProfilePhoto))
+            {
+                <div style="margin-bottom:8px">
+                    <img src="@Model.CurrentProfilePhoto" id="imgPreview" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--teal)" />
+                </div>
+            }
+            else
+            {
+                <img id="imgPreview" src="" style="display:none;width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--teal);margin-bottom:8px" />
+            }
+            <input type="file" name="ProfileImageFile" accept=".jpg,.jpeg,.png,.webp" class="form-control" data-preview="imgPreview" />
+            <small class="text-muted">Required for approval. Max 2 MB.</small>
+        </div>
+        <div style="margin-top:18px">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a href="/Riders/Details/@Model.Id" class="btn btn-secondary" style="margin-left:8px">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

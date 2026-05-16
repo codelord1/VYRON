@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.CustomerApp.ViewModels"
+             x:Class="Vyron.CustomerApp.Views.Orders.BalancePaymentPage"
+             x:DataType="vm:BalancePaymentViewModel"
+             Title="Pay Balance"
+             BackgroundColor="{StaticResource Bg}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="16">
+
+            <!-- Success -->
+            <VerticalStackLayout IsVisible="{Binding PaymentDone}" Spacing="16">
+                <Label Text="🎉" FontSize="56" HorizontalOptions="Center" />
+                <Label Text="Balance Paid!"
+                       FontFamily="OpenSansSemibold" FontSize="24"
+                       HorizontalOptions="Center" />
+                <Label Text="{Binding SuccessMessage}" FontSize="13"
+                       TextColor="{StaticResource Gray3}"
+                       HorizontalOptions="Center" HorizontalTextAlignment="Center" />
+                <Button Text="← Back to Orders"
+                        Clicked="OnBackToOrders" />
+            </VerticalStackLayout>
+
+            <!-- Form -->
+            <VerticalStackLayout IsVisible="{Binding PaymentDone, Converter={StaticResource InvertBool}}"
+                                 Spacing="16">
+
+                <!-- Amount -->
+                <Border BackgroundColor="{StaticResource Dark}"
+                        StrokeShape="RoundRectangle 16" Padding="24,20">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Balance Due"
+                               TextColor="{StaticResource Gray3}" FontSize="13"
+                               HorizontalOptions="Center" />
+                        <Label Text="{Binding Order.BalanceAmount, StringFormat='₦{0:N0}'}"
+                               TextColor="White" FontFamily="OpenSansSemibold"
+                               FontSize="38" HorizontalOptions="Center" />
+                        <Label Text="Final payment after delivery"
+                               TextColor="{StaticResource Gray3}" FontSize="12"
+                               HorizontalOptions="Center" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border BackgroundColor="#FFF1F0" Stroke="#FFB8B0"
+                        StrokeShape="RoundRectangle 10" Padding="12,10"
+                        IsVisible="{Binding ErrorMessage, Converter={StaticResource NotNullToBool}}">
+                    <Label Text="{Binding ErrorMessage}" TextColor="#C0392B" FontSize="13" />
+                </Border>
+
+                <Label Text="Payment Method" FontFamily="OpenSansSemibold" FontSize="14" />
+                <Border BackgroundColor="White" Stroke="#D0D0C8"
+                        StrokeShape="RoundRectangle 12" Padding="0">
+                    <Picker ItemsSource="{Binding PaymentMethods}"
+                            SelectedItem="{Binding SelectedMethod}"
+                            BackgroundColor="Transparent" Margin="12,0" />
+                </Border>
+
+                <Button Text="Confirm Balance Payment"
+                        Command="{Binding ConfirmPaymentCommand}"
+                        IsEnabled="{Binding IsNotBusy}" />
+
+                <ActivityIndicator IsRunning="{Binding IsBusy}" Color="{StaticResource Teal}"
+                                   IsVisible="{Binding IsBusy}" HorizontalOptions="Center" />
+
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

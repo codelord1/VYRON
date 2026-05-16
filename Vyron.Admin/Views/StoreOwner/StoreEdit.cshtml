@@ -1,0 +1,149 @@
+@model LaundryStore
+@{ ViewData["Title"] = "Edit Store"; }
+
+<div class="page-header">
+    <h1>Edit: @Model.Name</h1>
+    <a href="/StoreOwner/Stores" class="btn btn-secondary btn-sm">← Back</a>
+</div>
+
+<form method="post" asp-action="StoreEdit">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="Id" value="@Model.Id" />
+    <input type="hidden" name="OwnerId" value="@Model.OwnerId" />
+    <input type="hidden" name="Status" value="@Model.Status" />
+    <input type="hidden" name="Latitude" value="@Model.Latitude" />
+    <input type="hidden" name="Longitude" value="@Model.Longitude" />
+    <input type="hidden" name="City" value="@Model.City" />
+    <input type="hidden" name="State" value="@Model.State" />
+    <input type="hidden" name="EstimatedPickupMinutes" value="@Model.EstimatedPickupMinutes" />
+
+    <div class="grid-2">
+        <div class="card">
+            <h3 class="card-title">Basic Info</h3>
+            <div class="form-group">
+                <label>Store Name</label>
+                <input type="text" name="Name" value="@Model.Name" required maxlength="150" />
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea name="Description" maxlength="1000" required>@Model.Description</textarea>
+            </div>
+            <div class="form-group">
+                <label>Phone</label>
+                <input type="text" name="Phone" value="@Model.Phone" required maxlength="20" />
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" name="Email" value="@Model.Email" required maxlength="200" />
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 class="card-title">Location &amp; Hours</h3>
+            <div class="form-group">
+                <label>Address</label>
+                <input type="text" name="Address" value="@Model.Address" required maxlength="300" />
+            </div>
+            <div class="form-group">
+                <label>Area</label>
+                <input type="text" name="Area" value="@Model.Area" required maxlength="100" />
+            </div>
+            <div class="form-group">
+                <label>Opening Hours</label>
+                <input type="text" name="OpeningHours" value="@Model.OpeningHours" placeholder="e.g. 8:00 AM - 8:00 PM" />
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 class="card-title">Pricing</h3>
+            <div class="form-group">
+                <label>Pickup Fee (₦)</label>
+                <input type="number" step="50" name="PickupFee" value="@Model.PickupFee" required />
+            </div>
+            <div class="form-group">
+                <label>Delivery Fee (₦)</label>
+                <input type="number" step="50" name="DeliveryFee" value="@Model.DeliveryFee" required />
+            </div>
+            <p class="text-muted" style="font-size:11px;">
+                Service prices (per kg, per item) are managed by admin. Contact support to update them.
+            </p>
+        </div>
+
+        <div class="card">
+            <h3 class="card-title">Read-only</h3>
+            <div class="flex-between mb-1"><span>Status</span><span class="badge badge-@(Model.Status == StoreStatus.Active ? "success" : "warning")">@Model.Status</span></div>
+            <div class="flex-between mb-1"><span>Verified</span><span>@(Model.IsVerified ? "✓ Yes" : "—")</span></div>
+            <div class="flex-between mb-1"><span>Top Rated</span><span>@(Model.IsTopRated ? "⭐ Yes" : "—")</span></div>
+            <div class="flex-between mb-1"><span>Rating</span><span class="text-bold">@Model.AverageRating ⭐ (@Model.TotalReviews)</span></div>
+            <div class="flex-between mb-1"><span>Orders</span><span class="text-bold">@Model.TotalOrders</span></div>
+            <p class="text-muted mt-2" style="font-size:11px;">
+                Status, verification, and top-rated badge are controlled by admin.
+            </p>
+        </div>
+    </div>
+
+    <div class="card">
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="/StoreOwner/Stores" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+
+<div class="card" style="margin-top:20px;">
+    <h3 class="card-title">Store Images</h3>
+    @{
+        var images = (ViewBag.Images as List<StoreImage>) ?? new List<StoreImage>();
+    }
+    @if (!images.Any())
+    {
+        <p class="text-muted" style="font-size:13px;margin-bottom:14px;">
+            No store image has been uploaded yet. Upload at least one image before your store can be approved.
+        </p>
+    }
+    else
+    {
+        <div class="flex" style="flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+            @foreach (var img in images)
+            {
+                <div style="text-align:center;">
+                    <img src="@img.ImagePath" alt="Store image"
+                         style="width:120px;height:96px;object-fit:cover;border-radius:6px;border:2px solid @(img.IsPrimary ? "var(--primary)" : "var(--gray-2)");" />
+                    @if (img.IsPrimary)
+                    {
+                        <div style="font-size:10px;color:var(--primary);font-weight:700;margin-top:3px;">★ Primary</div>
+                    }
+                    <div class="flex" style="gap:4px;justify-content:center;margin-top:5px;">
+                        @if (!img.IsPrimary)
+                        {
+                            <form asp-action="SetPrimaryStoreImage" asp-controller="StoreOwner" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="storeId" value="@Model.Id" />
+                                <input type="hidden" name="imageId" value="@img.Id" />
+                                <button type="submit" class="btn btn-secondary btn-sm" style="font-size:10px;padding:2px 7px;">Set Primary</button>
+                            </form>
+                        }
+                        <form asp-action="DeleteStoreImage" asp-controller="StoreOwner" method="post"
+                              onsubmit="return confirm('Delete this image?')">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="storeId" value="@Model.Id" />
+                            <input type="hidden" name="imageId" value="@img.Id" />
+                            <button type="submit" class="btn btn-danger btn-sm" style="font-size:10px;padding:2px 7px;">✕ Delete</button>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <form asp-action="UploadStoreImage" asp-controller="StoreOwner" method="post" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="storeId" value="@Model.Id" />
+        @if (TempData["ImageError"] is string imgErr) { <div class="alert alert-danger">@imgErr</div> }
+        @if (TempData["ImageSuccess"] is string imgOk) { <div class="alert alert-success">@imgOk</div> }
+        <div class="flex" style="gap:8px;align-items:center;">
+            <input type="file" name="imageFile" accept=".jpg,.jpeg,.png,.webp" class="form-control" style="flex:1;" data-preview="soImgPrev" />
+            <button type="submit" class="btn btn-primary btn-sm">Upload Store Image</button>
+        </div>
+        <div style="margin-top:6px"><img id="soImgPrev" src="" style="display:none;max-width:140px;border-radius:6px;" /></div>
+        <small class="text-muted">Max 2 MB · JPG, PNG, WebP accepted.</small>
+    </form>
+</div>

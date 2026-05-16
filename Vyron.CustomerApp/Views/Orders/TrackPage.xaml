@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.CustomerApp.ViewModels"
+             xmlns:dto="clr-namespace:Vyron.CustomerApp.DTOs"
+             x:Class="Vyron.CustomerApp.Views.Orders.TrackPage"
+             x:DataType="vm:TrackViewModel"
+             Title="Track"
+             BackgroundColor="{StaticResource Bg}">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- Header -->
+        <Border Grid.Row="0"
+                BackgroundColor="White"
+                Stroke="Transparent"
+                Padding="20,16,20,14">
+            <VerticalStackLayout Spacing="2">
+                <Label Text="Track Order"
+                       FontFamily="OpenSansSemibold"
+                       FontSize="20" />
+                <Label Text="Live status of your active order"
+                       FontSize="12"
+                       TextColor="{StaticResource Gray3}" />
+            </VerticalStackLayout>
+        </Border>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="0">
+
+                <!-- Loading -->
+                <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                   Color="{StaticResource Teal}"
+                                   IsVisible="{Binding IsBusy}"
+                                   HorizontalOptions="Center"
+                                   Margin="0,60" />
+
+                <!-- Active order section -->
+                <VerticalStackLayout IsVisible="{Binding HasActiveOrder}"
+                                     Padding="16,12"
+                                     Spacing="12">
+
+                    <!-- ── Status card ── -->
+                    <Border BackgroundColor="White"
+                            Stroke="#ECEAE4"
+                            StrokeShape="RoundRectangle 16"
+                            Padding="18,16">
+                        <VerticalStackLayout Spacing="12">
+
+                            <!-- Order number + status badge -->
+                            <Grid ColumnDefinitions="*,Auto">
+                                <VerticalStackLayout Spacing="3">
+                                    <Label Text="{Binding ActiveOrder.OrderNumber, StringFormat='Order #{0}'}"
+                                           FontFamily="OpenSansSemibold"
+                                           FontSize="16" />
+                                    <Label Text="{Binding ActiveOrder.Store.Name}"
+                                           FontSize="12"
+                                           TextColor="{StaticResource Gray3}" />
+                                </VerticalStackLayout>
+                                <Border Grid.Column="1"
+                                        BackgroundColor="#E8F8F5"
+                                        StrokeShape="RoundRectangle 8"
+                                        Stroke="Transparent"
+                                        Padding="10,5"
+                                        VerticalOptions="Start">
+                                    <Label Text="{Binding ActiveOrder.StatusName}"
+                                           FontFamily="OpenSansSemibold"
+                                           FontSize="11"
+                                           TextColor="{StaticResource Teal}" />
+                                </Border>
+                            </Grid>
+
+                            <BoxView HeightRequest="1" Color="#F0EFE9" />
+
+                            <!-- Status emoji + description -->
+                            <Grid ColumnDefinitions="40,*" ColumnSpacing="12">
+                                <Label Text="{Binding ActiveOrder.StatusEmoji}"
+                                       FontSize="28"
+                                       VerticalOptions="Center"
+                                       HorizontalOptions="Center" />
+                                <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                                    <Label Text="{Binding ActiveOrder.StatusDescription}"
+                                           FontFamily="OpenSansSemibold"
+                                           FontSize="14" />
+                                    <Label Text="{Binding ActiveOrder.StatusSubtitle}"
+                                           FontSize="12"
+                                           TextColor="{StaticResource Gray3}"
+                                           IsVisible="{Binding ActiveOrder.StatusSubtitle, Converter={StaticResource NotNullToBool}}" />
+                                </VerticalStackLayout>
+                            </Grid>
+
+                            <!-- View full details button -->
+                            <Button Text="View Full Details"
+                                    Command="{Binding ViewOrderCommand}"
+                                    BackgroundColor="Transparent"
+                                    TextColor="{StaticResource Teal}"
+                                    BorderColor="{StaticResource Teal}"
+                                    BorderWidth="1.5"
+                                    HeightRequest="44"
+                                    Margin="0,4,0,0" />
+
+                            <!-- ── Contact actions ── -->
+                            <BoxView HeightRequest="1" Color="#F0EFE9" Margin="0,4,0,4" />
+
+                            <!-- Call Store (always visible when there's an active order) -->
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                <Button Grid.Column="0"
+                                        Text="📞 Call Store"
+                                        Command="{Binding CallStoreCommand}"
+                                        BackgroundColor="#F0EFE9"
+                                        TextColor="#333"
+                                        FontSize="13"
+                                        HeightRequest="40"
+                                        CornerRadius="10" />
+
+                                <!-- Call Rider (only when rider is assigned) -->
+                                <Button Grid.Column="1"
+                                        Text="📞 Call Rider"
+                                        Command="{Binding CallRiderCommand}"
+                                        BackgroundColor="#F0EFE9"
+                                        TextColor="#333"
+                                        FontSize="13"
+                                        HeightRequest="40"
+                                        CornerRadius="10"
+                                        IsVisible="{Binding ActiveOrder.Rider, Converter={StaticResource NotNullToBool}}" />
+                            </Grid>
+
+                            <!-- Message Rider (only when rider is assigned) -->
+                            <Button Text="💬 Message Rider"
+                                    Command="{Binding MessageRiderCommand}"
+                                    BackgroundColor="Transparent"
+                                    TextColor="{StaticResource Teal}"
+                                    FontSize="13"
+                                    HeightRequest="38"
+                                    IsVisible="{Binding ActiveOrder.Rider, Converter={StaticResource NotNullToBool}}" />
+
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- ── Progress Tree ── -->
+                    <Border BackgroundColor="White"
+                            Stroke="#ECEAE4"
+                            StrokeShape="RoundRectangle 16"
+                            Padding="18,16">
+                        <VerticalStackLayout Spacing="0">
+
+                            <Label Text="Order Progress"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="14"
+                                   Margin="0,0,0,14" />
+
+                            <!-- Macro steps — each row is icon+line+text -->
+                            <VerticalStackLayout BindableLayout.ItemsSource="{Binding ProgressSteps}" Spacing="0">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:OrderProgressStep">
+                                        <Grid ColumnDefinitions="28,8,*"
+                                              ColumnSpacing="0"
+                                              RowDefinitions="Auto,Auto">
+
+                                            <!-- Circle indicator -->
+                                            <Border WidthRequest="28" HeightRequest="28"
+                                                    StrokeShape="RoundRectangle 14"
+                                                    VerticalOptions="Start"
+                                                    HorizontalOptions="Center">
+                                                <Border.Triggers>
+                                                    <DataTrigger TargetType="Border"
+                                                                 Binding="{Binding IsDone}"
+                                                                 Value="True">
+                                                        <Setter Property="BackgroundColor" Value="{StaticResource Teal}" />
+                                                        <Setter Property="Stroke" Value="{StaticResource Teal}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger TargetType="Border"
+                                                                 Binding="{Binding IsCurrent}"
+                                                                 Value="True">
+                                                        <Setter Property="BackgroundColor" Value="White" />
+                                                        <Setter Property="Stroke" Value="{StaticResource Teal}" />
+                                                        <Setter Property="StrokeThickness" Value="2.5" />
+                                                    </DataTrigger>
+                                                    <DataTrigger TargetType="Border"
+                                                                 Binding="{Binding IsFuture}"
+                                                                 Value="True">
+                                                        <Setter Property="BackgroundColor" Value="#F0EFE9" />
+                                                        <Setter Property="Stroke" Value="#D0D0C8" />
+                                                    </DataTrigger>
+                                                </Border.Triggers>
+                                                <Label Text="{Binding Icon}"
+                                                       FontSize="13"
+                                                       HorizontalOptions="Center"
+                                                       VerticalOptions="Center" />
+                                            </Border>
+
+                                            <!-- Connector line (hidden on last item) -->
+                                            <BoxView Grid.Column="0"
+                                                     Grid.Row="1"
+                                                     WidthRequest="2"
+                                                     HeightRequest="20"
+                                                     HorizontalOptions="Center"
+                                                     VerticalOptions="Fill"
+                                                     IsVisible="{Binding HasConnector}">
+                                                <BoxView.Triggers>
+                                                    <DataTrigger TargetType="BoxView"
+                                                                 Binding="{Binding IsDone}"
+                                                                 Value="True">
+                                                        <Setter Property="Color" Value="{StaticResource Teal}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger TargetType="BoxView"
+                                                                 Binding="{Binding IsDone}"
+                                                                 Value="False">
+                                                        <Setter Property="Color" Value="#D0D0C8" />
+                                                    </DataTrigger>
+                                                </BoxView.Triggers>
+                                            </BoxView>
+
+                                            <!-- Step label -->
+                                            <VerticalStackLayout Grid.Column="2"
+                                                                  Grid.Row="0"
+                                                                  Margin="10,4,0,0"
+                                                                  Spacing="1">
+                                                <Label Text="{Binding Label}"
+                                                       FontSize="13"
+                                                       FontFamily="OpenSansSemibold">
+                                                    <Label.Triggers>
+                                                        <DataTrigger TargetType="Label"
+                                                                     Binding="{Binding IsCurrent}"
+                                                                     Value="True">
+                                                            <Setter Property="TextColor" Value="{StaticResource Teal}" />
+                                                        </DataTrigger>
+                                                        <DataTrigger TargetType="Label"
+                                                                     Binding="{Binding IsFuture}"
+                                                                     Value="True">
+                                                            <Setter Property="TextColor" Value="{StaticResource Gray3}" />
+                                                        </DataTrigger>
+                                                    </Label.Triggers>
+                                                </Label>
+                                                <Label Text="{Binding Timestamp}"
+                                                       FontSize="11"
+                                                       TextColor="{StaticResource Gray3}"
+                                                       IsVisible="{Binding Timestamp, Converter={StaticResource NotNullToBool}}" />
+                                            </VerticalStackLayout>
+
+                                            <!-- Empty cell below label (to align with connector) -->
+                                            <BoxView Grid.Column="2"
+                                                     Grid.Row="1"
+                                                     HeightRequest="20"
+                                                     Color="Transparent"
+                                                     IsVisible="{Binding HasConnector}" />
+
+                                        </Grid>
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </VerticalStackLayout>
+
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Refresh button -->
+                    <Button Text="↻  Refresh"
+                            Command="{Binding LoadCommand}"
+                            BackgroundColor="Transparent"
+                            TextColor="{StaticResource Gray3}"
+                            FontSize="13"
+                            HeightRequest="36" />
+
+                </VerticalStackLayout>
+
+                <!-- Empty state -->
+                <VerticalStackLayout IsVisible="{Binding IsEmpty}"
+                                     HorizontalOptions="Center"
+                                     VerticalOptions="Center"
+                                     Spacing="12"
+                                     Padding="40,80">
+                    <Label Text="📦"
+                           FontSize="56"
+                           HorizontalOptions="Center" />
+                    <Label Text="No active orders"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="18"
+                           HorizontalOptions="Center"
+                           HorizontalTextAlignment="Center" />
+                    <Label Text="When you place an order, its live status will appear here."
+                           FontSize="13"
+                           TextColor="{StaticResource Gray3}"
+                           HorizontalOptions="Center"
+                           HorizontalTextAlignment="Center" />
+                    <Button Text="Browse Stores"
+                            Command="{Binding GoToStoresCommand}"
+                            Margin="0,8,0,0" />
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+    </Grid>
+
+</ContentPage>

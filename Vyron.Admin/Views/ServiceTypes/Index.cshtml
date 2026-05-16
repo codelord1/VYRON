@@ -1,0 +1,60 @@
+@model List<ServiceTypeEntity>
+@{ ViewData["Title"] = "Service Types"; }
+
+<div class="page-header">
+    <div>
+        <h1>Service Types</h1>
+        <p style="color:var(--gray-3);font-size:13px;margin:4px 0 0;">Admin-managed service type catalog. @Model.Count(s => s.IsActive) active types.</p>
+    </div>
+    <a href="/ServiceTypes/Create" class="btn btn-primary">+ New Service Type</a>
+</div>
+
+@if (TempData["Success"] is string ok)
+{
+    <div class="alert alert-success">@ok</div>
+}
+
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th class="text-center">Sort</th>
+                <th class="text-center">Status</th>
+                <th>Created</th>
+                <th class="text-center">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var t in Model)
+            {
+                <tr>
+                    <td><strong>@t.Name</strong></td>
+                    <td class="text-muted" style="font-size:13px;">@(t.Description ?? "—")</td>
+                    <td class="text-center">@t.SortOrder</td>
+                    <td class="text-center">
+                        @if (t.IsActive) { <span class="badge badge-success">Active</span> }
+                        else { <span class="badge badge-warning">Inactive</span> }
+                    </td>
+                    <td style="font-size:12px;">@t.CreatedAt.ToString("dd MMM yyyy")</td>
+                    <td class="text-center">
+                        <div class="action-row">
+                            <a href="/ServiceTypes/Edit/@t.Id" class="btn btn-sm btn-outline">Edit</a>
+                            <form asp-action="ToggleActive" asp-route-id="@t.Id" method="post" style="display:inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm @(t.IsActive ? "btn-warning" : "btn-success")">
+                                    @(t.IsActive ? "Deactivate" : "Activate")
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            }
+            @if (!Model.Any())
+            {
+                <tr><td colspan="6" style="text-align:center;padding:40px;color:#888;">No service types yet. <a href="/ServiceTypes/Create">Add one</a>.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>

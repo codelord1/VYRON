@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.CustomerApp.ViewModels"
+             xmlns:dto="clr-namespace:Vyron.CustomerApp.DTOs"
+             x:Class="Vyron.CustomerApp.Views.Orders.OrdersPage"
+             x:DataType="vm:OrdersViewModel"
+             Title="My Orders"
+             BackgroundColor="{StaticResource Bg}">
+
+    <RefreshView Command="{Binding LoadCommand}"
+                 IsRefreshing="{Binding IsBusy}">
+        <CollectionView ItemsSource="{Binding Orders_}"
+                        SelectionMode="Single"
+                        SelectionChangedCommand="{Binding SelectOrderCommand}"
+                        SelectionChangedCommandParameter="{Binding SelectedItem, Source={RelativeSource Self}}"
+                        Margin="16,8">
+
+            <CollectionView.EmptyView>
+                <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center"
+                                     Spacing="12" Padding="40">
+                    <Label Text="📦" FontSize="48" HorizontalOptions="Center" />
+                    <Label Text="No orders yet"
+                           FontFamily="OpenSansSemibold" FontSize="18"
+                           HorizontalOptions="Center" />
+                    <Label Text="Browse stores and place your first laundry order!"
+                           FontSize="13" TextColor="{StaticResource Gray3}"
+                           HorizontalOptions="Center" HorizontalTextAlignment="Center" />
+                </VerticalStackLayout>
+            </CollectionView.EmptyView>
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="dto:OrderDto">
+                    <Border BackgroundColor="White" Stroke="#EDEDEA"
+                            StrokeShape="RoundRectangle 14" Margin="0,6" Padding="16,14">
+                        <VerticalStackLayout Spacing="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Text="{Binding OrderNumber}"
+                                       FontFamily="OpenSansSemibold" FontSize="15" />
+                                <Border Grid.Column="1"
+                                        BackgroundColor="{StaticResource Bg}"
+                                        StrokeShape="RoundRectangle 8"
+                                        Padding="8,4">
+                                    <Label>
+                                        <Label.FormattedText>
+                                            <FormattedString>
+                                                <Span Text="{Binding StatusEmoji}" FontSize="12" />
+                                                <Span Text=" " />
+                                                <Span Text="{Binding StatusName}" FontSize="11" />
+                                            </FormattedString>
+                                        </Label.FormattedText>
+                                    </Label>
+                                </Border>
+                            </Grid>
+                            <Label Text="{Binding Store.Name}"
+                                   FontSize="13" TextColor="{StaticResource Gray3}" />
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Text="{Binding CreatedAt, StringFormat='{0:MMM dd, yyyy}'}"
+                                       FontSize="12" TextColor="{StaticResource Gray3}" />
+                                <Label Grid.Column="1"
+                                       Text="{Binding TotalEstimate, StringFormat='₦{0:N0}'}"
+                                       FontFamily="OpenSansSemibold" FontSize="13"
+                                       TextColor="{StaticResource Teal}" />
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </RefreshView>
+</ContentPage>

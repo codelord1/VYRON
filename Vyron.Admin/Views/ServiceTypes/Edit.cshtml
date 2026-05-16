@@ -1,0 +1,43 @@
+@model ServiceTypeEntity
+@{ ViewData["Title"] = $"Edit: {Model.Name}"; }
+
+<div class="page-header">
+    <h1>Edit Service Type</h1>
+    <a href="/ServiceTypes" class="btn btn-ghost">← Back</a>
+</div>
+
+<div class="service-form-card" style="max-width:600px;">
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+        @Html.AntiForgeryToken()
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger">
+                @foreach (var err in ViewData.ModelState.SelectMany(s => s.Value!.Errors))
+                { <div>@err.ErrorMessage</div> }
+            </div>
+        }
+        @if (TempData["Success"] is string ok) { <div class="alert alert-success">@ok</div> }
+
+        <div class="form-group">
+            <label asp-for="Name">Name <span style="color:red">*</span></label>
+            <input asp-for="Name" class="form-control" required />
+        </div>
+        <div class="form-group">
+            <label asp-for="Description">Description</label>
+            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+            <label asp-for="SortOrder">Display Order</label>
+            <input asp-for="SortOrder" type="number" class="form-control" min="0" />
+        </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:10px;">
+            <input asp-for="IsActive" type="checkbox" style="width:18px;height:18px;" />
+            <label asp-for="IsActive" style="margin:0;font-weight:400;">Active</label>
+        </div>
+        <div class="form-actions" style="display:flex;gap:10px;margin-top:20px;">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a href="/ServiceTypes" class="btn btn-ghost">Cancel</a>
+        </div>
+    </form>
+</div>

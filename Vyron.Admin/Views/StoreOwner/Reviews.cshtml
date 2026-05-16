@@ -1,0 +1,63 @@
+@model List<Review>
+@{ ViewData["Title"] = "Reviews"; }
+
+<div class="page-header">
+    <h1>Reviews on My Stores</h1>
+    <span class="text-muted">
+        @Model.Count total ·
+        avg @(Model.Any() ? Math.Round(Model.Average(r => r.Rating), 1).ToString("0.0") : "—") ⭐
+    </span>
+</div>
+
+<div class="stats">
+    <div class="stat">
+        <div class="label">5 stars</div>
+        <div class="value">@Model.Count(r => r.Rating == 5)</div>
+    </div>
+    <div class="stat info">
+        <div class="label">4 stars</div>
+        <div class="value">@Model.Count(r => r.Rating == 4)</div>
+    </div>
+    <div class="stat warning">
+        <div class="label">3 stars</div>
+        <div class="value">@Model.Count(r => r.Rating == 3)</div>
+    </div>
+    <div class="stat alert">
+        <div class="label">1-2 stars</div>
+        <div class="value">@Model.Count(r => r.Rating < 3)</div>
+    </div>
+</div>
+
+<div class="card">
+    <h3 class="card-title">All Reviews</h3>
+    @if (!Model.Any())
+    {
+        <p class="text-muted text-center" style="padding:30px;">No reviews yet. Once customers receive their orders, they can leave reviews.</p>
+    }
+    else
+    {
+        foreach (var r in Model)
+        {
+            <div style="padding: 14px 0; border-bottom: 1px solid var(--gray-2);">
+                <div class="flex-between mb-1">
+                    <div>
+                        <span class="text-bold">@r.Customer.FullName</span>
+                        <span style="color:var(--amber);margin-left:8px;">@(new string('★', r.Rating))@(new string('☆', 5 - r.Rating))</span>
+                    </div>
+                    <div>
+                        <small class="text-muted">@r.Store.Name · @r.CreatedAt.ToString("MMM dd, yyyy")</small>
+                        @if (!r.IsVisible) { <span class="badge badge-danger" style="margin-left:6px;">Hidden by admin</span> }
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(r.Comment))
+                {
+                    <p style="margin: 6px 0 0; color: var(--gray-5);">@r.Comment</p>
+                }
+                <small class="text-muted">
+                    Order:
+                    <a href="/StoreOwner/OrderDetail/@r.OrderId">@r.Order.OrderNumber</a>
+                </small>
+            </div>
+        }
+    }
+</div>

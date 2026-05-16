@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.CustomerApp.ViewModels"
+             xmlns:dto="clr-namespace:Vyron.CustomerApp.DTOs"
+             x:Class="Vyron.CustomerApp.Views.Disputes.DisputeHistoryPage"
+             x:DataType="vm:DisputeHistoryViewModel"
+             Title="Dispute History"
+             BackgroundColor="{StaticResource Bg}">
+
+    <Grid RowDefinitions="*">
+        <CollectionView ItemsSource="{Binding Items}"
+                        IsVisible="{Binding IsEmpty, Converter={StaticResource InvertBool}}"
+                        Margin="0,8">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="dto:DisputeDetailDto">
+                    <Border BackgroundColor="White"
+                            Stroke="#ECEAE4"
+                            StrokeShape="RoundRectangle 14"
+                            Margin="16,4"
+                            Padding="16,14">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="{Binding OrderNumber, StringFormat='Order #{0}'}"
+                                       FontFamily="OpenSansSemibold"
+                                       FontSize="14" />
+                                <Label Text="{Binding TypeName}"
+                                       FontSize="12"
+                                       TextColor="{StaticResource Gray3}" />
+                                <Label Text="{Binding CreatedAt, StringFormat='{0:d MMM yyyy}'}"
+                                       FontSize="11"
+                                       TextColor="{StaticResource Gray3}" />
+                            </VerticalStackLayout>
+                            <Border Grid.Column="1"
+                                    StrokeShape="RoundRectangle 8"
+                                    Stroke="Transparent"
+                                    Padding="10,5"
+                                    VerticalOptions="Start">
+                                <Border.Triggers>
+                                    <DataTrigger TargetType="Border"
+                                                 Binding="{Binding Status}"
+                                                 Value="Open">
+                                        <Setter Property="BackgroundColor" Value="#FFF8E1" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Border"
+                                                 Binding="{Binding Status}"
+                                                 Value="Resolved">
+                                        <Setter Property="BackgroundColor" Value="#E8F8F5" />
+                                    </DataTrigger>
+                                    <DataTrigger TargetType="Border"
+                                                 Binding="{Binding Status}"
+                                                 Value="Refunded">
+                                        <Setter Property="BackgroundColor" Value="#E8F8F5" />
+                                    </DataTrigger>
+                                </Border.Triggers>
+                                <Label Text="{Binding StatusName}"
+                                       FontFamily="OpenSansSemibold"
+                                       FontSize="11"
+                                       TextColor="{StaticResource Teal}" />
+                            </Border>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <!-- Empty state -->
+        <VerticalStackLayout IsVisible="{Binding IsEmpty}"
+                             HorizontalOptions="Center"
+                             VerticalOptions="Center"
+                             Spacing="12"
+                             Padding="40,0">
+            <Label Text="⚖️"
+                   FontSize="48"
+                   HorizontalOptions="Center" />
+            <Label Text="No disputes yet"
+                   FontFamily="OpenSansSemibold"
+                   FontSize="18"
+                   HorizontalOptions="Center" />
+            <Label Text="Any disputes you raise will appear here."
+                   FontSize="13"
+                   TextColor="{StaticResource Gray3}"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center" />
+        </VerticalStackLayout>
+
+        <!-- Loading -->
+        <ActivityIndicator IsRunning="{Binding IsBusy}"
+                           Color="{StaticResource Teal}"
+                           IsVisible="{Binding IsBusy}"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center" />
+
+    </Grid>
+
+</ContentPage>

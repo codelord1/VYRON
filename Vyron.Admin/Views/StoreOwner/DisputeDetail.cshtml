@@ -1,0 +1,92 @@
+@model Dispute
+@{ ViewData["Title"] = $"Dispute: {Model.Order.OrderNumber}"; }
+
+<div class="page-header">
+    <h1>Dispute on @Model.Order.OrderNumber</h1>
+    <a href="/StoreOwner/Disputes" class="btn btn-secondary btn-sm">← Back</a>
+</div>
+
+<div class="grid-2">
+    <div>
+        <div class="card">
+            <h3 class="card-title">Issue Reported</h3>
+            <div class="flex-between mb-2">
+                <span class="badge badge-warning">@Model.Type</span>
+                <span class="badge badge-@StatusBadge(Model.Status)">@Model.Status</span>
+            </div>
+            <p>@Model.Description</p>
+            <hr style="border:none;border-top:1px solid var(--gray-2);margin:10px 0;" />
+            <div class="flex-between mb-1"><span>Customer</span><span class="text-bold">@Model.RaisedBy.FullName</span></div>
+            <div class="flex-between mb-1"><span>Phone</span><span>@Model.RaisedBy.Phone</span></div>
+            <div class="flex-between mb-1"><span>Order total</span><span class="text-bold">₦@Model.Order.TotalEstimate.ToString("N0")</span></div>
+            <div class="flex-between mb-1"><span>Raised on</span><span>@Model.CreatedAt.ToString("MMM dd 'at' HH:mm")</span></div>
+        </div>
+
+        @if (Model.ResolvedAt.HasValue)
+        {
+            <div class="card" style="background:var(--teal-pale);border-left:4px solid var(--teal-dark);">
+                <h3 class="card-title">✓ Resolution by Admin</h3>
+                <p><strong>@Model.Resolution</strong> on @Model.ResolvedAt?.ToString("MMM dd 'at' HH:mm")</p>
+                @if (Model.RefundAmount.HasValue)
+                {
+                    <p>Refund issued: <span class="text-bold">₦@Model.RefundAmount.Value.ToString("N0")</span></p>
+                }
+                @if (!string.IsNullOrEmpty(Model.ResolutionNote))
+                {
+                    <p class="text-muted">@Model.ResolutionNote</p>
+                }
+            </div>
+        }
+    </div>
+
+    <div>
+        <div class="card">
+            <h3 class="card-title">Conversation</h3>
+            <p class="text-muted" style="font-size:12px;">
+                Reply to share your side of the story. Admin will review all messages before resolving.
+            </p>
+            <div style="max-height: 360px; overflow-y: auto; padding: 8px 0;">
+                @foreach (var m in Model.Messages.OrderBy(x => x.SentAt))
+                {
+                    <div class="message @(m.IsAdminMessage ? "message-admin" : "message-user")">
+                        @m.Message
+                        <div class="message-meta">@m.Sender.FullName · @m.SentAt.ToString("MMM dd HH:mm")</div>
+                    </div>
+                    <div style="clear:both;"></div>
+                }
+                @if (!Model.Messages.Any())
+                {
+                    <p class="text-muted text-center" style="padding:20px;">No messages yet — be the first to respond.</p>
+                }
+            </div>
+
+            @if (Model.ResolvedAt == null)
+            {
+                <form asp-action="ReplyDispute" method="post" class="mt-2">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <div class="form-group">
+                        <textarea name="message" placeholder="Explain what happened..." required></textarea>
+                    </div>
+                    <button class="btn btn-primary btn-block">Send Reply</button>
+                </form>
+            }
+            else
+            {
+                <p class="text-muted text-center mt-2" style="font-size:12px;">
+                    Dispute is closed. No further replies accepted.
+                </p>
+            }
+        </div>
+    </div>
+</div>
+
+@functions {
+    string StatusBadge(DisputeStatus s) => s switch
+    {
+        DisputeStatus.Open => "danger",
+        DisputeStatus.UnderReview or DisputeStatus.AwaitingResponse => "warning",
+        DisputeStatus.Resolved or DisputeStatus.Refunded => "success",
+        _ => "gray"
+    };
+}

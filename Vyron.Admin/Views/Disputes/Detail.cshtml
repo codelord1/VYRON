@@ -1,0 +1,129 @@
+@model Dispute
+@{ ViewData["Title"] = $"Dispute on {Model.Order.OrderNumber}"; }
+
+<div class="page-header">
+    <h1>@Model.Type · @Model.Order.OrderNumber</h1>
+    <a href="/Disputes" class="btn btn-secondary btn-sm">← Back</a>
+</div>
+
+<div class="grid-2">
+    <div>
+        <div class="card">
+            <h3 class="card-title">Issue</h3>
+            <div class="flex-between mb-2">
+                <span class="badge badge-warning">@Model.Type</span>
+                <span class="badge badge-@StatusBadge(Model.Status)">@Model.Status</span>
+            </div>
+            <p>@Model.Description</p>
+            <hr style="border:none;border-top:1px solid var(--gray-2);margin:10px 0;" />
+            <div class="flex-between mb-1"><span>Raised by</span><span class="text-bold">@Model.RaisedBy.FullName (@Model.RaisedBy.Phone)</span></div>
+            <div class="flex-between mb-1"><span>Created</span><span>@Model.CreatedAt.ToString("MMM dd 'at' HH:mm")</span></div>
+            <div class="flex-between mb-1"><span>Order total</span><span class="text-bold">₦@Model.Order.TotalEstimate.ToString("N0")</span></div>
+        </div>
+
+        <div class="card">
+            <h3 class="card-title">Messages</h3>
+            <div style="max-height: 400px; overflow-y: auto; padding: 8px 0;">
+                @foreach (var m in Model.Messages.OrderBy(x => x.SentAt))
+                {
+                    <div class="message @(m.IsAdminMessage ? "message-admin" : "message-user")">
+                        @m.Message
+                        <div class="message-meta">@m.Sender.FullName · @m.SentAt.ToString("MMM dd HH:mm")</div>
+                    </div>
+                    <div style="clear:both;"></div>
+                }
+                @if (!Model.Messages.Any())
+                {
+                    <p class="text-muted text-center" style="padding:20px;">No messages yet.</p>
+                }
+            </div>
+            <form asp-action="AddMessage" method="post" class="mt-2">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <div class="form-group">
+                    <textarea name="message" placeholder="Reply as admin..." required></textarea>
+                </div>
+                <button class="btn btn-primary btn-block">Send Reply</button>
+            </form>
+        </div>
+    </div>
+
+    <div>
+        <div class="card">
+            <h3 class="card-title">Update Status</h3>
+            <form asp-action="UpdateStatus" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <div class="form-group">
+                    <label>Status</label>
+                    <select name="status">
+                        @foreach (var s in Enum.GetValues<DisputeStatus>())
+                        { <option value="@s" selected="@(Model.Status == s)">@s</option> }
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Admin note (logged)</label>
+                    <textarea name="note" placeholder="Investigation note..."></textarea>
+                </div>
+                <button class="btn btn-secondary btn-block">Update</button>
+            </form>
+        </div>
+
+        @if (Model.ResolvedAt == null)
+        {
+            <div class="card">
+                <h3 class="card-title">Resolve Dispute</h3>
+                <form asp-action="Resolve" method="post" data-confirm="Resolve this dispute? This is final.">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <div class="form-group">
+                        <label>Resolution</label>
+                        <select name="resolution" required>
+                            @foreach (var r in Enum.GetValues<DisputeResolution>())
+                            { <option value="@r">@r</option> }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Refund Amount (₦, optional)</label>
+                        <input type="number" step="0.01" name="refundAmount" placeholder="0" />
+                    </div>
+                    <div class="form-group">
+                        <label>Resolution Note</label>
+                        <textarea name="note" placeholder="Explain to customer..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-block">Resolve Dispute</button>
+                </form>
+            </div>
+        }
+        else
+        {
+            <div class="card">
+                <h3 class="card-title">Resolution</h3>
+                <p><strong>@Model.Resolution</strong> — @Model.ResolvedAt?.ToString("MMM dd 'at' HH:mm")</p>
+                @if (Model.RefundAmount.HasValue)
+                {
+                    <p>Refund: <span class="text-bold">₦@Model.RefundAmount.Value.ToString("N0")</span></p>
+                }
+                <p class="text-muted">@Model.ResolutionNote</p>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.AdminNotes))
+        {
+            <div class="card">
+                <h3 class="card-title">Admin Notes</h3>
+                <pre style="white-space:pre-wrap;font-family:inherit;font-size:12px;color:var(--gray-4);">@Model.AdminNotes</pre>
+            </div>
+        }
+    </div>
+</div>
+
+@functions {
+    string StatusBadge(DisputeStatus s) => s switch
+    {
+        DisputeStatus.Open => "danger",
+        DisputeStatus.UnderReview or DisputeStatus.AwaitingResponse => "warning",
+        DisputeStatus.Resolved or DisputeStatus.Refunded => "success",
+        _ => "gray"
+    };
+}

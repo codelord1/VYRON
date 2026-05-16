@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.CustomerApp.ViewModels"
+             x:Class="Vyron.CustomerApp.Views.Auth.VerifyOtpPage"
+             x:DataType="vm:VerifyOtpViewModel"
+             Shell.NavBarIsVisible="False"
+             Shell.TabBarIsVisible="False"
+             BackgroundColor="{StaticResource Bg}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="28,64,28,48" Spacing="0">
+
+            <!-- ── Brand ───────────────────────────────────────────── -->
+            <Label Text="VYRON"
+                   TextColor="{StaticResource Teal}"
+                   FontFamily="OpenSansSemibold"
+                   FontSize="42"
+                   HorizontalOptions="Center" />
+            <Label Text="Laundry, simplified."
+                   FontSize="13"
+                   TextColor="{StaticResource Gray3}"
+                   HorizontalOptions="Center"
+                   Margin="0,4,0,48" />
+
+            <!-- ── Card ────────────────────────────────────────────── -->
+            <Border BackgroundColor="White"
+                    Stroke="#E8E8E2"
+                    StrokeShape="RoundRectangle 20"
+                    Padding="24,28">
+                <VerticalStackLayout Spacing="0">
+
+                    <Label Text="Verify your number"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="22"
+                           Margin="0,0,0,6" />
+                    <Label Text="Enter the 6-digit code sent to your phone."
+                           FontSize="13"
+                           TextColor="{StaticResource Gray3}"
+                           Margin="0,0,0,20" />
+
+                    <!-- Error banner -->
+                    <Border BackgroundColor="#FFF1F0"
+                            Stroke="#FFB8B0"
+                            StrokeShape="RoundRectangle 10"
+                            Padding="12,10"
+                            Margin="0,0,0,14"
+                            IsVisible="{Binding ErrorMessage, Converter={StaticResource NotNullToBool}}">
+                        <Label Text="{Binding ErrorMessage}"
+                               TextColor="#C0392B"
+                               FontSize="12" />
+                    </Border>
+
+                    <!-- Success banner -->
+                    <Border BackgroundColor="#F0FFF4"
+                            Stroke="#86EFAC"
+                            StrokeShape="RoundRectangle 10"
+                            Padding="12,10"
+                            Margin="0,0,0,14"
+                            IsVisible="{Binding SuccessMessage, Converter={StaticResource NotNullToBool}}">
+                        <Label Text="{Binding SuccessMessage}"
+                               TextColor="#166534"
+                               FontSize="12" />
+                    </Border>
+
+                    <!-- Phone display -->
+                    <Border BackgroundColor="{StaticResource Bg}"
+                            StrokeShape="RoundRectangle 10"
+                            Padding="14,12"
+                            Margin="0,0,0,14">
+                        <Label FontSize="13">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="Code sent to "
+                                          TextColor="{StaticResource Gray3}" />
+                                    <Span Text="{Binding Phone}"
+                                          FontFamily="OpenSansSemibold" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                    </Border>
+
+                    <!-- ⚠️ DEV MODE BANNER — only shown when API echoes OTP back -->
+                    <Border BackgroundColor="#FFF8E1"
+                            Stroke="#FFC107"
+                            StrokeShape="RoundRectangle 10"
+                            Padding="14,12"
+                            Margin="0,0,0,16"
+                            IsVisible="{Binding HasDevOtp}">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="🔧 Development Mode"
+                                   FontFamily="OpenSansSemibold"
+                                   TextColor="#7B5800"
+                                   FontSize="12" />
+                            <Label FontSize="15" FontFamily="OpenSansSemibold">
+                                <Label.FormattedText>
+                                    <FormattedString>
+                                        <Span Text="Your OTP: "
+                                              TextColor="#5C4400" />
+                                        <Span Text="{Binding DevOtp}"
+                                              TextColor="#7B5800"
+                                              FontSize="26"
+                                              FontFamily="OpenSansSemibold" />
+                                    </FormattedString>
+                                </Label.FormattedText>
+                            </Label>
+                            <Label Text="This banner only appears in development. SMS is not sent in dev mode."
+                                   TextColor="#7B5800"
+                                   FontSize="11" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- OTP input -->
+                    <Label Text="Verification Code"
+                           FontSize="13"
+                           FontFamily="OpenSansSemibold"
+                           Margin="0,0,0,8" />
+                    <Border BackgroundColor="White"
+                            Stroke="#D0D0C8"
+                            StrokeShape="RoundRectangle 12">
+                        <Entry Placeholder="000000"
+                               Text="{Binding OtpCode}"
+                               Keyboard="Numeric"
+                               MaxLength="6"
+                               FontFamily="OpenSansSemibold"
+                               FontSize="28"
+                               HorizontalTextAlignment="Center"
+                               BackgroundColor="Transparent"
+                               ReturnType="Done"
+                               ReturnCommand="{Binding VerifyCommand}"
+                               Margin="14,8" />
+                    </Border>
+
+                    <!-- Verify button -->
+                    <Button Text="Verify &amp; Continue"
+                            Command="{Binding VerifyCommand}"
+                            IsEnabled="{Binding IsNotBusy}"
+                            Margin="0,20,0,0" />
+
+                    <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                       Color="{StaticResource Teal}"
+                                       IsVisible="{Binding IsBusy}"
+                                       HorizontalOptions="Center"
+                                       Margin="0,12,0,0" />
+
+                    <!-- Secondary actions -->
+                    <Button Text="Resend Code"
+                            Command="{Binding ResendCommand}"
+                            IsEnabled="{Binding IsNotBusy}"
+                            BackgroundColor="Transparent"
+                            TextColor="{StaticResource Teal}"
+                            FontSize="13"
+                            Margin="0,8,0,0" />
+
+                    <Button Text="← Change number"
+                            Command="{Binding EditPhoneCommand}"
+                            BackgroundColor="Transparent"
+                            TextColor="{StaticResource Gray3}"
+                            FontSize="13" />
+
+                </VerticalStackLayout>
+            </Border>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

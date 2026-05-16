@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.CustomerApp.ViewModels"
+             x:Class="Vyron.CustomerApp.Views.Profile.ProfilePage"
+             x:DataType="vm:ProfileViewModel"
+             Title="My Profile"
+             BackgroundColor="{StaticResource Bg}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="16">
+
+            <!-- Avatar -->
+            <Border BackgroundColor="{StaticResource Teal}"
+                    WidthRequest="80" HeightRequest="80"
+                    StrokeShape="RoundRectangle 40"
+                    HorizontalOptions="Center"
+                    Margin="0,20,0,0">
+                <Label Text="{Binding FullName, Converter={StaticResource InitialsConverter}}"
+                       TextColor="White"
+                       FontFamily="OpenSansSemibold"
+                       FontSize="28"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center" />
+            </Border>
+
+            <Label Text="{Binding FullName}"
+                   FontFamily="OpenSansSemibold" FontSize="20"
+                   HorizontalOptions="Center" />
+            <Label Text="{Binding Phone}"
+                   FontSize="13" TextColor="{StaticResource Gray3}"
+                   HorizontalOptions="Center" />
+
+            <!-- Success / Error -->
+            <Border BackgroundColor="#F0FFF8" Stroke="#00C9A7"
+                    StrokeShape="RoundRectangle 10" Padding="12,10"
+                    IsVisible="{Binding SuccessMessage, Converter={StaticResource NotNullToBool}}">
+                <Label Text="{Binding SuccessMessage}" TextColor="#007A58" FontSize="13" />
+            </Border>
+            <Border BackgroundColor="#FFF1F0" Stroke="#FFB8B0"
+                    StrokeShape="RoundRectangle 10" Padding="12,10"
+                    IsVisible="{Binding ErrorMessage, Converter={StaticResource NotNullToBool}}">
+                <Label Text="{Binding ErrorMessage}" TextColor="#C0392B" FontSize="13" />
+            </Border>
+
+            <!-- Profile card -->
+            <Border BackgroundColor="White" Stroke="#EDEDEA"
+                    StrokeShape="RoundRectangle 14" Padding="18,16">
+                <VerticalStackLayout Spacing="14">
+
+                    <Label Text="Full Name" FontFamily="OpenSansSemibold" FontSize="13" />
+                    <Border BackgroundColor="{StaticResource Bg}" Stroke="#D0D0C8"
+                            StrokeShape="RoundRectangle 12"
+                            IsEnabled="{Binding EditMode}">
+                        <Entry Text="{Binding FullName}"
+                               IsReadOnly="{Binding EditMode, Converter={StaticResource InvertBool}}"
+                               BackgroundColor="Transparent"
+                               Margin="14,0" />
+                    </Border>
+
+                    <Label Text="Email" FontFamily="OpenSansSemibold" FontSize="13" />
+                    <Border BackgroundColor="{StaticResource Bg}" Stroke="#D0D0C8"
+                            StrokeShape="RoundRectangle 12">
+                        <Entry Text="{Binding Email}"
+                               Placeholder="your@email.com"
+                               Keyboard="Email"
+                               IsReadOnly="{Binding EditMode, Converter={StaticResource InvertBool}}"
+                               BackgroundColor="Transparent"
+                               Margin="14,0" />
+                    </Border>
+
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Edit / Save button -->
+            <Button Text="Edit Profile"
+                    BackgroundColor="{StaticResource Bg}"
+                    TextColor="{StaticResource Teal}"
+                    IsVisible="{Binding EditMode, Converter={StaticResource InvertBool}}"
+                    Clicked="OnEditClicked" />
+
+            <Button Text="Save Changes"
+                    Command="{Binding SaveCommand}"
+                    IsVisible="{Binding EditMode}"
+                    IsEnabled="{Binding IsNotBusy}" />
+
+            <ActivityIndicator IsRunning="{Binding IsBusy}" Color="{StaticResource Teal}"
+                               IsVisible="{Binding IsBusy}" HorizontalOptions="Center" />
+
+            <!-- Sign out -->
+            <Button Text="Sign Out"
+                    Command="{Binding LogoutCommand}"
+                    BackgroundColor="Transparent"
+                    TextColor="#C0392B"
+                    FontSize="14"
+                    Margin="0,20,0,0" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

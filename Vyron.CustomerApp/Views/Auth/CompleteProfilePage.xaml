@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.CustomerApp.ViewModels"
+             x:Class="Vyron.CustomerApp.Views.Auth.CompleteProfilePage"
+             x:DataType="vm:CompleteProfileViewModel"
+             Shell.NavBarIsVisible="False"
+             Shell.TabBarIsVisible="False"
+             BackgroundColor="{StaticResource Bg}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="28,64,28,48" Spacing="0">
+
+            <!-- ── Brand ───────────────────────────────────────────── -->
+            <Label Text="VYRON"
+                   TextColor="{StaticResource Teal}"
+                   FontFamily="OpenSansSemibold"
+                   FontSize="42"
+                   HorizontalOptions="Center" />
+            <Label Text="Laundry, simplified."
+                   FontSize="13"
+                   TextColor="{StaticResource Gray3}"
+                   HorizontalOptions="Center"
+                   Margin="0,4,0,48" />
+
+            <!-- ── Card ────────────────────────────────────────────── -->
+            <Border BackgroundColor="White"
+                    Stroke="#E8E8E2"
+                    StrokeShape="RoundRectangle 20"
+                    Padding="24,28">
+                <VerticalStackLayout Spacing="0">
+
+                    <!-- Avatar placeholder -->
+                    <Border BackgroundColor="{StaticResource Teal}"
+                            WidthRequest="68"
+                            HeightRequest="68"
+                            StrokeShape="RoundRectangle 34"
+                            HorizontalOptions="Center"
+                            Margin="0,0,0,16">
+                        <Label Text="👤"
+                               FontSize="30"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center" />
+                    </Border>
+
+                    <Label Text="Create your account"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="22"
+                           HorizontalOptions="Center"
+                           Margin="0,0,0,6" />
+                    <Label Text="Enter the code we sent to your phone and set up your profile."
+                           FontSize="13"
+                           TextColor="{StaticResource Gray3}"
+                           HorizontalOptions="Center"
+                           HorizontalTextAlignment="Center"
+                           Margin="0,0,0,24" />
+
+                    <!-- Error banner -->
+                    <Border BackgroundColor="#FFF1F0"
+                            Stroke="#FFB8B0"
+                            StrokeShape="RoundRectangle 10"
+                            Padding="12,10"
+                            Margin="0,0,0,16"
+                            IsVisible="{Binding ErrorMessage, Converter={StaticResource NotNullToBool}}">
+                        <Label Text="{Binding ErrorMessage}"
+                               TextColor="#C0392B"
+                               FontSize="12" />
+                    </Border>
+
+                    <!-- ⚠️ DEV MODE BANNER -->
+                    <Border BackgroundColor="#FFF8E1"
+                            Stroke="#FFC107"
+                            StrokeShape="RoundRectangle 10"
+                            Padding="14,12"
+                            Margin="0,0,0,16"
+                            IsVisible="{Binding HasDevOtp}">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="🔧 Development Mode"
+                                   FontFamily="OpenSansSemibold"
+                                   TextColor="#7B5800"
+                                   FontSize="12" />
+                            <Label FontSize="15" FontFamily="OpenSansSemibold">
+                                <Label.FormattedText>
+                                    <FormattedString>
+                                        <Span Text="Your OTP: "
+                                              TextColor="#5C4400" />
+                                        <Span Text="{Binding DevOtp}"
+                                              TextColor="#7B5800"
+                                              FontSize="26"
+                                              FontFamily="OpenSansSemibold" />
+                                    </FormattedString>
+                                </Label.FormattedText>
+                            </Label>
+                            <Label Text="This banner only appears in development. SMS is not sent in dev mode."
+                                   TextColor="#7B5800"
+                                   FontSize="11" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Verification code -->
+                    <Label Text="Verification Code"
+                           FontSize="13"
+                           FontFamily="OpenSansSemibold"
+                           Margin="0,0,0,8" />
+                    <Border BackgroundColor="White"
+                            Stroke="#D0D0C8"
+                            StrokeShape="RoundRectangle 12"
+                            Margin="0,0,0,20">
+                        <Entry Placeholder="000000"
+                               Text="{Binding OtpCode}"
+                               Keyboard="Numeric"
+                               MaxLength="6"
+                               FontFamily="OpenSansSemibold"
+                               FontSize="28"
+                               HorizontalTextAlignment="Center"
+                               BackgroundColor="Transparent"
+                               ReturnType="Next"
+                               Margin="14,8" />
+                    </Border>
+
+                    <!-- Full name -->
+                    <Label Text="Your full name"
+                           FontSize="13"
+                           FontFamily="OpenSansSemibold"
+                           Margin="0,0,0,8" />
+                    <Border BackgroundColor="White"
+                            Stroke="#D0D0C8"
+                            StrokeShape="RoundRectangle 12"
+                            Margin="0,0,0,18">
+                        <Entry Placeholder="e.g. Amara Johnson"
+                               Text="{Binding FullName}"
+                               BackgroundColor="Transparent"
+                               ReturnType="Next"
+                               Margin="14,0" />
+                    </Border>
+
+                    <!-- Email (optional) -->
+                    <Label Text="Email address (optional)"
+                           FontSize="13"
+                           FontFamily="OpenSansSemibold"
+                           Margin="0,0,0,8" />
+                    <Border BackgroundColor="White"
+                            Stroke="#D0D0C8"
+                            StrokeShape="RoundRectangle 12"
+                            Margin="0,0,0,18">
+                        <Entry Placeholder="you@email.com"
+                               Text="{Binding Email}"
+                               Keyboard="Email"
+                               BackgroundColor="Transparent"
+                               ReturnType="Next"
+                               Margin="14,0" />
+                    </Border>
+
+                    <!-- Password -->
+                    <Label Text="Create Password"
+                           FontSize="13"
+                           FontFamily="OpenSansSemibold"
+                           Margin="0,0,0,8" />
+                    <Border BackgroundColor="White"
+                            Stroke="#D0D0C8"
+                            StrokeShape="RoundRectangle 12"
+                            Margin="0,0,0,8">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Entry Placeholder="At least 6 characters"
+                                   Text="{Binding Password}"
+                                   IsPassword="{Binding ShowPassword, Converter={StaticResource InvertBool}}"
+                                   BackgroundColor="Transparent"
+                                   ReturnType="Next"
+                                   Margin="14,0" />
+                            <Button Grid.Column="1"
+                                    Text="{Binding PasswordToggleIcon}"
+                                    Command="{Binding TogglePasswordCommand}"
+                                    BackgroundColor="Transparent"
+                                    FontSize="16"
+                                    Padding="8,0"
+                                    WidthRequest="44" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Confirm Password -->
+                    <Label Text="Confirm Password"
+                           FontSize="13"
+                           FontFamily="OpenSansSemibold"
+                           Margin="0,0,0,8" />
+                    <Border BackgroundColor="White"
+                            Stroke="#D0D0C8"
+                            StrokeShape="RoundRectangle 12"
+                            Margin="0,0,0,24">
+                        <Entry Placeholder="Repeat your password"
+                               Text="{Binding ConfirmPassword}"
+                               IsPassword="{Binding ShowPassword, Converter={StaticResource InvertBool}}"
+                               BackgroundColor="Transparent"
+                               ReturnType="Done"
+                               ReturnCommand="{Binding SaveCommand}"
+                               Margin="14,0" />
+                    </Border>
+
+                    <Button Text="Create Account 🧺"
+                            Command="{Binding SaveCommand}"
+                            IsEnabled="{Binding IsNotBusy}" />
+
+                    <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                       Color="{StaticResource Teal}"
+                                       IsVisible="{Binding IsBusy}"
+                                       HorizontalOptions="Center"
+                                       Margin="0,12,0,0" />
+
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Back to login -->
+            <Label FontSize="13"
+                   HorizontalOptions="Center"
+                   Margin="0,20,0,0">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnBackToLoginTapped" />
+                </Label.GestureRecognizers>
+                <Label.FormattedText>
+                    <FormattedString>
+                        <Span Text="← Back to Login"
+                              TextColor="{StaticResource Gray3}" />
+                    </FormattedString>
+                </Label.FormattedText>
+            </Label>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

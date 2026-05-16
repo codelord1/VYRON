@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.CustomerApp.ViewModels"
+             x:Class="Vyron.CustomerApp.Views.Auth.LoginPage"
+             x:DataType="vm:LoginViewModel"
+             Shell.NavBarIsVisible="False"
+             Shell.TabBarIsVisible="False"
+             BackgroundColor="{StaticResource Bg}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="28,64,28,48" Spacing="0">
+
+            <!-- ── Brand ───────────────────────────────────────────── -->
+            <Label Text="VYRON"
+                   TextColor="{StaticResource Teal}"
+                   FontFamily="OpenSansSemibold"
+                   FontSize="42"
+                   HorizontalOptions="Center" />
+            <Label Text="Laundry, simplified."
+                   FontSize="13"
+                   TextColor="{StaticResource Gray3}"
+                   HorizontalOptions="Center"
+                   Margin="0,4,0,48" />
+
+            <!-- ── Card ────────────────────────────────────────────── -->
+            <Border BackgroundColor="White"
+                    Stroke="#E8E8E2"
+                    StrokeShape="RoundRectangle 20"
+                    Padding="24,28">
+                <VerticalStackLayout Spacing="0">
+
+                    <Label Text="Welcome back"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="22"
+                           Margin="0,0,0,6" />
+                    <Label Text="Login with your phone number and password."
+                           FontSize="13"
+                           TextColor="{StaticResource Gray3}"
+                           Margin="0,0,0,24" />
+
+                    <!-- Error banner -->
+                    <Border BackgroundColor="#FFF1F0"
+                            Stroke="#FFB8B0"
+                            StrokeShape="RoundRectangle 10"
+                            Padding="12,10"
+                            Margin="0,0,0,16"
+                            IsVisible="{Binding ErrorMessage, Converter={StaticResource NotNullToBool}}">
+                        <Label Text="{Binding ErrorMessage}"
+                               TextColor="#C0392B"
+                               FontSize="12" />
+                    </Border>
+
+                    <!-- Phone Number label -->
+                    <Label Text="Phone Number"
+                           FontSize="13"
+                           FontFamily="OpenSansSemibold"
+                           Margin="0,0,0,8" />
+
+                    <!-- Country picker + local number row -->
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" Margin="0,0,0,18">
+
+                        <!-- Country code selector -->
+                        <Border BackgroundColor="White"
+                                Stroke="#D0D0C8"
+                                StrokeShape="RoundRectangle 12"
+                                WidthRequest="148">
+                            <Picker ItemsSource="{Binding CountryOptions}"
+                                    SelectedItem="{Binding SelectedCountry}"
+                                    ItemDisplayBinding="{Binding DisplayText}"
+                                    BackgroundColor="Transparent"
+                                    Margin="10,0" />
+                        </Border>
+
+                        <!-- Local phone number -->
+                        <Border Grid.Column="1"
+                                BackgroundColor="White"
+                                Stroke="#D0D0C8"
+                                StrokeShape="RoundRectangle 12">
+                            <Entry Placeholder="8012345678"
+                                   Text="{Binding LocalPhone}"
+                                   Keyboard="Telephone"
+                                   BackgroundColor="Transparent"
+                                   ReturnType="Next"
+                                   Margin="14,0" />
+                        </Border>
+                    </Grid>
+
+                    <!-- Password -->
+                    <Label Text="Password"
+                           FontSize="13"
+                           FontFamily="OpenSansSemibold"
+                           Margin="0,0,0,8" />
+                    <Border BackgroundColor="White"
+                            Stroke="#D0D0C8"
+                            StrokeShape="RoundRectangle 12"
+                            Margin="0,0,0,6">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Entry Placeholder="Your password"
+                                   Text="{Binding Password}"
+                                   IsPassword="{Binding ShowPassword, Converter={StaticResource InvertBool}}"
+                                   BackgroundColor="Transparent"
+                                   ReturnType="Done"
+                                   ReturnCommand="{Binding LoginCommand}"
+                                   Margin="14,0" />
+                            <Button Grid.Column="1"
+                                    Text="{Binding PasswordToggleIcon}"
+                                    Command="{Binding TogglePasswordCommand}"
+                                    BackgroundColor="Transparent"
+                                    FontSize="16"
+                                    Padding="8,0"
+                                    WidthRequest="44" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Remember me + Forgot password row -->
+                    <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,20">
+                        <!-- Remember me toggle — whole left side tappable -->
+                        <Grid Grid.Column="0" ColumnDefinitions="Auto,Auto" ColumnSpacing="6"
+                              VerticalOptions="Center">
+                            <Grid.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding ToggleRememberMeCommand}" />
+                            </Grid.GestureRecognizers>
+                            <Switch Grid.Column="0"
+                                    IsToggled="{Binding RememberMe}"
+                                    OnColor="{StaticResource Teal}"
+                                    ThumbColor="White"
+                                    VerticalOptions="Center"
+                                    Scale="0.75" />
+                            <Label Grid.Column="1"
+                                   Text="Remember me"
+                                   FontSize="13"
+                                   TextColor="{StaticResource Gray3}"
+                                   VerticalOptions="Center" />
+                        </Grid>
+                        <!-- Forgot password -->
+                        <Label Grid.Column="2" HorizontalOptions="End" VerticalOptions="Center">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding GoToForgotPasswordCommand}" />
+                            </Label.GestureRecognizers>
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="Forgot Password?"
+                                          TextColor="{StaticResource Teal}"
+                                          FontSize="13" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                    </Grid>
+
+                    <Button Text="Login"
+                            Command="{Binding LoginCommand}"
+                            IsEnabled="{Binding IsNotBusy}" />
+
+                    <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                       Color="{StaticResource Teal}"
+                                       IsVisible="{Binding IsBusy}"
+                                       HorizontalOptions="Center"
+                                       Margin="0,12,0,0" />
+
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- ── Create account link ────────────────────────────── -->
+            <HorizontalStackLayout HorizontalOptions="Center" Margin="0,20,0,0" Spacing="4">
+                <Label Text="Don't have an account?"
+                       FontSize="13"
+                       TextColor="{StaticResource Gray3}"
+                       VerticalOptions="Center" />
+                <Label FontSize="13" VerticalOptions="Center">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding GoToSignupCommand}" />
+                    </Label.GestureRecognizers>
+                    <Label.FormattedText>
+                        <FormattedString>
+                            <Span Text="Create Account"
+                                  TextColor="{StaticResource Teal}"
+                                  FontFamily="OpenSansSemibold" />
+                        </FormattedString>
+                    </Label.FormattedText>
+                </Label>
+            </HorizontalStackLayout>
+
+            <Label Text="By continuing you agree to VYRON's Terms of Service."
+                   FontSize="11"
+                   TextColor="{StaticResource Gray3}"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center"
+                   Margin="0,8,0,0" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

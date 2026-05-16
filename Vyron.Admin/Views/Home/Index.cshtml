@@ -1,0 +1,173 @@
+@model Vyron.Admin.Services.DashboardVm
+@{ ViewData["Title"] = "Dashboard"; }
+
+<div class="page-header">
+    <div>
+        <h1>Dashboard</h1>
+        <p>Monitor orders, stores, riders, payments, and service quality.</p>
+    </div>
+    <span class="text-muted">@DateTime.Now.ToString("dddd, MMM dd, yyyy")</span>
+</div>
+
+<div class="hero-card">
+    <div class="hero-eyebrow">Admin overview</div>
+    <h2>@(Model.ActiveDisputes > 0 ? "Some items need attention." : "Everything looks steady.")</h2>
+    <p>
+        @if (Model.ActiveDisputes > 0)
+        {
+            <text>@Model.ActiveDisputes active dispute(s) need resolution. Keep customer experience moving.</text>
+        }
+        else
+        {
+            <text>No urgent admin issues are waiting right now.</text>
+        }
+    </p>
+</div>
+
+<div class="section-title">
+    <h2>Overview</h2>
+    <a href="/Orders">View all orders</a>
+</div>
+
+<div class="stats">
+    <div class="stat">
+        <div class="stat-icon">O</div>
+        <div class="label">Orders Today</div>
+        <div class="value">@Model.OrdersToday</div>
+        <div class="delta">All new orders today</div>
+    </div>
+    <div class="stat info">
+        <div class="stat-icon">P</div>
+        <div class="label">Pending Pickups</div>
+        <div class="value">@Model.PendingPickups</div>
+        <div class="delta">Riders dispatched</div>
+    </div>
+    <div class="stat warning">
+        <div class="stat-icon">W</div>
+        <div class="label">Processing</div>
+        <div class="value">@Model.Processing</div>
+        <div class="delta">At laundry stores</div>
+    </div>
+    <div class="stat purple">
+        <div class="stat-icon">D</div>
+        <div class="label">Out for Delivery</div>
+        <div class="value">@Model.OutForDelivery</div>
+        <div class="delta">En route to customers</div>
+    </div>
+    <div class="stat @(Model.ActiveDisputes > 0 ? "alert" : "")">
+        <div class="stat-icon">!</div>
+        <div class="label">Active Disputes</div>
+        <div class="value">@Model.ActiveDisputes</div>
+        <div class="delta">Need resolution</div>
+    </div>
+    <div class="stat green">
+        <div class="stat-icon">N</div>
+        <div class="label">Revenue Today</div>
+        <div class="value">&#8358;@Model.RevenueToday.ToString("N0")</div>
+        <div class="delta">Week: &#8358;@Model.RevenueWeek.ToString("N0")</div>
+    </div>
+    <div class="stat info">
+        <div class="stat-icon">S</div>
+        <div class="label">Active Stores</div>
+        <div class="value">@Model.TotalStores</div>
+        <div class="delta">Approved and live</div>
+    </div>
+    <div class="stat">
+        <div class="stat-icon">R</div>
+        <div class="label">Online Riders</div>
+        <div class="value">@Model.OnlineRiders</div>
+        <div class="delta">Available now</div>
+    </div>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <div class="section-title">
+            <h3>Recent Orders</h3>
+            <a href="/Orders">View all</a>
+        </div>
+        @if (!Model.RecentOrders.Any())
+        {
+            <div class="empty-state">
+                <div>
+                    <div class="empty-icon">O</div>
+                    <h3>No orders yet.</h3>
+                    <p>Orders will appear here once customers start booking.</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="table-wrap" style="margin: 0;">
+                <table class="table-mobile-card">
+                    <thead>
+                        <tr><th>Order</th><th>Customer</th><th>Status</th><th>Total</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var o in Model.RecentOrders)
+                        {
+                            <tr>
+                                <td><a href="/Orders/Detail/@o.Id" class="text-bold">@o.OrderNumber</a></td>
+                                <td>@o.Customer.FullName</td>
+                                <td><span class="badge badge-@StatusBadge(o.Status)">@o.Status</span></td>
+                                <td class="text-bold">&#8358;@((o.ActualTotal > 0 ? o.ActualTotal : o.TotalEstimate).ToString("N0"))</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <div class="card">
+        <div class="section-title">
+            <h3>Open Disputes</h3>
+            <a href="/Disputes">View all</a>
+        </div>
+        @if (!Model.OpenDisputes.Any())
+        {
+            <div class="empty-state">
+                <div>
+                    <div class="empty-icon">D</div>
+                    <h3>No open disputes.</h3>
+                    <p>Customer issues that need admin action will appear here.</p>
+                </div>
+            </div>
+        }
+        else
+        {
+            foreach (var d in Model.OpenDisputes)
+            {
+                <div style="padding: 12px 0; border-bottom: 1px solid var(--line);">
+                    <div class="flex-between">
+                        <a href="/Disputes/Detail/@d.Id" class="text-bold">@d.Order.OrderNumber</a>
+                        <span class="badge badge-danger">@d.Type</span>
+                    </div>
+                    <div class="text-muted" style="font-size: 12px; margin-top: 4px;">
+                        @d.Order.Customer.FullName - @d.CreatedAt.ToString("MMM dd, HH:mm")
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@functions {
+    string StatusBadge(OrderStatus s) => s switch
+    {
+        OrderStatus.Pending => "gray",
+        OrderStatus.Confirmed => "info",
+        OrderStatus.PickupFeePaid => "info",
+        OrderStatus.RiderAssigned => "info",
+        OrderStatus.PickedUp => "purple",
+        OrderStatus.Processing => "warning",
+        OrderStatus.Ready => "success",
+        OrderStatus.OutForDelivery => "purple",
+        OrderStatus.Delivered => "success",
+        OrderStatus.BalancePaid => "success",
+        OrderStatus.Completed => "success",
+        OrderStatus.Disputed => "danger",
+        OrderStatus.Cancelled => "gray",
+        _ => "gray"
+    };
+}

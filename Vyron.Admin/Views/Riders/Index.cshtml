@@ -1,0 +1,45 @@
+@model List<Rider>
+@{ ViewData["Title"] = "Riders"; }
+
+<div class="page-header">
+    <h1>Riders</h1>
+    <a href="/Riders/Create" class="btn btn-primary btn-sm">+ Add Rider</a>
+</div>
+
+<div class="table-wrap">
+    <table class="table-mobile-card">
+        <thead>
+            <tr><th>Name</th><th>Phone</th><th>Vehicle</th><th>Status</th><th>Deliveries</th><th>Earnings</th><th>Active Orders</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var r in Model)
+            {
+                var active = r.Orders.Count(o => o.Status != OrderStatus.Completed && o.Status != OrderStatus.Cancelled);
+                <tr>
+                    <td class="text-bold">@r.User.FullName</td>
+                    <td>@r.User.Phone</td>
+                    <td>@r.VehicleType<br /><small class="text-muted">@r.VehiclePlate</small></td>
+                    <td>
+                        <span class="badge badge-@(r.Status == RiderStatus.OnlineAvailable ? "success" : r.Status == RiderStatus.OnDelivery ? "info" : "gray")">
+                            @r.Status
+                        </span>
+                    </td>
+                    <td>@r.TotalDeliveries</td>
+                    <td>₦@r.TotalEarnings.ToString("N0")</td>
+                    <td>@active</td>
+                    <td>
+                        <form asp-action="ToggleOnline" method="post" style="display:inline;">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@r.Id" />
+                            <button class="btn btn-secondary btn-sm">Toggle</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            @if (!Model.Any())
+            {
+                <tr><td colspan="8" class="text-center text-muted" style="padding:30px;">No riders yet. <a href="/Riders/Create">Add the first one →</a></td></tr>
+            }
+        </tbody>
+    </table>
+</div>

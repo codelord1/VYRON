@@ -1,0 +1,82 @@
+@model StoreCreateVm
+@{ ViewData["Title"] = "Request New Store"; }
+
+<div class="page-header">
+    <h1>Request New Store</h1>
+    <a href="/StoreOwner/Stores" class="btn btn-secondary btn-sm">← My Stores</a>
+</div>
+
+<div class="alert alert-info" style="max-width:720px">
+    Your store request will be reviewed by an Admin before activation.
+    You can upload a store image now or after submission.
+</div>
+
+<div class="card" style="max-width:720px">
+    <form asp-controller="StoreOwner" asp-action="StoreCreate" enctype="multipart/form-data" method="post">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" style="display:@(ViewData.ModelState.IsValid ? "none" : "block")"></div>
+
+        <div class="form-group">
+            <label asp-for="Name">Store Name *</label>
+            <input asp-for="Name" class="form-control" placeholder="e.g. My Laundry Shop" />
+            <span asp-validation-for="Name" class="text-red" style="font-size:11px"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Description">Description</label>
+            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+        </div>
+        <div class="flex" style="gap:14px">
+            <div class="form-group flex-1">
+                <label asp-for="Phone">Contact Phone *</label>
+                <input asp-for="Phone" class="form-control" placeholder="+2348012345678" />
+                <span asp-validation-for="Phone" class="text-red" style="font-size:11px"></span>
+            </div>
+            <div class="form-group flex-1">
+                <label asp-for="Email">Email</label>
+                <input asp-for="Email" type="email" class="form-control" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label asp-for="Address">Address *</label>
+            <input asp-for="Address" class="form-control" />
+            <span asp-validation-for="Address" class="text-red" style="font-size:11px"></span>
+        </div>
+        <div class="flex" style="gap:14px">
+            <div class="form-group flex-1">
+                <label asp-for="Area">Area *</label>
+                <input asp-for="Area" class="form-control" placeholder="Lekki, Ikeja..." />
+                <span asp-validation-for="Area" class="text-red" style="font-size:11px"></span>
+            </div>
+            <div class="form-group flex-1">
+                <label asp-for="City">City</label>
+                <input asp-for="City" class="form-control" />
+            </div>
+        </div>
+        <div class="flex" style="gap:14px">
+            <div class="form-group flex-1">
+                <label asp-for="PickupFee">Pickup Fee (₦)</label>
+                <input asp-for="PickupFee" type="number" step="0.01" class="form-control" />
+            </div>
+            <div class="form-group flex-1">
+                <label asp-for="DeliveryFee">Delivery Fee (₦)</label>
+                <input asp-for="DeliveryFee" type="number" step="0.01" class="form-control" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label asp-for="OpeningHours">Opening Hours</label>
+            <input asp-for="OpeningHours" class="form-control" placeholder="8:00 AM - 8:00 PM" />
+        </div>
+        <div class="form-group">
+            <label>Store Image (optional)</label>
+            <input type="file" name="ImageFile" accept=".jpg,.jpeg,.png,.webp" class="form-control" data-preview="imgPreview" />
+            <div style="margin-top:8px"><img id="imgPreview" src="" style="display:none;max-width:200px;border-radius:8px" /></div>
+            <small class="text-muted">Max 2 MB. An image is required before Admin approval.</small>
+        </div>
+        <div style="margin-top:18px">
+            <button type="submit" class="btn btn-primary">Submit for Approval</button>
+            <a href="/StoreOwner/Stores" class="btn btn-secondary" style="margin-left:8px">Cancel</a>
+        </div>
+    </form>
+</div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

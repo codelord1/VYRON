@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.CustomerApp.ViewModels"
+             x:Class="Vyron.CustomerApp.Views.Orders.PickupFeePaymentPage"
+             x:DataType="vm:PickupFeeViewModel"
+             Title="Pay Pickup Fee"
+             BackgroundColor="{StaticResource Bg}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="16">
+
+            <!-- Success state -->
+            <VerticalStackLayout IsVisible="{Binding PaymentDone}" Spacing="16">
+                <Label Text="✅" FontSize="56" HorizontalOptions="Center" />
+                <Label Text="Pickup Fee Paid!"
+                       FontFamily="OpenSansSemibold" FontSize="24"
+                       HorizontalOptions="Center" />
+                <Label Text="{Binding SuccessMessage}"
+                       FontSize="13" TextColor="{StaticResource Gray3}"
+                       HorizontalOptions="Center" HorizontalTextAlignment="Center" />
+                <Button Text="Track Order →" Command="{Binding TrackOrderCommand}" />
+            </VerticalStackLayout>
+
+            <!-- Payment form -->
+            <VerticalStackLayout IsVisible="{Binding PaymentDone, Converter={StaticResource InvertBool}}"
+                                 Spacing="16">
+
+                <!-- Amount card -->
+                <Border BackgroundColor="{StaticResource Teal}"
+                        StrokeShape="RoundRectangle 16" Padding="24,20">
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Amount Due Now"
+                               TextColor="#D0FFF5"
+                               FontSize="13"
+                               HorizontalOptions="Center" />
+                        <Label Text="{Binding Order.PickupFeeAmount, StringFormat='₦{0:N0}'}"
+                               TextColor="White"
+                               FontFamily="OpenSansSemibold"
+                               FontSize="38"
+                               HorizontalOptions="Center" />
+                        <Label Text="Pickup Fee"
+                               TextColor="#D0FFF5"
+                               FontSize="12"
+                               HorizontalOptions="Center" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Order info -->
+                <Border BackgroundColor="White" Stroke="#EDEDEA"
+                        StrokeShape="RoundRectangle 14" Padding="16"
+                        IsVisible="{Binding Order, Converter={StaticResource NotNullToBool}}">
+                    <VerticalStackLayout Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Order" FontSize="13" TextColor="{StaticResource Gray3}" />
+                            <Label Grid.Column="1" Text="{Binding Order.OrderNumber}"
+                                   FontFamily="OpenSansSemibold" FontSize="13" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Store" FontSize="13" TextColor="{StaticResource Gray3}" />
+                            <Label Grid.Column="1" Text="{Binding Order.Store.Name}"
+                                   FontFamily="OpenSansSemibold" FontSize="13" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Balance (on delivery)" FontSize="13" TextColor="{StaticResource Gray3}" />
+                            <Label Grid.Column="1"
+                                   Text="{Binding Order.BalanceAmount, StringFormat='₦{0:N0}'}"
+                                   FontFamily="OpenSansSemibold" FontSize="13" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Error -->
+                <Border BackgroundColor="#FFF1F0" Stroke="#FFB8B0"
+                        StrokeShape="RoundRectangle 10" Padding="12,10"
+                        IsVisible="{Binding ErrorMessage, Converter={StaticResource NotNullToBool}}">
+                    <Label Text="{Binding ErrorMessage}" TextColor="#C0392B" FontSize="13" />
+                </Border>
+
+                <!-- Payment method -->
+                <Label Text="Select Payment Method"
+                       FontFamily="OpenSansSemibold" FontSize="14" />
+                <Border BackgroundColor="White" Stroke="#D0D0C8"
+                        StrokeShape="RoundRectangle 12" Padding="0">
+                    <Picker ItemsSource="{Binding PaymentMethods}"
+                            SelectedItem="{Binding SelectedMethod}"
+                            BackgroundColor="Transparent"
+                            Margin="12,0" />
+                </Border>
+
+                <Label Text="💡 For CashOnDelivery: hand cash to rider at pickup. For Transfer: send to provided account."
+                       FontSize="11" TextColor="{StaticResource Gray3}" />
+
+                <Button Text="Confirm Pickup Fee Payment"
+                        Command="{Binding ConfirmPaymentCommand}"
+                        IsEnabled="{Binding IsNotBusy}" />
+
+                <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                   Color="{StaticResource Teal}"
+                                   IsVisible="{Binding IsBusy}"
+                                   HorizontalOptions="Center" />
+
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

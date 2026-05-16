@@ -1,0 +1,37 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build output
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+
+# Rider / IDE
+.idea/
+.vscode/
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# ASP.NET / secrets / local config
+appsettings.Local.json
+appsettings.*.local.json
+secrets.json
+
+# SQL Server local files
+*.mdf
+*.ldf
+
+# Publish output
+publish/
+wwwroot/lib/

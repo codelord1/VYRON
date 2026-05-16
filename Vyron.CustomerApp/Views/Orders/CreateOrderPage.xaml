@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.CustomerApp.ViewModels"
+             xmlns:svc="clr-namespace:Vyron.CustomerApp.Services"
+             x:Class="Vyron.CustomerApp.Views.Orders.CreateOrderPage"
+             x:DataType="vm:CreateOrderViewModel"
+             Title="Order Details"
+             BackgroundColor="{StaticResource Bg}">
+
+    <Grid RowDefinitions="*,Auto">
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Spacing="14" Padding="16">
+
+                <!-- Error banner -->
+                <Border BackgroundColor="#FFF1F0" Stroke="#FFB8B0"
+                        StrokeShape="RoundRectangle 10" Padding="12,10"
+                        IsVisible="{Binding ErrorMessage, Converter={StaticResource NotNullToBool}}">
+                    <Label Text="{Binding ErrorMessage}" TextColor="#C0392B" FontSize="13" />
+                </Border>
+
+                <!-- ── Order items summary ── -->
+                <Border BackgroundColor="White" Stroke="#EDEDEA"
+                        StrokeShape="RoundRectangle 14" Padding="16,14">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="{Binding StoreName}"
+                               FontFamily="OpenSansSemibold" FontSize="16" />
+
+                        <!-- Item rows -->
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding DraftItems}" Spacing="6">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="svc:OrderDraftItem">
+                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+                                        <Label Text="{Binding ServiceName}"
+                                               FontSize="13"
+                                               VerticalOptions="Center" />
+                                        <Label Grid.Column="1"
+                                               Text="{Binding QtyDisplay}"
+                                               FontSize="12"
+                                               TextColor="{StaticResource Gray3}"
+                                               VerticalOptions="Center" />
+                                        <Label Grid.Column="2"
+                                               Text="{Binding LineTotalDisplay}"
+                                               FontFamily="OpenSansSemibold"
+                                               FontSize="13"
+                                               TextColor="{StaticResource Teal}"
+                                               VerticalOptions="Center" />
+                                    </Grid>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+
+                        <!-- No-items warning -->
+                        <Label Text="⚠️ No services selected. Go back and add services."
+                               FontSize="13" TextColor="#E74C3C"
+                               IsVisible="{Binding HasDraftItems, Converter={StaticResource InvertBool}}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Pickup address -->
+                <Label Text="Pickup Address *" FontFamily="OpenSansSemibold" FontSize="14" />
+                <Border BackgroundColor="White" Stroke="#D0D0C8" StrokeShape="RoundRectangle 12">
+                    <Entry Placeholder="Enter full pickup address"
+                           Text="{Binding PickupAddress}"
+                           BackgroundColor="Transparent"
+                           Margin="14,4" />
+                </Border>
+
+                <!-- Same address toggle -->
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                    <CheckBox IsChecked="{Binding SameAddress}" Color="{StaticResource Teal}" />
+                    <Label Grid.Column="1" Text="Delivery same as pickup address"
+                           VerticalOptions="Center" FontSize="13" />
+                </Grid>
+
+                <!-- Delivery address (conditional) -->
+                <VerticalStackLayout IsVisible="{Binding SameAddress, Converter={StaticResource InvertBool}}"
+                                     Spacing="6">
+                    <Label Text="Delivery Address *" FontFamily="OpenSansSemibold" FontSize="14" />
+                    <Border BackgroundColor="White" Stroke="#D0D0C8" StrokeShape="RoundRectangle 12">
+                        <Entry Placeholder="Enter delivery address"
+                               Text="{Binding DeliveryAddress}"
+                               BackgroundColor="Transparent"
+                               Margin="14,4" />
+                    </Border>
+                </VerticalStackLayout>
+
+                <!-- Pickup date & slot -->
+                <Label Text="Pickup Date" FontFamily="OpenSansSemibold" FontSize="14" />
+                <Border BackgroundColor="White" Stroke="#D0D0C8" StrokeShape="RoundRectangle 12" Padding="4,0">
+                    <DatePicker Date="{Binding PickupDate}"
+                                BackgroundColor="Transparent"
+                                Margin="10,0" />
+                </Border>
+
+                <Label Text="Time Slot" FontFamily="OpenSansSemibold" FontSize="14" />
+                <Border BackgroundColor="White" Stroke="#D0D0C8" StrokeShape="RoundRectangle 12" Padding="0">
+                    <Picker ItemsSource="{Binding TimeSlots}"
+                            SelectedItem="{Binding SelectedSlot}"
+                            BackgroundColor="Transparent"
+                            Margin="10,0" />
+                </Border>
+
+                <!-- Payment method -->
+                <Label Text="Payment Method" FontFamily="OpenSansSemibold" FontSize="14" />
+                <Border BackgroundColor="White" Stroke="#D0D0C8" StrokeShape="RoundRectangle 12" Padding="0">
+                    <Picker ItemsSource="{Binding PaymentMethods}"
+                            SelectedItem="{Binding PaymentMethod}"
+                            BackgroundColor="Transparent"
+                            Margin="10,0" />
+                </Border>
+
+                <!-- Notes -->
+                <Label Text="Special Instructions (optional)" FontFamily="OpenSansSemibold" FontSize="14" />
+                <Border BackgroundColor="White" Stroke="#D0D0C8" StrokeShape="RoundRectangle 12">
+                    <Editor Placeholder="E.g. handle delicate fabrics with care..."
+                            Text="{Binding SpecialInstructions}"
+                            AutoSize="TextChanges"
+                            BackgroundColor="Transparent"
+                            MinimumHeightRequest="80"
+                            Margin="14,8" />
+                </Border>
+
+                <!-- Price summary -->
+                <Border BackgroundColor="{StaticResource Dark}"
+                        StrokeShape="RoundRectangle 14" Padding="18,14">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Order Summary" TextColor="White"
+                               FontFamily="OpenSansSemibold" FontSize="14" />
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Laundry (estimate)" TextColor="{StaticResource Gray3}" FontSize="13" />
+                            <Label Grid.Column="1"
+                                   Text="{Binding TotalLaundryCost, StringFormat='₦{0:N0}'}"
+                                   TextColor="White" FontFamily="OpenSansSemibold" FontSize="13" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Pickup fee" TextColor="{StaticResource Gray3}" FontSize="13" />
+                            <Label Grid.Column="1"
+                                   Text="{Binding PickupFee, StringFormat='₦{0:N0}'}"
+                                   TextColor="White" FontFamily="OpenSansSemibold" FontSize="13" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="Delivery fee" TextColor="{StaticResource Gray3}" FontSize="13" />
+                            <Label Grid.Column="1"
+                                   Text="{Binding DeliveryFee, StringFormat='₦{0:N0}'}"
+                                   TextColor="White" FontFamily="OpenSansSemibold" FontSize="13" />
+                        </Grid>
+                        <BoxView HeightRequest="1" Color="#444" />
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="💳 Pay now" TextColor="{StaticResource Teal}"
+                                   FontFamily="OpenSansSemibold" FontSize="14" />
+                            <Label Grid.Column="1"
+                                   Text="{Binding AmountDueNow, StringFormat='₦{0:N0}'}"
+                                   TextColor="{StaticResource Teal}"
+                                   FontFamily="OpenSansSemibold" FontSize="16" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="⏳ Balance on delivery"
+                                   TextColor="{StaticResource Gray3}" FontSize="13" />
+                            <Label Grid.Column="1"
+                                   Text="{Binding BalanceDueLater, StringFormat='₦{0:N0}'}"
+                                   TextColor="{StaticResource Gray3}"
+                                   FontFamily="OpenSansSemibold" FontSize="13" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Border Grid.Row="1" BackgroundColor="White" Stroke="#EDEDEA" Padding="16,12">
+            <Button Text="Place Order"
+                    Command="{Binding PlaceOrderCommand}"
+                    IsEnabled="{Binding IsNotBusy}" />
+        </Border>
+    </Grid>
+</ContentPage>

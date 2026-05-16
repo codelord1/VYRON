@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.CustomerApp.ViewModels"
+             xmlns:dto="clr-namespace:Vyron.CustomerApp.DTOs"
+             x:Class="Vyron.CustomerApp.Views.Stores.StoresPage"
+             x:Name="ThisPage"
+             x:DataType="vm:StoresViewModel"
+             BackgroundColor="{StaticResource Bg}">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- ═══════════════════════════════════════════════════════
+             HEADER  (greeting + search + filter chips)
+             ═══════════════════════════════════════════════════════ -->
+        <Border Grid.Row="0"
+                BackgroundColor="White"
+                Stroke="Transparent"
+                Padding="20,16,20,12">
+            <VerticalStackLayout Spacing="14">
+
+                <!-- Greeting row -->
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Grid.Column="0" Spacing="2" VerticalOptions="Center">
+                        <Label Text="{Binding Greeting}"
+                               FontFamily="OpenSansSemibold"
+                               FontSize="20" />
+                        <Label Text="Find trusted laundry stores near you"
+                               FontSize="12"
+                               TextColor="{StaticResource Gray3}" />
+                    </VerticalStackLayout>
+
+                    <!-- Avatar circle -->
+                    <Border Grid.Column="1"
+                            BackgroundColor="{StaticResource Teal}"
+                            WidthRequest="42"
+                            HeightRequest="42"
+                            StrokeShape="RoundRectangle 21"
+                            Stroke="Transparent"
+                            VerticalOptions="Center">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding GoToProfileCommand}" />
+                        </Border.GestureRecognizers>
+                        <Label Text="{Binding UserInitials}"
+                               FontFamily="OpenSansSemibold"
+                               FontSize="14"
+                               TextColor="White"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center" />
+                    </Border>
+                </Grid>
+
+                <!-- Search bar -->
+                <Border BackgroundColor="{StaticResource Bg}"
+                        Stroke="#E0E0D8"
+                        StrokeShape="RoundRectangle 12">
+                    <Grid ColumnDefinitions="Auto,*">
+                        <Label Grid.Column="0"
+                               Text="🔍"
+                               FontSize="15"
+                               VerticalOptions="Center"
+                               Margin="12,0,0,0" />
+                        <Entry Grid.Column="1"
+                               Placeholder="Search stores or areas…"
+                               Text="{Binding SearchText}"
+                               BackgroundColor="Transparent"
+                               ReturnCommand="{Binding SearchCommand}"
+                               ReturnType="Search"
+                               Margin="6,0,12,0" />
+                    </Grid>
+                </Border>
+
+                <!-- Filter chips -->
+                <ScrollView Orientation="Horizontal"
+                            HorizontalScrollBarVisibility="Never">
+                    <HorizontalStackLayout Spacing="8">
+
+                        <!-- All -->
+                        <Border BackgroundColor="White"
+                                StrokeShape="RoundRectangle 20"
+                                Stroke="#D8D8D0"
+                                Padding="14,7">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="" />
+                            </Border.GestureRecognizers>
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border" Binding="{Binding SelectedFilter}" Value="">
+                                    <Setter Property="BackgroundColor" Value="{StaticResource Teal}" />
+                                    <Setter Property="Stroke" Value="{StaticResource Teal}" />
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <Label Text="All" FontSize="12" TextColor="{StaticResource Gray5}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding SelectedFilter}" Value="">
+                                        <Setter Property="TextColor" Value="White" />
+                                        <Setter Property="FontFamily" Value="OpenSansSemibold" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                        </Border>
+
+                        <!-- Top Rated -->
+                        <Border BackgroundColor="White"
+                                StrokeShape="RoundRectangle 20"
+                                Stroke="#D8D8D0"
+                                Padding="14,7">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="toprated" />
+                            </Border.GestureRecognizers>
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border" Binding="{Binding SelectedFilter}" Value="toprated">
+                                    <Setter Property="BackgroundColor" Value="{StaticResource Teal}" />
+                                    <Setter Property="Stroke" Value="{StaticResource Teal}" />
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <Label Text="⭐ Top Rated" FontSize="12" TextColor="{StaticResource Gray5}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding SelectedFilter}" Value="toprated">
+                                        <Setter Property="TextColor" Value="White" />
+                                        <Setter Property="FontFamily" Value="OpenSansSemibold" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                        </Border>
+
+                        <!-- Fast Pickup -->
+                        <Border BackgroundColor="White"
+                                StrokeShape="RoundRectangle 20"
+                                Stroke="#D8D8D0"
+                                Padding="14,7">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="fast" />
+                            </Border.GestureRecognizers>
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border" Binding="{Binding SelectedFilter}" Value="fast">
+                                    <Setter Property="BackgroundColor" Value="{StaticResource Teal}" />
+                                    <Setter Property="Stroke" Value="{StaticResource Teal}" />
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <Label Text="⚡ Fast Pickup" FontSize="12" TextColor="{StaticResource Gray5}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding SelectedFilter}" Value="fast">
+                                        <Setter Property="TextColor" Value="White" />
+                                        <Setter Property="FontFamily" Value="OpenSansSemibold" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                        </Border>
+
+                        <!-- Verified -->
+                        <Border BackgroundColor="White"
+                                StrokeShape="RoundRectangle 20"
+                                Stroke="#D8D8D0"
+                                Padding="14,7">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="verified" />
+                            </Border.GestureRecognizers>
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border" Binding="{Binding SelectedFilter}" Value="verified">
+                                    <Setter Property="BackgroundColor" Value="{StaticResource Teal}" />
+                                    <Setter Property="Stroke" Value="{StaticResource Teal}" />
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <Label Text="✓ Verified" FontSize="12" TextColor="{StaticResource Gray5}">
+                                <Label.Triggers>
+                                    <DataTrigger TargetType="Label" Binding="{Binding SelectedFilter}" Value="verified">
+                                        <Setter Property="TextColor" Value="White" />
+                                        <Setter Property="FontFamily" Value="OpenSansSemibold" />
+                                    </DataTrigger>
+                                </Label.Triggers>
+                            </Label>
+                        </Border>
+
+                    </HorizontalStackLayout>
+                </ScrollView>
+
+            </VerticalStackLayout>
+        </Border>
+
+        <!-- ═══════════════════════════════════════════════════════
+             STORE LIST
+             ═══════════════════════════════════════════════════════ -->
+        <RefreshView Grid.Row="1"
+                     Command="{Binding LoadCommand}"
+                     IsRefreshing="{Binding IsBusy}">
+
+            <CollectionView ItemsSource="{Binding StoreItems}"
+                            SelectionMode="None"
+                            Margin="16,8,16,8">
+
+                <!-- Polished empty state -->
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout HorizontalOptions="Center"
+                                         VerticalOptions="Center"
+                                         Spacing="12"
+                                         Padding="40,60">
+                        <Label Text="🧺"
+                               FontSize="56"
+                               HorizontalOptions="Center" />
+                        <Label Text="No verified laundry stores available yet."
+                               FontFamily="OpenSansSemibold"
+                               FontSize="17"
+                               HorizontalOptions="Center"
+                               HorizontalTextAlignment="Center" />
+                        <Label Text="New stores are joining VYRON regularly. Check back soon."
+                               FontSize="13"
+                               TextColor="{StaticResource Gray3}"
+                               HorizontalOptions="Center"
+                               HorizontalTextAlignment="Center" />
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+
+                <!-- ── Store card ──────────────────────────────────── -->
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="dto:StoreListItemDto">
+                        <Grid Padding="0,6">
+
+                            <Border BackgroundColor="White"
+                                    Stroke="#ECEAE4"
+                                    StrokeShape="RoundRectangle 16">
+                                <Grid RowDefinitions="160,Auto">
+
+                                    <!-- Image / placeholder area -->
+                                    <Grid Grid.Row="0" BackgroundColor="#E4F5F0">
+
+                                        <!-- Letter placeholder (always rendered below image) -->
+                                        <Label Text="{Binding NameInitial}"
+                                               FontFamily="OpenSansSemibold"
+                                               FontSize="60"
+                                               TextColor="#A8DFD3"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center" />
+
+                                        <!-- Actual image — covers placeholder when loaded -->
+                                        <Image Source="{Binding FullLogoUrl}"
+                                               Aspect="AspectFill"
+                                               IsVisible="{Binding HasLogo}" />
+
+                                        <!-- Open / Closed status badge -->
+                                        <Border VerticalOptions="End"
+                                                HorizontalOptions="Start"
+                                                Margin="12,0,0,12"
+                                                Padding="8,4"
+                                                StrokeShape="RoundRectangle 8"
+                                                Stroke="Transparent"
+                                                BackgroundColor="#00C9A7">
+                                            <Border.Triggers>
+                                                <DataTrigger TargetType="Border"
+                                                             Binding="{Binding IsOpen}"
+                                                             Value="False">
+                                                    <Setter Property="BackgroundColor" Value="#E74C3C" />
+                                                </DataTrigger>
+                                            </Border.Triggers>
+                                            <Label Text="{Binding OpenStatusText}"
+                                                   FontFamily="OpenSansSemibold"
+                                                   FontSize="11"
+                                                   TextColor="White" />
+                                        </Border>
+
+                                    </Grid>
+
+                                    <!-- Card content -->
+                                    <VerticalStackLayout Grid.Row="1"
+                                                          Padding="16,13,16,16"
+                                                          Spacing="5">
+
+                                        <!-- Name + rating -->
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <Label Text="{Binding Name}"
+                                                   FontFamily="OpenSansSemibold"
+                                                   FontSize="16"
+                                                   LineBreakMode="TailTruncation" />
+                                            <Label Grid.Column="1"
+                                                   Text="{Binding RatingDisplay}"
+                                                   FontSize="11"
+                                                   TextColor="#E6A817"
+                                                   VerticalOptions="Center" />
+                                        </Grid>
+
+                                        <!-- Badge -->
+                                        <Label Text="{Binding BadgeText}"
+                                               FontSize="11"
+                                               TextColor="{StaticResource Teal}"
+                                               IsVisible="{Binding BadgeText, Converter={StaticResource NotEmptyBool}}" />
+
+                                        <!-- Location -->
+                                        <Label FontSize="12" TextColor="{StaticResource Gray3}">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="📍 " />
+                                                    <Span Text="{Binding Area}" />
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+
+                                        <!-- Services + starting price -->
+                                        <Label FontSize="12" TextColor="{StaticResource Gray3}">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{Binding ServiceCountText}" />
+                                                    <Span Text="{Binding StartingFromText}" />
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+
+                                        <!-- Divider -->
+                                        <BoxView HeightRequest="1" Color="#F0EFE9" Margin="0,4" />
+
+                                        <!-- Fees + turnaround + CTA -->
+                                        <Grid ColumnDefinitions="*,*,*,Auto" ColumnSpacing="8">
+                                            <Label Grid.Column="0"
+                                                   Text="{Binding PickupFeeDisplay}"
+                                                   FontSize="11"
+                                                   TextColor="{StaticResource Gray3}"
+                                                   VerticalOptions="Center" />
+                                            <Label Grid.Column="1"
+                                                   Text="{Binding DeliveryFeeDisplay}"
+                                                   FontSize="11"
+                                                   TextColor="{StaticResource Gray3}"
+                                                   HorizontalOptions="Center"
+                                                   VerticalOptions="Center" />
+                                            <Label Grid.Column="2"
+                                                   Text="{Binding EstimatedTimeDisplay}"
+                                                   FontSize="11"
+                                                   TextColor="{StaticResource Gray3}"
+                                                   VerticalOptions="Center" />
+                                            <Border Grid.Column="3"
+                                                    BackgroundColor="{StaticResource Teal}"
+                                                    StrokeShape="RoundRectangle 8"
+                                                    Stroke="Transparent"
+                                                    Padding="12,6">
+                                                <Label Text="View →"
+                                                       FontFamily="OpenSansSemibold"
+                                                       FontSize="12"
+                                                       TextColor="White" />
+                                            </Border>
+                                        </Grid>
+
+                                    </VerticalStackLayout>
+
+                                </Grid>
+                            </Border>
+
+                            <!-- Tap target over the whole card -->
+                            <Grid.GestureRecognizers>
+                                <TapGestureRecognizer
+                                    Command="{Binding Source={x:Reference ThisPage}, Path=BindingContext.SelectStoreCommand}"
+                                    CommandParameter="{Binding .}" />
+                            </Grid.GestureRecognizers>
+
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+
+            </CollectionView>
+        </RefreshView>
+
+    </Grid>
+
+</ContentPage>

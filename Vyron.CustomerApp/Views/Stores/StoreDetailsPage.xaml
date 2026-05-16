@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.CustomerApp.ViewModels"
+             xmlns:dto="clr-namespace:Vyron.CustomerApp.DTOs"
+             x:Class="Vyron.CustomerApp.Views.Stores.StoreDetailsPage"
+             x:DataType="vm:StoreDetailsViewModel"
+             Title="{Binding Store.Name, FallbackValue='Store Details'}"
+             BackgroundColor="{StaticResource Bg}">
+
+    <Grid RowDefinitions="*,Auto">
+
+        <!-- ── Scrollable body ─────────────────────────────────── -->
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Spacing="0">
+
+                <!-- Loading indicator (covers the banner placeholder) -->
+                <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                   Color="{StaticResource Teal}"
+                                   IsVisible="{Binding IsBusy}"
+                                   HorizontalOptions="Center"
+                                   Margin="0,60" />
+
+                <VerticalStackLayout IsVisible="{Binding IsNotBusy}" Spacing="0">
+
+                    <!-- ══ BANNER IMAGE ══════════════════════════════ -->
+                    <Grid HeightRequest="220" BackgroundColor="#D8EEE9">
+
+                        <!-- Placeholder initial -->
+                        <Label Text="{Binding Store.NameInitial}"
+                               FontFamily="OpenSansSemibold"
+                               FontSize="80"
+                               TextColor="#9FD5CB"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center" />
+
+                        <!-- Store image (banner preferred, logo as fallback) -->
+                        <Image Source="{Binding Store.BestImageUrl}"
+                               Aspect="AspectFill"
+                               IsVisible="{Binding Store.HasImage}" />
+
+                        <!-- Open / Closed chip over image -->
+                        <Border HorizontalOptions="End"
+                                VerticalOptions="End"
+                                Margin="0,0,16,16"
+                                Padding="10,5"
+                                StrokeShape="RoundRectangle 10"
+                                Stroke="Transparent"
+                                BackgroundColor="#00C9A7">
+                            <Border.Triggers>
+                                <DataTrigger TargetType="Border"
+                                             Binding="{Binding Store.IsOpen}"
+                                             Value="False">
+                                    <Setter Property="BackgroundColor" Value="#E74C3C" />
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <Label Text="{Binding Store.OpenStatusText}"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="12"
+                                   TextColor="White" />
+                        </Border>
+
+                    </Grid>
+
+                    <!-- ══ STORE HEADER CARD ════════════════════════ -->
+                    <Border BackgroundColor="White"
+                            Stroke="Transparent"
+                            Padding="20,18,20,14"
+                            Margin="0">
+                        <VerticalStackLayout Spacing="6">
+
+                            <!-- Name + rating row -->
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Text="{Binding Store.Name}"
+                                       FontFamily="OpenSansSemibold"
+                                       FontSize="22" />
+                                <Label Grid.Column="1"
+                                       Text="{Binding Store.RatingDisplay}"
+                                       FontSize="13"
+                                       TextColor="#E6A817"
+                                       VerticalOptions="Center" />
+                            </Grid>
+
+                            <!-- Badges (Verified / Top Rated / Fast) -->
+                            <Label Text="{Binding Store.BadgeText}"
+                                   FontSize="13"
+                                   TextColor="{StaticResource Teal}"
+                                   IsVisible="{Binding Store.BadgeText, Converter={StaticResource NotEmptyBool}}" />
+
+                            <!-- Description -->
+                            <Label Text="{Binding Store.Description}"
+                                   FontSize="13"
+                                   TextColor="{StaticResource Gray3}"
+                                   IsVisible="{Binding Store.Description, Converter={StaticResource NotEmptyBool}}" />
+
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <BoxView HeightRequest="8" Color="{StaticResource Bg}" />
+
+                    <!-- ══ INFO CARD ═════════════════════════════════ -->
+                    <Border BackgroundColor="White"
+                            Stroke="Transparent"
+                            Padding="20,16">
+                        <VerticalStackLayout Spacing="12">
+
+                            <Label Text="Store Details"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="15"
+                                   Margin="0,0,0,4" />
+
+                            <!-- Location -->
+                            <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
+                                <Label Text="📍" Grid.Column="0" VerticalOptions="Start" />
+                                <Label Grid.Column="1"
+                                       FontSize="13"
+                                       VerticalOptions="Start">
+                                    <Label.FormattedText>
+                                        <FormattedString>
+                                            <Span Text="{Binding Store.Address}" />
+                                            <Span Text=", " />
+                                            <Span Text="{Binding Store.Area}" />
+                                        </FormattedString>
+                                    </Label.FormattedText>
+                                </Label>
+                            </Grid>
+
+                            <!-- Hours -->
+                            <Grid ColumnDefinitions="24,*" ColumnSpacing="10"
+                                  IsVisible="{Binding Store.OpeningHours, Converter={StaticResource NotNullToBool}}">
+                                <Label Text="🕐" Grid.Column="0" VerticalOptions="Center" />
+                                <Label Grid.Column="1"
+                                       Text="{Binding Store.OpeningHours}"
+                                       FontSize="13"
+                                       VerticalOptions="Center" />
+                            </Grid>
+
+                            <!-- Phone -->
+                            <Grid ColumnDefinitions="24,*" ColumnSpacing="10"
+                                  IsVisible="{Binding Store.Phone, Converter={StaticResource NotEmptyBool}}">
+                                <Label Text="📞" Grid.Column="0" VerticalOptions="Center" />
+                                <Label Grid.Column="1"
+                                       Text="{Binding Store.Phone}"
+                                       FontSize="13"
+                                       VerticalOptions="Center" />
+                            </Grid>
+
+                            <BoxView HeightRequest="1" Color="#F0EFE9" Margin="0,4" />
+
+                            <!-- Fees row -->
+                            <Grid ColumnDefinitions="*,*,*">
+                                <VerticalStackLayout Grid.Column="0" Spacing="2">
+                                    <Label Text="{Binding Store.PickupFeeDisplay}"
+                                           FontFamily="OpenSansSemibold"
+                                           FontSize="14"
+                                           TextColor="{StaticResource Gray5}" />
+                                    <Label Text="Pickup fee"
+                                           FontSize="11"
+                                           TextColor="{StaticResource Gray3}" />
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                    <Label Text="{Binding Store.DeliveryFeeDisplay}"
+                                           FontFamily="OpenSansSemibold"
+                                           FontSize="14"
+                                           TextColor="{StaticResource Gray5}"
+                                           HorizontalOptions="Center" />
+                                    <Label Text="Delivery fee"
+                                           FontSize="11"
+                                           TextColor="{StaticResource Gray3}"
+                                           HorizontalOptions="Center" />
+                                </VerticalStackLayout>
+                                <VerticalStackLayout Grid.Column="2" Spacing="2">
+                                    <Label Text="{Binding Store.EstimatedTimeDisplay}"
+                                           FontFamily="OpenSansSemibold"
+                                           FontSize="14"
+                                           TextColor="{StaticResource Gray5}"
+                                           HorizontalOptions="End" />
+                                    <Label Text="Est. pickup"
+                                           FontSize="11"
+                                           TextColor="{StaticResource Gray3}"
+                                           HorizontalOptions="End" />
+                                </VerticalStackLayout>
+                            </Grid>
+
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <BoxView HeightRequest="8" Color="{StaticResource Bg}" />
+
+                    <!-- ══ SERVICES ═══════════════════════════════════ -->
+                    <Border BackgroundColor="White"
+                            Stroke="Transparent"
+                            Padding="20,16">
+                        <VerticalStackLayout Spacing="10">
+
+                            <Label Text="Services"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="15"
+                                   Margin="0,0,0,4" />
+
+                            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Store.Services}"
+                                                  Spacing="8">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate x:DataType="dto:ServiceSummaryDto">
+                                        <Border BackgroundColor="{StaticResource Bg}"
+                                                Stroke="#ECEAE4"
+                                                StrokeShape="RoundRectangle 12"
+                                                Padding="14,12">
+                                            <Grid ColumnDefinitions="*,Auto">
+
+                                                <VerticalStackLayout Grid.Column="0" Spacing="3">
+                                                    <Label Text="{Binding Name}"
+                                                           FontFamily="OpenSansSemibold"
+                                                           FontSize="14" />
+                                                    <Label Text="{Binding Description}"
+                                                           FontSize="12"
+                                                           TextColor="{StaticResource Gray3}"
+                                                           IsVisible="{Binding Description, Converter={StaticResource NotNullToBool}}" />
+                                                    <Label FontSize="12"
+                                                           TextColor="{StaticResource Gray3}">
+                                                        <Label.FormattedText>
+                                                            <FormattedString>
+                                                                <Span Text="{Binding MinChargeDisplay}" />
+                                                                <Span Text="  ·  " />
+                                                                <Span Text="{Binding TimeDisplay}" />
+                                                            </FormattedString>
+                                                        </Label.FormattedText>
+                                                    </Label>
+                                                </VerticalStackLayout>
+
+                                                <VerticalStackLayout Grid.Column="1"
+                                                                      VerticalOptions="Center"
+                                                                      Spacing="2">
+                                                    <Label Text="{Binding PriceDisplay}"
+                                                           FontFamily="OpenSansSemibold"
+                                                           FontSize="15"
+                                                           TextColor="{StaticResource Teal}"
+                                                           HorizontalOptions="End" />
+                                                </VerticalStackLayout>
+
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </VerticalStackLayout>
+
+                            <Label Text="No services listed for this store."
+                                   FontSize="13"
+                                   TextColor="{StaticResource Gray3}"
+                                   IsVisible="{Binding Store.Services.Count, Converter={StaticResource NullToBool}}" />
+
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- ══ REVIEWS ════════════════════════════════════ -->
+                    <BoxView HeightRequest="8" Color="{StaticResource Bg}"
+                             IsVisible="{Binding HasReviews}" />
+
+                    <Border BackgroundColor="White"
+                            Stroke="Transparent"
+                            Padding="20,16"
+                            IsVisible="{Binding HasReviews}">
+                        <VerticalStackLayout Spacing="10">
+
+                            <Label Text="Recent Reviews"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="15"
+                                   Margin="0,0,0,4" />
+
+                            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Store.RecentReviews}"
+                                                  Spacing="8">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate x:DataType="dto:ReviewDto">
+                                        <Border BackgroundColor="{StaticResource Bg}"
+                                                Stroke="#ECEAE4"
+                                                StrokeShape="RoundRectangle 12"
+                                                Padding="14,12">
+                                            <VerticalStackLayout Spacing="4">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <Label Text="{Binding CustomerName}"
+                                                           FontFamily="OpenSansSemibold"
+                                                           FontSize="13" />
+                                                    <Label Grid.Column="1"
+                                                           Text="{Binding StarsDisplay}"
+                                                           FontSize="14"
+                                                           TextColor="#E6A817" />
+                                                </Grid>
+                                                <Label Text="{Binding Comment}"
+                                                       FontSize="12"
+                                                       TextColor="{StaticResource Gray3}"
+                                                       IsVisible="{Binding Comment, Converter={StaticResource NotNullToBool}}" />
+                                            </VerticalStackLayout>
+                                        </Border>
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </VerticalStackLayout>
+
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <!-- Bottom spacer so content clears the sticky CTA -->
+                    <BoxView HeightRequest="20" Color="Transparent" />
+
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- ── Sticky "Start Order" CTA ──────────────────────────── -->
+        <Border Grid.Row="1"
+                BackgroundColor="White"
+                Stroke="#ECEAE4"
+                Padding="20,12">
+            <Button Text="🧺  Start Order"
+                    Command="{Binding StartOrderCommand}"
+                    IsEnabled="{Binding IsNotBusy}" />
+        </Border>
+
+    </Grid>
+
+</ContentPage>

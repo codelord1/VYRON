@@ -1,0 +1,93 @@
+@model List<LaundryStore>
+@{
+    ViewData["Title"] = "Stores";
+    var activeCount = Model.Count(s => s.Status == StoreStatus.Active);
+    var pendingCount = Model.Count(s => s.Status == StoreStatus.Pending);
+    var verifiedCount = Model.Count(s => s.IsVerified);
+}
+
+<div class="page-header">
+    <div>
+        <h1>Stores</h1>
+        <p>Review, approve, and monitor laundry store performance.</p>
+    </div>
+    <span class="text-muted">@Model.Count total</span>
+</div>
+
+<div class="stats">
+    <div class="stat">
+        <div class="stat-icon">S</div>
+        <div class="label">Total Stores</div>
+        <div class="value">@Model.Count</div>
+        <div class="delta">All submitted stores</div>
+    </div>
+    <div class="stat green">
+        <div class="stat-icon">A</div>
+        <div class="label">Active Stores</div>
+        <div class="value">@activeCount</div>
+        <div class="delta">Approved and live</div>
+    </div>
+    <div class="stat warning">
+        <div class="stat-icon">P</div>
+        <div class="label">Pending Review</div>
+        <div class="value">@pendingCount</div>
+        <div class="delta">Awaiting admin action</div>
+    </div>
+    <div class="stat info">
+        <div class="stat-icon">V</div>
+        <div class="label">Verified</div>
+        <div class="value">@verifiedCount</div>
+        <div class="delta">Quality checked</div>
+    </div>
+</div>
+
+<div class="table-wrap">
+    <table class="table-mobile-card">
+        <thead>
+            <tr><th>Name</th><th>Owner</th><th>Area</th><th>Status</th><th>Rating</th><th>Orders</th><th>Badges</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var s in Model)
+            {
+                <tr>
+                    <td><a href="/Stores/Detail/@s.Id" class="text-bold">@s.Name</a></td>
+                    <td>@s.Owner.FullName<br /><small>@s.Owner.Phone</small></td>
+                    <td>@s.Area</td>
+                    <td><span class="badge badge-@StatusBadge(s.Status)">@s.Status</span></td>
+                    <td>@s.AverageRating (@s.TotalReviews)</td>
+                    <td>@s.TotalOrders</td>
+                    <td>
+                        @if (s.IsVerified) { <span class="badge badge-success">Verified</span> }
+                        @if (s.IsTopRated) { <span class="badge badge-warning">Top</span> }
+                    </td>
+                    <td><a href="/Stores/Detail/@s.Id" class="btn btn-secondary btn-sm btn-inline">View</a></td>
+                </tr>
+            }
+            @if (!Model.Any())
+            {
+                <tr>
+                    <td colspan="8">
+                        <div class="empty-state">
+                            <div>
+                                <div class="empty-icon">S</div>
+                                <h3>No stores yet.</h3>
+                                <p>Submitted stores will appear here for review.</p>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@functions {
+    string StatusBadge(StoreStatus s) => s switch
+    {
+        StoreStatus.Active => "success",
+        StoreStatus.Pending => "warning",
+        StoreStatus.Suspended => "danger",
+        StoreStatus.Rejected => "gray",
+        _ => "gray"
+    };
+}

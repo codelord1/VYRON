@@ -1,0 +1,130 @@
+@model Vyron.Admin.Services.StoreOwnerDashboardVm
+@{ ViewData["Title"] = "Dashboard"; }
+
+<div class="page-header">
+    <div>
+        <h1>Welcome back!</h1>
+        <p>Here's what's happening with your store today.</p>
+    </div>
+    <span class="text-muted">@DateTime.Now.ToString("dddd, MMM dd, yyyy")</span>
+</div>
+
+<div class="hero-card">
+    <div class="hero-eyebrow">Today's overview</div>
+    <h2>@(Model.PendingConfirmation > 0 ? "Orders are waiting for acceptance." : "Everything looks good.")</h2>
+    <p>
+        @if (Model.PendingConfirmation > 0)
+        {
+            <text>You have @Model.PendingConfirmation customer order(s) waiting for your response.</text>
+        }
+        else
+        {
+            <text>You have no new orders at the moment.</text>
+        }
+    </p>
+</div>
+
+<div class="section-title">
+    <h2>Overview</h2>
+    <a href="/StoreOwner/Orders">View all</a>
+</div>
+
+<div class="stats">
+    <div class="stat">
+        <div class="stat-icon">O</div>
+        <div class="label">Orders Today</div>
+        <div class="value">@Model.TotalOrdersToday</div>
+        <div class="delta">Across all your stores</div>
+    </div>
+    <div class="stat purple @(Model.PendingConfirmation > 0 ? "warning" : "")">
+        <div class="stat-icon">A</div>
+        <div class="label">Awaiting Acceptance</div>
+        <div class="value">@Model.PendingConfirmation</div>
+        <div class="delta">Customers waiting</div>
+    </div>
+    <div class="stat info">
+        <div class="stat-icon">P</div>
+        <div class="label">Processing</div>
+        <div class="value">@Model.Processing</div>
+        <div class="delta">At your laundry</div>
+    </div>
+    <div class="stat warning">
+        <div class="stat-icon">D</div>
+        <div class="label">Ready for Delivery</div>
+        <div class="value">@Model.Ready</div>
+        <div class="delta">Awaiting rider</div>
+    </div>
+    <div class="stat green">
+        <div class="stat-icon">N</div>
+        <div class="label">Revenue Today</div>
+        <div class="value">&#8358;@Model.RevenueToday.ToString("N0")</div>
+        <div class="delta">Paid orders only</div>
+    </div>
+    <div class="stat purple">
+        <div class="stat-icon">S</div>
+        <div class="label">My Stores</div>
+        <div class="value">@Model.MyStores.Count</div>
+        <div class="delta">@Model.MyStores.Count(s => s.Status == StoreStatus.Active) active</div>
+    </div>
+</div>
+
+@if (Model.PendingConfirmation > 0)
+{
+    <div class="alert alert-info flex-between">
+        <span>You have <strong>@Model.PendingConfirmation</strong> orders awaiting your acceptance.</span>
+        <a href="/StoreOwner/Orders?status=PickupFeePaid" class="btn btn-secondary btn-sm btn-inline">Review</a>
+    </div>
+}
+
+<div class="card">
+    <div class="section-title">
+        <h3>Recent Orders</h3>
+        <a href="/StoreOwner/Orders">View all orders</a>
+    </div>
+
+    @if (!Model.RecentOrders.Any())
+    {
+        <div class="empty-state">
+            <div>
+                <div class="empty-icon">O</div>
+                <h3>No orders yet.</h3>
+                <p>When you receive orders, they will appear here.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="table-wrap" style="margin:0;">
+            <table class="table-mobile-card">
+                <thead>
+                    <tr><th>Order #</th><th>Customer</th><th>Service</th><th>Status</th><th>Total</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var o in Model.RecentOrders.Take(15))
+                    {
+                        <tr>
+                            <td><a href="/StoreOwner/OrderDetail/@o.Id" class="text-bold">@o.OrderNumber</a></td>
+                            <td>@o.Customer.FullName<br /><small>@o.Customer.Phone</small></td>
+                            <td>@o.Service.Name</td>
+                            <td><span class="badge badge-@StatusBadge(o.Status)">@o.Status</span></td>
+                            <td class="text-bold">&#8358;@o.TotalEstimate.ToString("N0")</td>
+                            <td><a href="/StoreOwner/OrderDetail/@o.Id" class="btn btn-secondary btn-sm btn-inline">View</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@functions {
+    string StatusBadge(OrderStatus s) => s switch
+    {
+        OrderStatus.Confirmed or OrderStatus.PickupFeePaid or OrderStatus.RiderAssigned => "info",
+        OrderStatus.PickedUp or OrderStatus.OutForDelivery => "purple",
+        OrderStatus.Processing => "warning",
+        OrderStatus.Ready or OrderStatus.Delivered or OrderStatus.BalancePaid or OrderStatus.Completed => "success",
+        OrderStatus.Disputed => "danger",
+        _ => "gray"
+    };
+}

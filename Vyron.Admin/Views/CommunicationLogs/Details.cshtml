@@ -1,0 +1,82 @@
+@model CommunicationLog
+@{ ViewData["Title"] = "Message Details"; }
+
+<div class="page-header">
+    <h1>Message Details</h1>
+    <a href="/CommunicationLogs" class="btn btn-ghost">← Back to Logs</a>
+</div>
+
+<div class="detail-grid" style="max-width:760px;display:grid;gap:16px;">
+    <div class="detail-card">
+        <h3 style="font-size:15px;margin:0 0 14px;">Message Info</h3>
+        <div class="detail-row">
+            <span class="detail-label">Channel</span>
+            <span>
+                @{
+                    var chBadge = Model.Channel switch { "SMS" => "badge-info", "Email" => "badge-purple", _ => "badge-gray" };
+                }
+                <span class="badge @chBadge">@Model.Channel</span>
+            </span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Status</span>
+            <span>
+                @{
+                    var stBadge = Model.Status switch { "Sent" => "badge-success", "Failed" => "badge-danger", _ => "badge-warning" };
+                }
+                <span class="badge @stBadge">@Model.Status</span>
+            </span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Sent At</span>
+            <span>@(Model.SentAt.HasValue ? Model.SentAt.Value.ToLocalTime().ToString("dd MMM yyyy HH:mm") : "—")</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Created</span>
+            <span>@Model.CreatedAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")</span>
+        </div>
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="detail-row">
+                <span class="detail-label">Error</span>
+                <span style="color:red">@Model.ErrorMessage</span>
+            </div>
+        }
+    </div>
+
+    <div class="detail-card">
+        <h3 style="font-size:15px;margin:0 0 14px;">Recipient</h3>
+        <div class="detail-row">
+            <span class="detail-label">Name</span>
+            <span>@(Model.RecipientName ?? "—")</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Phone</span>
+            <span>@(Model.RecipientPhone ?? "—")</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Email</span>
+            <span>@(Model.RecipientEmail ?? "—")</span>
+        </div>
+        @if (Model.RelatedEntityType != null)
+        {
+            <div class="detail-row">
+                <span class="detail-label">Related</span>
+                <span>@Model.RelatedEntityType: @Model.RelatedEntityId</span>
+            </div>
+        }
+    </div>
+
+    <div class="detail-card">
+        <h3 style="font-size:15px;margin:0 0 10px;">Content</h3>
+        <p style="font-weight:700;margin:0 0 8px;">@Model.Subject</p>
+        <div style="background:var(--gray-1);border-radius:8px;padding:16px;font-size:14px;line-height:1.6;white-space:pre-wrap;">@Model.Body</div>
+    </div>
+</div>
+
+<style>
+.detail-card { background:#fff; border:1px solid var(--gray-2); border-radius:12px; padding:20px; }
+.detail-row  { display:flex; gap:12px; padding:8px 0; border-bottom:1px solid var(--gray-1); align-items:flex-start; }
+.detail-row:last-child { border-bottom:0; }
+.detail-label { flex:0 0 120px; font-size:12px; color:var(--gray-3); font-weight:700; text-transform:uppercase; padding-top:2px; }
+</style>

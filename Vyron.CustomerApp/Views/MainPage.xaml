@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Vyron.CustomerApp.Views.MainPage"
+             BackgroundColor="{StaticResource Bg}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24,40" Spacing="20">
+
+            <!-- ── Brand header ── -->
+            <Label Text="VYRON"
+                   TextColor="{StaticResource Teal}"
+                   FontFamily="OpenSansSemibold"
+                   FontSize="44"
+                   HorizontalOptions="Center" />
+            <Label Text="Laundry, simplified."
+                   FontSize="14"
+                   TextColor="{StaticResource Gray3}"
+                   HorizontalOptions="Center"
+                   Margin="0,-8,0,0" />
+
+            <!-- ── Hero card (modern Border, no Frame) ── -->
+            <Border BackgroundColor="{StaticResource Dark}"
+                    Stroke="Transparent"
+                    StrokeShape="RoundRectangle 16"
+                    Padding="22"
+                    Margin="0,16,0,0">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="🧺 Trusted laundry, on demand."
+                           TextColor="White"
+                           FontFamily="OpenSansSemibold"
+                           FontSize="20" />
+                    <Label Text="Compare nearby stores, pay a small pickup fee, and track every step from pickup to delivery."
+                           TextColor="{StaticResource Gray3}"
+                           FontSize="13" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- ── Feature tiles ── -->
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+
+                <Border Grid.Row="0" Grid.Column="0"
+                        BackgroundColor="White" Stroke="#E8E8E2"
+                        StrokeShape="RoundRectangle 14" Padding="16">
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="🏪" FontSize="24" />
+                        <Label Text="Browse Stores" FontFamily="OpenSansSemibold" FontSize="14" />
+                        <Label Text="By rating, price, distance, speed."
+                               FontSize="11" TextColor="{StaticResource Gray3}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Grid.Row="0" Grid.Column="1"
+                        BackgroundColor="White" Stroke="#E8E8E2"
+                        StrokeShape="RoundRectangle 14" Padding="16">
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="💸" FontSize="24" />
+                        <Label Text="Transparent Pricing" FontFamily="OpenSansSemibold" FontSize="14" />
+                        <Label Text="Pay pickup fee now, balance on delivery."
+                               FontSize="11" TextColor="{StaticResource Gray3}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Grid.Row="1" Grid.Column="0"
+                        BackgroundColor="White" Stroke="#E8E8E2"
+                        StrokeShape="RoundRectangle 14" Padding="16">
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="📍" FontSize="24" />
+                        <Label Text="Live Tracking" FontFamily="OpenSansSemibold" FontSize="14" />
+                        <Label Text="From pickup to delivery, in real time."
+                               FontSize="11" TextColor="{StaticResource Gray3}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Grid.Row="1" Grid.Column="1"
+                        BackgroundColor="White" Stroke="#E8E8E2"
+                        StrokeShape="RoundRectangle 14" Padding="16">
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="⭐" FontSize="24" />
+                        <Label Text="Reviews &amp; Trust" FontFamily="OpenSansSemibold" FontSize="14" />
+                        <Label Text="Verified stores, rated by real customers."
+                               FontSize="11" TextColor="{StaticResource Gray3}" />
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+
+            <!-- ── CTA ── -->
+            <Button x:Name="GetStartedBtn"
+                    Text="Get Started"
+                    Clicked="OnGetStartedClicked"
+                    Margin="0,16,0,0" />
+
+            <Label Text="v3.0  ·  Lagos, Nigeria"
+                   FontSize="11"
+                   TextColor="{StaticResource Gray3}"
+                   HorizontalOptions="Center"
+                   Margin="0,8,0,0" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

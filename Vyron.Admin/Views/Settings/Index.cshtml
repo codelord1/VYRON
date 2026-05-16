@@ -1,0 +1,124 @@
+@model List<SystemConfig>
+@{
+    ViewData["Title"] = "System Settings";
+    ViewData["Subtitle"] = "Manage your marketplace configuration";
+    var mode = Model.FirstOrDefault(c => c.Key == "RiderAssignmentMode");
+    var modeValue = mode?.Value ?? "0";
+    var modeLabel = modeValue switch
+    {
+        "1" => "Auto (Platform)",
+        "2" => "Auto (3rd Party)",
+        _ => "Manual"
+    };
+    var configs = Model.Where(c => c.Key != "RiderAssignmentMode").ToList();
+}
+
+<div class="card settings-mode-card">
+    <div class="settings-card-header">
+        <h2 class="settings-title"><span class="settings-icon">R</span> Rider Assignment Mode</h2>
+        <span class="current-pill">Current: @modeLabel</span>
+    </div>
+
+    @if (mode != null)
+    {
+        <div class="mode-grid">
+            <div class="mode-option @(modeValue == "0" ? "is-active" : "")">
+                <div class="mode-art">✋</div>
+                <div class="mode-copy">
+                    <h3>Manual (Admin)</h3>
+                    <p>Admin manually assigns riders to each order.</p>
+                    @if (modeValue == "0")
+                    {
+                        <span class="active-note">Currently Active</span>
+                    }
+                    else
+                    {
+                        <form asp-action="Update" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="key" value="RiderAssignmentMode" />
+                            <input type="hidden" name="value" value="0" />
+                            <button class="btn btn-secondary btn-block">Switch to Manual (Admin)</button>
+                        </form>
+                    }
+                </div>
+            </div>
+
+            <div class="mode-option @(modeValue == "1" ? "is-active" : "")">
+                <div class="mode-art">A</div>
+                <div class="mode-copy">
+                    <h3>Auto (Platform)</h3>
+                    <p>System auto-assigns nearest available rider.</p>
+                    @if (modeValue == "1")
+                    {
+                        <span class="active-note">Currently Active</span>
+                    }
+                    else
+                    {
+                        <form asp-action="Update" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="key" value="RiderAssignmentMode" />
+                            <input type="hidden" name="value" value="1" />
+                            <button class="btn btn-secondary btn-block">Switch to Auto (Platform)</button>
+                        </form>
+                    }
+                </div>
+            </div>
+
+            <div class="mode-option @(modeValue == "2" ? "is-active" : "")">
+                <div class="mode-art">G</div>
+                <div class="mode-copy">
+                    <h3>Auto (3rd Party)</h3>
+                    <p>Orders sent to external logistics API.</p>
+                    @if (modeValue == "2")
+                    {
+                        <span class="active-note">Currently Active</span>
+                    }
+                    else
+                    {
+                        <form asp-action="Update" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="key" value="RiderAssignmentMode" />
+                            <input type="hidden" name="value" value="2" />
+                            <button class="btn btn-secondary btn-block">Switch to Auto (3rd Party)</button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<div class="config-grid">
+    @foreach (var c in configs)
+    {
+        <div class="card config-card">
+            <div class="config-card-head">
+                <span class="config-icon">@ConfigIcon(c.Key)</span>
+                <div>
+                    <h3>@c.Key</h3>
+                    <p>@c.Description</p>
+                </div>
+            </div>
+            <form asp-action="Update" method="post" class="config-form-row">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="key" value="@c.Key" />
+                <input type="text" name="value" value="@c.Value" />
+                <button class="btn btn-primary">Save</button>
+            </form>
+            <small class="config-updated">Last updated: @c.UpdatedAt.ToString("MMM dd, yyyy HH:mm")</small>
+        </div>
+    }
+</div>
+
+@functions {
+    string ConfigIcon(string key)
+    {
+        if (key.Contains("Expiry", StringComparison.OrdinalIgnoreCase)) return "T";
+        if (key.Contains("Attempt", StringComparison.OrdinalIgnoreCase)) return "S";
+        if (key.Contains("Pickup", StringComparison.OrdinalIgnoreCase)) return "P";
+        if (key.Contains("Delivery", StringComparison.OrdinalIgnoreCase)) return "D";
+        if (key.Contains("Commission", StringComparison.OrdinalIgnoreCase)) return "%";
+        if (key.Contains("Api", StringComparison.OrdinalIgnoreCase) || key.Contains("Url", StringComparison.OrdinalIgnoreCase)) return "L";
+        return "C";
+    }
+}

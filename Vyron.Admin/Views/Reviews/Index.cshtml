@@ -1,0 +1,40 @@
+@model List<Review>
+@{ ViewData["Title"] = "Reviews"; }
+
+<div class="page-header"><h1>Reviews</h1><span class="text-muted">@Model.Count total</span></div>
+
+<div class="table-wrap">
+    <table class="table-mobile-card">
+        <thead>
+            <tr><th>Customer</th><th>Store</th><th>Order</th><th>Rating</th><th>Comment</th><th>Visible</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var r in Model)
+            {
+                <tr>
+                    <td class="text-bold">@r.Customer.FullName</td>
+                    <td>@r.Store.Name</td>
+                    <td><a href="/Orders/Detail/@r.OrderId">@r.Order.OrderNumber</a></td>
+                    <td style="color:var(--amber);">@(new string('★', r.Rating))</td>
+                    <td><small>@(r.Comment?.Length > 80 ? r.Comment[..80] + "..." : r.Comment)</small></td>
+                    <td>
+                        @if (r.IsVisible) { <span class="badge badge-success">Visible</span> }
+                        else { <span class="badge badge-danger">Hidden</span> }
+                    </td>
+                    <td>
+                        <form asp-action="Moderate" method="post" style="display:inline;">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@r.Id" />
+                            <input type="hidden" name="visible" value="@(!r.IsVisible)" />
+                            <button class="btn btn-secondary btn-sm">@(r.IsVisible ? "Hide" : "Show")</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            @if (!Model.Any())
+            {
+                <tr><td colspan="7" class="text-center text-muted" style="padding:30px;">No reviews yet.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.CustomerApp.ViewModels"
+             x:Class="Vyron.CustomerApp.Views.Orders.MessageRiderPage"
+             x:DataType="vm:MessageRiderViewModel"
+             Title="Message Rider"
+             BackgroundColor="{StaticResource Bg}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20,24" Spacing="0">
+
+            <!-- Icon + heading -->
+            <Label Text="💬"
+                   FontSize="48"
+                   HorizontalOptions="Center"
+                   Margin="0,0,0,12" />
+            <Label Text="Send a message to your rider"
+                   FontFamily="OpenSansSemibold"
+                   FontSize="20"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center"
+                   Margin="0,0,0,8" />
+            <Label Text="Your rider will receive this message for your active order."
+                   FontSize="13"
+                   TextColor="{StaticResource Gray3}"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center"
+                   Margin="0,0,0,32" />
+
+            <!-- Card -->
+            <Border BackgroundColor="White"
+                    Stroke="#E8E8E2"
+                    StrokeShape="RoundRectangle 16"
+                    Padding="20,24">
+                <VerticalStackLayout Spacing="0">
+
+                    <!-- Error / Success banners -->
+                    <Border BackgroundColor="#FFF1F0"
+                            Stroke="#FFB8B0"
+                            StrokeShape="RoundRectangle 10"
+                            Padding="12,10"
+                            Margin="0,0,0,16"
+                            IsVisible="{Binding ErrorMessage, Converter={StaticResource NotNullToBool}}">
+                        <Label Text="{Binding ErrorMessage}"
+                               TextColor="#C0392B"
+                               FontSize="12" />
+                    </Border>
+
+                    <Border BackgroundColor="#F0FFF4"
+                            Stroke="#B2DFDB"
+                            StrokeShape="RoundRectangle 10"
+                            Padding="12,10"
+                            Margin="0,0,0,16"
+                            IsVisible="{Binding SuccessMessage, Converter={StaticResource NotNullToBool}}">
+                        <Label Text="{Binding SuccessMessage}"
+                               TextColor="#27AE60"
+                               FontSize="12" />
+                    </Border>
+
+                    <!-- Message input -->
+                    <Label Text="Your Message"
+                           FontSize="13"
+                           FontFamily="OpenSansSemibold"
+                           Margin="0,0,0,8" />
+                    <Border BackgroundColor="White"
+                            Stroke="#D0D0C8"
+                            StrokeShape="RoundRectangle 12"
+                            Margin="0,0,0,20">
+                        <Editor Placeholder="e.g. Please call when you arrive…"
+                                Text="{Binding Message}"
+                                MinimumHeightRequest="120"
+                                BackgroundColor="Transparent"
+                                Margin="12,8" />
+                    </Border>
+
+                    <!-- Send button -->
+                    <Button Text="Send Message"
+                            Command="{Binding SendCommand}"
+                            IsEnabled="{Binding IsNotBusy}" />
+
+                    <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                       Color="{StaticResource Teal}"
+                                       IsVisible="{Binding IsBusy}"
+                                       HorizontalOptions="Center"
+                                       Margin="0,12,0,0" />
+
+                </VerticalStackLayout>
+            </Border>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

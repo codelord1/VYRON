@@ -1,0 +1,65 @@
+@model List<LaundryStore>
+@{ ViewData["Title"] = "My Stores"; }
+
+<div class="page-header">
+    <div>
+        <h1>My Stores</h1>
+        <p>Manage store profiles, service links, and approval readiness.</p>
+    </div>
+    <a href="/StoreOwner/StoreCreate" class="btn btn-primary">+ Request New Store</a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="empty-state">
+        <div>
+            <div class="empty-icon">S</div>
+            <h3>You do not have any stores yet.</h3>
+            <p>Request a store and complete the profile for admin approval.</p>
+            <div class="mt-2"><a href="/StoreOwner/StoreCreate" class="btn btn-primary">Request a Store</a></div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="grid-2">
+        @foreach (var s in Model)
+        {
+            <div class="card">
+                <div class="flex-between mb-2">
+                    <h3 class="card-title mb-0">@s.Name</h3>
+                    <span class="badge badge-@(s.Status == StoreStatus.Active ? "success" : s.Status == StoreStatus.Pending ? "warning" : "danger")">@s.Status</span>
+                </div>
+                <p class="text-muted mb-2">@s.Description</p>
+
+                <div class="flex-between mb-1"><span>Area</span><span>@s.Area</span></div>
+                <div class="flex-between mb-1"><span>Rating</span><span>@s.AverageRating (@s.TotalReviews)</span></div>
+                <div class="flex-between mb-1"><span>Orders</span><span class="text-bold">@s.TotalOrders</span></div>
+                <div class="flex-between mb-1"><span>Pickup fee</span><span>&#8358;@s.PickupFee.ToString("N0")</span></div>
+                <div class="flex-between mb-1"><span>Delivery fee</span><span>&#8358;@s.DeliveryFee.ToString("N0")</span></div>
+                <div class="flex-between mb-1"><span>Pickup time</span><span>~@s.EstimatedPickupMinutes min</span></div>
+                <div class="flex-between mb-2"><span>Services</span><span class="text-bold">@s.Services.Count(svc => svc.IsActive) active</span></div>
+
+                @if (s.Status == StoreStatus.Pending)
+                {
+                    <div class="alert alert-info">
+                        Awaiting admin approval. Make sure a store image is uploaded.
+                    </div>
+                }
+
+                <div class="flex gap-2 mt-2">
+                    <a href="/StoreOwner/StoreEdit/@s.Id" class="btn btn-primary btn-sm flex-1">Edit Store</a>
+                    <a href="/StoreOwner/ServiceOfferings" class="btn btn-secondary btn-sm flex-1">Services</a>
+                </div>
+
+                @if (s.IsVerified || s.IsTopRated)
+                {
+                    <div class="mt-2">
+                        @if (s.IsVerified) { <span class="badge badge-success">Verified</span> }
+                        @if (s.IsTopRated) { <span class="badge badge-warning">Top Rated</span> }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}

@@ -1,0 +1,34 @@
+@{
+    ViewData["Title"] = "Access Denied";
+    string? returnUrl = ViewBag.ReturnUrl as string;
+}
+
+<div class="page-header">
+    <h1>Access Denied</h1>
+</div>
+
+<div class="card" style="max-width:560px;text-align:center;padding:40px 32px;">
+    <div style="font-size:48px;margin-bottom:16px;">🚫</div>
+    <h2 style="margin-bottom:8px;color:var(--danger);">Access Denied</h2>
+    <p style="color:var(--gray-4);margin-bottom:24px;">
+        You do not have permission to access this page or perform this action.
+        If you believe this is an error, please contact the administrator.
+    </p>
+    @if (!string.IsNullOrEmpty(returnUrl) && returnUrl.StartsWith("/") && !returnUrl.Contains("//"))
+    {
+        <p style="font-size:12px;color:var(--gray-3);margin-bottom:16px;">
+            Requested resource: <code style="background:var(--gray-1);padding:2px 6px;border-radius:3px;">@returnUrl</code>
+        </p>
+    }
+    <div class="flex" style="gap:10px;justify-content:center;">
+        @if (User.IsInRole("StoreOwner"))
+        {
+            <a href="/StoreOwner/Dashboard" class="btn btn-primary">← Back to Dashboard</a>
+        }
+        else
+        {
+            <a href="/Home" class="btn btn-primary">← Back to Dashboard</a>
+        }
+        <a href="/Account/Login" class="btn btn-secondary">Sign in as different user</a>
+    </div>
+</div>

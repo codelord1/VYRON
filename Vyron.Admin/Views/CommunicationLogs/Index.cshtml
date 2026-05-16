@@ -1,0 +1,122 @@
+@model List<CommunicationLog>
+@{
+    ViewData["Title"] = "Communication Logs";
+    int    page       = (int)(ViewBag.Page ?? 1);
+    int    pageSize   = (int)(ViewBag.PageSize ?? 25);
+    int    total      = (int)(ViewBag.TotalCount ?? 0);
+    int    totalPages = (int)Math.Ceiling((double)total / pageSize);
+}
+
+<div class="page-header">
+    <div>
+        <h1>Communication Logs</h1>
+        <p style="color:var(--gray-3);font-size:13px;margin:4px 0 0;">@total total messages logged</p>
+    </div>
+    <a href="/Messages/Send" class="btn btn-primary">+ Send Message</a>
+</div>
+
+<!-- Filters -->
+<form method="get" action="/CommunicationLogs"
+      class="filter-bar" style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+    <div>
+        <label style="font-size:12px;display:block;margin-bottom:4px;">Channel</label>
+        <select name="channel" class="form-select" style="max-width:140px;">
+            <option value="">All Channels</option>
+            <option value="InApp"  selected="@(ViewBag.Channel == "InApp"  ? "selected" : null)">InApp</option>
+            <option value="SMS"    selected="@(ViewBag.Channel == "SMS"    ? "selected" : null)">SMS</option>
+            <option value="Email"  selected="@(ViewBag.Channel == "Email"  ? "selected" : null)">Email</option>
+        </select>
+    </div>
+    <div>
+        <label style="font-size:12px;display:block;margin-bottom:4px;">Status</label>
+        <select name="status" class="form-select" style="max-width:130px;">
+            <option value="">All Status</option>
+            <option value="Sent"    selected="@(ViewBag.Status == "Sent"    ? "selected" : null)">Sent</option>
+            <option value="Failed"  selected="@(ViewBag.Status == "Failed"  ? "selected" : null)">Failed</option>
+            <option value="Pending" selected="@(ViewBag.Status == "Pending" ? "selected" : null)">Pending</option>
+        </select>
+    </div>
+    <div>
+        <label style="font-size:12px;display:block;margin-bottom:4px;">From</label>
+        <input type="date" name="from" value="@ViewBag.From" class="form-control" style="max-width:150px;" />
+    </div>
+    <div>
+        <label style="font-size:12px;display:block;margin-bottom:4px;">To</label>
+        <input type="date" name="to" value="@ViewBag.To" class="form-control" style="max-width:150px;" />
+    </div>
+    <div>
+        <label style="font-size:12px;display:block;margin-bottom:4px;">Recipient</label>
+        <input type="text" name="search" value="@ViewBag.Search" placeholder="Name or phone…"
+               class="form-control" style="max-width:200px;" />
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+    <a href="/CommunicationLogs" class="btn btn-ghost btn-sm">Clear</a>
+</form>
+
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Channel</th>
+                <th>Status</th>
+                <th>Recipient</th>
+                <th>Subject</th>
+                <th>Related</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var l in Model)
+            {
+                <tr>
+                    <td style="font-size:12px;white-space:nowrap;">@l.CreatedAt.ToLocalTime().ToString("dd MMM yy HH:mm")</td>
+                    <td>
+                        @{
+                            var chBadge = l.Channel switch { "SMS" => "badge-info", "Email" => "badge-purple", _ => "badge-gray" };
+                        }
+                        <span class="badge @chBadge">@l.Channel</span>
+                    </td>
+                    <td>
+                        @{
+                            var stBadge = l.Status switch { "Sent" => "badge-success", "Failed" => "badge-danger", _ => "badge-warning" };
+                        }
+                        <span class="badge @stBadge">@l.Status</span>
+                    </td>
+                    <td>
+                        <div>@(l.RecipientName ?? "—")</div>
+                        <small class="text-muted">@l.RecipientPhone</small>
+                    </td>
+                    <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                        @l.Subject
+                    </td>
+                    <td style="font-size:12px;">
+                        @if (l.RelatedEntityType != null)
+                        { <span>@l.RelatedEntityType</span> }
+                        else { <span class="text-muted">—</span> }
+                    </td>
+                    <td>
+                        <a href="/CommunicationLogs/Details/@l.Id" class="btn btn-ghost btn-sm">View</a>
+                    </td>
+                </tr>
+            }
+            @if (!Model.Any())
+            {
+                <tr><td colspan="7" style="text-align:center;padding:40px;color:#888;">No communication logs found.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (totalPages > 1)
+{
+    <div style="display:flex;gap:6px;margin-top:16px;flex-wrap:wrap;">
+        @for (int i = 1; i <= totalPages; i++)
+        {
+            if (i == page)
+            { <span class="btn btn-primary btn-sm">@i</span> }
+            else
+            { <a href="/CommunicationLogs?page=@i&channel=@ViewBag.Channel&status=@ViewBag.Status&search=@ViewBag.Search&from=@ViewBag.From&to=@ViewBag.To" class="btn btn-ghost btn-sm">@i</a> }
+        }
+    </div>
+}

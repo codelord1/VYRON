@@ -1,0 +1,118 @@
+@model UsersFilterVm
+@{ ViewData["Title"] = "Users"; }
+
+<div class="page-header">
+    <h1>Users</h1>
+    <span class="text-muted" style="font-size:13px;">@Model.TotalCount total users</span>
+</div>
+
+<!-- Filters -->
+<form method="get" action="/Users" class="filter-bar" style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+    <input name="search" value="@Model.Search" placeholder="Search name, phone, email…"
+           class="form-control" style="max-width:240px;" />
+    <select name="roleFilter" class="form-select" style="max-width:160px;">
+        <option value="">All Roles</option>
+        <option value="Customer"   selected="@(Model.RoleFilter == "Customer"   ? "selected" : null)">Customer</option>
+        <option value="Admin"      selected="@(Model.RoleFilter == "Admin"      ? "selected" : null)">Admin</option>
+        <option value="StoreOwner" selected="@(Model.RoleFilter == "StoreOwner" ? "selected" : null)">Store Owner</option>
+        <option value="Rider"      selected="@(Model.RoleFilter == "Rider"      ? "selected" : null)">Rider</option>
+    </select>
+    <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+    @if (!string.IsNullOrWhiteSpace(Model.Search) || !string.IsNullOrWhiteSpace(Model.RoleFilter))
+    {
+        <a href="/Users" class="btn btn-ghost btn-sm">Clear</a>
+    }
+</form>
+
+<div class="table-wrap">
+    <table class="table-mobile-card">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Phone</th>
+                <th>Role(s)</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Last Login</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var u in Model.Users)
+            {
+                var initials = string.Join("", u.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                                               .Take(2).Select(p => p[0].ToString().ToUpperInvariant()));
+                if (string.IsNullOrEmpty(initials)) initials = "?";
+
+                <tr>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            @if (!string.IsNullOrEmpty(u.ProfilePhoto))
+                            {
+                                <img src="@u.ProfilePhoto" alt="avatar"
+                                     style="width:34px;height:34px;border-radius:50%;object-fit:cover;" />
+                            }
+                            else
+                            {
+                                <span class="avatar" style="width:34px;height:34px;font-size:13px;">@initials</span>
+                            }
+                            <span class="text-bold">@u.FullName</span>
+                        </div>
+                    </td>
+                    <td>@u.Phone<br /><small class="text-muted">@u.Email</small></td>
+                    <td>
+                        @foreach (var role in u.Roles.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                        {
+                            <span class="badge badge-@(role == "Admin" || role == "SuperAdmin" ? "info" : role == "Customer" ? "success" : "gray")"
+                                  style="margin-right:3px;">@role</span>
+                        }
+                    </td>
+                    <td>
+                        <span class="badge badge-@(u.IsActive ? "success" : "gray")">
+                            @(u.IsActive ? "Active" : "Inactive")
+                        </span>
+                    </td>
+                    <td>@u.CreatedAt.ToString("dd MMM yyyy")</td>
+                    <td>@(u.LastLoginAt.HasValue ? u.LastLoginAt.Value.ToString("dd MMM yyyy") : "Never")</td>
+                    <td>
+                        <div style="display:flex;gap:6px;">
+                            <a href="/Users/Details/@u.Id" class="btn btn-ghost btn-sm">View</a>
+                            <form method="post" action="/Users/ToggleActive" style="display:inline;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@u.Id" />
+                                <button type="submit" class="btn btn-ghost btn-sm"
+                                        onclick="return confirm('@(u.IsActive ? "Deactivate" : "Activate") this user?')">
+                                    @(u.IsActive ? "Deactivate" : "Activate")
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            }
+            @if (!Model.Users.Any())
+            {
+                <tr><td colspan="7" style="text-align:center;padding:40px;color:#888;">No users found.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+@if (Model.TotalCount > Model.PageSize)
+{
+    var totalPages = (int)Math.Ceiling((double)Model.TotalCount / Model.PageSize);
+    <div style="display:flex;gap:6px;margin-top:16px;flex-wrap:wrap;">
+        @for (int i = 1; i <= totalPages; i++)
+        {
+            if (i == Model.Page)
+            {
+                <span class="btn btn-primary btn-sm">@i</span>
+            }
+            else
+            {
+                <a href="/Users?page=@i&search=@Model.Search&roleFilter=@Model.RoleFilter"
+                   class="btn btn-ghost btn-sm">@i</a>
+            }
+        }
+    </div>
+}

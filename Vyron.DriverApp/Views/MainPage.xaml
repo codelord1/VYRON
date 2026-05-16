@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Vyron.DriverApp.Views.MainPage"
+             BackgroundColor="{StaticResource Bg}">
+    <ScrollView>
+        <VerticalStackLayout Padding="24,40" Spacing="20">
+
+            <Label Text="VYRON" TextColor="{StaticResource Teal}"
+                   FontFamily="OpenSansSemibold" FontSize="44" HorizontalOptions="Center" />
+            <Label Text="Rider Console" FontSize="14" TextColor="{StaticResource Gray3}"
+                   HorizontalOptions="Center" Margin="0,-8,0,0" />
+
+            <Border BackgroundColor="{StaticResource Dark}" Stroke="Transparent"
+                    StrokeShape="RoundRectangle 16" Padding="22" Margin="0,16,0,0">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="🏍️ Deliver. Earn. Repeat." TextColor="White"
+                           FontFamily="OpenSansSemibold" FontSize="20" />
+                    <Label Text="Pick up laundry from stores, deliver clean clothes to customers, earn after each completed run."
+                           TextColor="{StaticResource Gray3}" FontSize="13" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+                <Border Grid.Row="0" Grid.Column="0"
+                        BackgroundColor="White" Stroke="#E8E8E2"
+                        StrokeShape="RoundRectangle 14" Padding="16">
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="📦" FontSize="24" />
+                        <Label Text="Assigned Orders" FontFamily="OpenSansSemibold" FontSize="14" />
+                        <Label Text="See pickups assigned to you in real time."
+                               FontSize="11" TextColor="{StaticResource Gray3}" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Row="0" Grid.Column="1"
+                        BackgroundColor="White" Stroke="#E8E8E2"
+                        StrokeShape="RoundRectangle 14" Padding="16">
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="🧭" FontSize="24" />
+                        <Label Text="Navigation" FontFamily="OpenSansSemibold" FontSize="14" />
+                        <Label Text="Pickup &amp; delivery addresses, one tap to maps."
+                               FontSize="11" TextColor="{StaticResource Gray3}" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Row="1" Grid.Column="0"
+                        BackgroundColor="White" Stroke="#E8E8E2"
+                        StrokeShape="RoundRectangle 14" Padding="16">
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="💰" FontSize="24" />
+                        <Label Text="Earnings" FontFamily="OpenSansSemibold" FontSize="14" />
+                        <Label Text="Track completed deliveries and payouts."
+                               FontSize="11" TextColor="{StaticResource Gray3}" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Row="1" Grid.Column="1"
+                        BackgroundColor="White" Stroke="#E8E8E2"
+                        StrokeShape="RoundRectangle 14" Padding="16">
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="🟢" FontSize="24" />
+                        <Label Text="Go Online" FontFamily="OpenSansSemibold" FontSize="14" />
+                        <Label Text="Tap to go online and start receiving orders."
+                               FontSize="11" TextColor="{StaticResource Gray3}" />
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+
+            <Button x:Name="LoginBtn" Text="Sign In" Clicked="OnLoginClicked" Margin="0,16,0,0" />
+
+            <Label Text="v3.0 · Rider App" FontSize="11" TextColor="{StaticResource Gray3}"
+                   HorizontalOptions="Center" Margin="0,8,0,0" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

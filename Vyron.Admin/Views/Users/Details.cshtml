@@ -1,0 +1,98 @@
+@model UserDetailVm
+@{ ViewData["Title"] = $"User: {Model.FullName}"; }
+
+<div class="page-header">
+    <div>
+        <a href="/Users" style="font-size:13px;color:var(--teal);">← Back to Users</a>
+        <h1>@Model.FullName</h1>
+    </div>
+    <form method="post" action="/Users/ToggleActive">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.Id" />
+        <button type="submit" class="btn @(Model.IsActive ? "btn-danger" : "btn-primary") btn-sm"
+                onclick="return confirm('@(Model.IsActive ? "Deactivate" : "Activate") this user?')">
+            @(Model.IsActive ? "Deactivate User" : "Activate User")
+        </button>
+    </form>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+    <!-- Profile card -->
+    <div class="card">
+        <div class="card-header">Profile</div>
+        <div class="card-body">
+            <dl class="detail-list">
+                <dt>Full Name</dt>   <dd>@Model.FullName</dd>
+                <dt>Phone</dt>       <dd>@Model.Phone</dd>
+                <dt>Email</dt>       <dd>@(Model.Email ?? "—")</dd>
+                <dt>Country Code</dt><dd>@Model.CountryCode</dd>
+                <dt>Local Phone</dt> <dd>@(Model.LocalPhone ?? "—")</dd>
+                <dt>Status</dt>
+                <dd>
+                    <span class="badge badge-@(Model.IsActive ? "success" : "gray")">
+                        @(Model.IsActive ? "Active" : "Inactive")
+                    </span>
+                </dd>
+            </dl>
+        </div>
+    </div>
+
+    <!-- Role card -->
+    <div class="card">
+        <div class="card-header">Roles</div>
+        <div class="card-body">
+            @if (Model.RoleList.Any())
+            {
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    @foreach (var role in Model.RoleList)
+                    {
+                        <span class="badge badge-@(role == "Admin" || role == "SuperAdmin" ? "info" : role == "Customer" ? "success" : "gray")"
+                              style="font-size:14px;padding:6px 14px;">@role</span>
+                    }
+                </div>
+                <p style="margin-top:12px;font-size:12px;color:#888;">
+                    Role assignment is managed via the Roles/UserRoles tables.
+                    Changing a user's role requires a database update.
+                </p>
+            }
+            else
+            {
+                <p style="color:#E74C3C;">⚠️ No role assigned to this user.</p>
+            }
+        </div>
+    </div>
+
+    <!-- Activity card -->
+    <div class="card">
+        <div class="card-header">Activity</div>
+        <div class="card-body">
+            <dl class="detail-list">
+                <dt>Member Since</dt><dd>@Model.CreatedAt.ToString("dd MMM yyyy, HH:mm")</dd>
+                <dt>Last Login</dt>  <dd>@(Model.LastLoginAt.HasValue ? Model.LastLoginAt.Value.ToString("dd MMM yyyy, HH:mm") : "Never")</dd>
+            </dl>
+        </div>
+    </div>
+
+    <!-- Stats card -->
+    <div class="card">
+        <div class="card-header">Statistics</div>
+        <div class="card-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;text-align:center;">
+                <div>
+                    <div style="font-size:28px;font-weight:700;color:var(--teal);">@Model.TotalOrders</div>
+                    <div style="font-size:12px;color:#888;">Orders</div>
+                </div>
+                <div>
+                    <div style="font-size:28px;font-weight:700;color:var(--teal);">@Model.TotalReviews</div>
+                    <div style="font-size:12px;color:#888;">Reviews</div>
+                </div>
+                <div>
+                    <div style="font-size:28px;font-weight:700;color:#E74C3C;">@Model.TotalDisputes</div>
+                    <div style="font-size:12px;color:#888;">Disputes</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
