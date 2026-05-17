@@ -122,9 +122,24 @@
 
                                         <!-- Name row + remove button -->
                                         <Grid ColumnDefinitions="*,Auto">
-                                            <Label Text="{Binding ServiceName}"
-                                                   FontFamily="OpenSansSemibold" FontSize="14"
-                                                   VerticalOptions="Center" />
+                                            <VerticalStackLayout Spacing="4">
+                                                <Label Text="{Binding ServiceName}"
+                                                       FontFamily="OpenSansSemibold" FontSize="14" />
+                                                <HorizontalStackLayout Spacing="8">
+                                                    <Border BackgroundColor="#E5F8F2"
+                                                            StrokeShape="RoundRectangle 12"
+                                                            Padding="8,3">
+                                                        <Label Text="{Binding PricingModeLabel}"
+                                                               FontSize="11"
+                                                               FontFamily="OpenSansSemibold"
+                                                               TextColor="{StaticResource Teal}" />
+                                                    </Border>
+                                                    <Label Text="{Binding PriceDisplay}"
+                                                           FontSize="12"
+                                                           TextColor="{StaticResource Gray3}"
+                                                           VerticalOptions="Center" />
+                                                </HorizontalStackLayout>
+                                            </VerticalStackLayout>
                                             <Button Grid.Column="1"
                                                     Text="✕"
                                                     FontSize="13"
@@ -136,11 +151,11 @@
                                                     CommandParameter="{Binding .}" />
                                         </Grid>
 
-                                        <!-- Steppers row -->
-                                        <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="10">
+                                        <!-- Pricing-mode specific controls -->
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
 
-                                            <!-- Weight stepper -->
-                                            <VerticalStackLayout>
+                                            <!-- Weight stepper: PerKg only -->
+                                            <VerticalStackLayout IsVisible="{Binding IsPerKg}">
                                                 <Label Text="Weight (kg)"
                                                        FontSize="11" FontFamily="OpenSansSemibold"
                                                        TextColor="{StaticResource Gray3}"
@@ -175,8 +190,8 @@
                                                 </Grid>
                                             </VerticalStackLayout>
 
-                                            <!-- Pieces stepper -->
-                                            <VerticalStackLayout Grid.Column="1">
+                                            <!-- Pieces stepper: PerItem only -->
+                                            <VerticalStackLayout IsVisible="{Binding IsPerItem}">
                                                 <Label Text="Pieces"
                                                        FontSize="11" FontFamily="OpenSansSemibold"
                                                        TextColor="{StaticResource Gray3}"
@@ -211,8 +226,20 @@
                                                 </Grid>
                                             </VerticalStackLayout>
 
+                                            <!-- Fixed service: no customer quantity control -->
+                                            <VerticalStackLayout IsVisible="{Binding IsFixed}"
+                                                                 VerticalOptions="Center">
+                                                <Label Text="Fixed price"
+                                                       FontSize="11"
+                                                       FontFamily="OpenSansSemibold"
+                                                       TextColor="{StaticResource Gray3}" />
+                                                <Label Text="No weight or pieces needed"
+                                                       FontSize="12"
+                                                       TextColor="{StaticResource Gray3}" />
+                                            </VerticalStackLayout>
+
                                             <!-- Line total -->
-                                            <VerticalStackLayout Grid.Column="2"
+                                            <VerticalStackLayout Grid.Column="1"
                                                                   VerticalOptions="Center"
                                                                   HorizontalOptions="End">
                                                 <Label Text="{Binding LineTotalDisplay}"
@@ -226,6 +253,11 @@
                                                        HorizontalOptions="End" />
                                             </VerticalStackLayout>
                                         </Grid>
+
+                                        <Label Text="{Binding MinimumChargeDisplay}"
+                                               IsVisible="{Binding HasMinimumCharge}"
+                                               FontSize="12"
+                                               TextColor="{StaticResource Gray3}" />
 
                                     </VerticalStackLayout>
                                 </Border>
@@ -242,6 +274,28 @@
                                    TextColor="White"
                                    FontFamily="OpenSansSemibold"
                                    FontSize="14" />
+                            <BoxView HeightRequest="1" Color="#333" />
+                            <Label Text="Order items"
+                                   TextColor="#B8D7D2"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="12" />
+                            <VerticalStackLayout BindableLayout.ItemsSource="{Binding DraftItems}" Spacing="5">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate x:DataType="svc:OrderDraftItem">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                            <Label Text="{Binding LineSummary}"
+                                                   TextColor="White"
+                                                   FontSize="12"
+                                                   LineBreakMode="WordWrap" />
+                                            <Label Grid.Column="1"
+                                                   Text="{Binding LineTotalDisplay}"
+                                                   TextColor="White"
+                                                   FontSize="12"
+                                                   FontFamily="OpenSansSemibold" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </VerticalStackLayout>
                             <BoxView HeightRequest="1" Color="#333" />
                             <Grid ColumnDefinitions="*,Auto">
                                 <Label Text="Laundry cost" TextColor="{StaticResource Gray3}" FontSize="13" />
@@ -260,6 +314,17 @@
                                 <Label Grid.Column="1"
                                        Text="{Binding DeliveryFee, StringFormat='₦{0:N0}'}"
                                        TextColor="White" FontSize="13" FontFamily="OpenSansSemibold" />
+                            </Grid>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Text="Total estimate"
+                                       TextColor="White"
+                                       FontFamily="OpenSansSemibold"
+                                       FontSize="13" />
+                                <Label Grid.Column="1"
+                                       Text="{Binding TotalEstimate, StringFormat='â‚¦{0:N0}'}"
+                                       TextColor="White"
+                                       FontFamily="OpenSansSemibold"
+                                       FontSize="15" />
                             </Grid>
                             <BoxView HeightRequest="1" Color="#444" />
                             <Grid ColumnDefinitions="*,Auto">

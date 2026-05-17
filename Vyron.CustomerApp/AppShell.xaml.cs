@@ -5,11 +5,14 @@ using Vyron.CustomerApp.Views.Orders;
 using Vyron.CustomerApp.Views.Profile;
 using Vyron.CustomerApp.Views.Reviews;
 using Vyron.CustomerApp.Views.Stores;
+using Vyron.CustomerApp.Views;
 
 namespace Vyron.CustomerApp;
 
 public partial class AppShell : Shell
 {
+    private bool _resettingTab;
+
     public AppShell()
     {
         InitializeComponent();
@@ -20,23 +23,39 @@ public partial class AppShell : Shell
         // ServiceSelection, etc.) are on the navigation stack, MAUI Shell does NOT
         // automatically pop them.  We listen to the Navigated event and, whenever
         // the shell lands back on the Stores root due to a tab-change or an
-        // explicit //main/stores navigation, pop everything above the root page so
+        // explicit Stores tab navigation, pop everything above the root page so
         // the user always sees a clean StoresPage (search/list).
         Navigated += OnShellNavigated;
     }
 
-    private static async void OnShellNavigated(object? sender, ShellNavigatedEventArgs e)
+    private async void OnShellNavigated(object? sender, ShellNavigatedEventArgs e)
     {
-        var location = e.Current.Location.OriginalString;
+        if (_resettingTab ||
+            (e.Source != ShellNavigationSource.ShellSectionChanged &&
+             e.Source != ShellNavigationSource.ShellItemChanged))
+            return;
 
-        // React only when we have landed on the Stores tab root via tab interaction
-        // (ShellSectionChanged = tab tapped; ShellItemChanged = tab-group switched)
-        if (location == AppRoutes.Stores &&
-            (e.Source == ShellNavigationSource.ShellSectionChanged ||
-             e.Source == ShellNavigationSource.ShellItemChanged))
+        var targetRoute = Current?.CurrentItem?.CurrentItem?.Route switch
         {
-            // Pop any stacked store/service-selection pages down to the root
-            await Shell.Current.Navigation.PopToRootAsync(animated: false);
+            "homeTab" => AppRoutes.Home,
+            "storesTab" => AppRoutes.Stores,
+            "ordersTab" => AppRoutes.Orders,
+            "moreTab" => AppRoutes.More,
+            _ => null
+        };
+
+        if (string.IsNullOrWhiteSpace(targetRoute) ||
+            e.Current.Location.OriginalString == targetRoute)
+            return;
+
+        try
+        {
+            _resettingTab = true;
+            await GoToAsync(targetRoute, animate: false);
+        }
+        finally
+        {
+            _resettingTab = false;
         }
     }
 
@@ -60,6 +79,7 @@ public partial class AppShell : Shell
         Routing.RegisterRoute("createOrder",      typeof(CreateOrderPage));
         Routing.RegisterRoute("orderSuccess",     typeof(OrderSuccessPage));
         Routing.RegisterRoute("orderDetails",     typeof(OrderDetailsPage));
+        Routing.RegisterRoute("orderTracking",    typeof(TrackPage));
         Routing.RegisterRoute("pickupFeePayment", typeof(PickupFeePaymentPage));
         Routing.RegisterRoute("balancePayment",   typeof(BalancePaymentPage));
 
@@ -71,7 +91,7 @@ public partial class AppShell : Shell
         // Notifications (More tab)
         Routing.RegisterRoute("notifications",    typeof(NotificationsPage));
 
-        // Message Rider (Track tab)
+        // Message Rider
         Routing.RegisterRoute("messageRider",     typeof(MessageRiderPage));
     }
 }

@@ -62,7 +62,7 @@ public partial class ServiceSelectionViewModel : BaseViewModel
     private async Task LoadAsync()
     {
         if (!Guid.TryParse(StoreId, out var id)) return;
-        var (data, _) = await SafeCallAsync(() => _stores.GetStoreAsync(id));
+        var (data, _) = await SafeCallAsync(() => _stores.GetStoreAsync(id), "stores");
         Store = data;
         if (Store != null)
         {
@@ -116,6 +116,16 @@ public partial class ServiceSelectionViewModel : BaseViewModel
     private async Task ContinueAsync()
     {
         if (!_draft.HasItems) { SetError("Please add at least one service."); return; }
+        if (_draft.Items.Any(i => !i.IsValid))
+        {
+            SetError("Please check the selected services. Weight, pieces, and prices must be valid.");
+            return;
+        }
+        if (_draft.TotalEstimate <= 0 || _draft.PickupFee < 0 || _draft.DeliveryFee < 0)
+        {
+            SetError("The order estimate is not valid yet. Please review your services and fees.");
+            return;
+        }
         await Shell.Current.GoToAsync($"createOrder?storeId={StoreId}");
     }
 }
@@ -168,6 +178,10 @@ public partial class CreateOrderViewModel : BaseViewModel
     {
         if (!_draft.HasItems)
         { SetError("No services selected. Go back and add services."); return; }
+        if (_draft.Items.Any(i => !i.IsValid))
+        { SetError("Please review your selected service quantities before placing the order."); return; }
+        if (_draft.TotalEstimate <= 0 || _draft.PickupFee < 0 || _draft.DeliveryFee < 0)
+        { SetError("The order estimate is not valid yet. Please review your services and fees."); return; }
         if (string.IsNullOrWhiteSpace(PickupAddress))
         { SetError("Please enter your pickup address."); return; }
         if (!SameAddress && string.IsNullOrWhiteSpace(DeliveryAddress))
@@ -181,7 +195,7 @@ public partial class CreateOrderViewModel : BaseViewModel
             paymentMethod  : PaymentMethod,
             notes          : SpecialInstructions.Trim());
 
-        var (order, _) = await SafeCallAsync(() => _orders.CreateOrderAsync(req));
+        var (order, _) = await SafeCallAsync(() => _orders.CreateOrderAsync(req), "orders");
         if (order != null)
         {
             _draft.Clear();   // cart is submitted — clear draft
@@ -210,7 +224,7 @@ public partial class OrderSuccessViewModel : BaseViewModel
     private async Task LoadAsync()
     {
         if (!Guid.TryParse(OrderId, out var id)) return;
-        var (data, _) = await SafeCallAsync(() => _orders.GetOrderAsync(id));
+        var (data, _) = await SafeCallAsync(() => _orders.GetOrderAsync(id), "orders");
         Order = data;
     }
 
@@ -252,7 +266,7 @@ public partial class PickupFeeViewModel : BaseViewModel
     private async Task LoadAsync()
     {
         if (!Guid.TryParse(OrderId, out var id)) return;
-        var (data, _) = await SafeCallAsync(() => _orders.GetOrderAsync(id));
+        var (data, _) = await SafeCallAsync(() => _orders.GetOrderAsync(id), "orders");
         Order = data;
     }
 
@@ -289,34 +303,33 @@ public partial class PickupFeeViewModel : BaseViewModel
                 // Reload order to reflect new PaymentState/Status
                 var (updated, _) = await _orders.GetOrderAsync(capturedOrderId);
                 if (updated != null) Order = updated;
-                // Wait briefly so user sees success banner, then jump to Track tab
+                // Wait briefly so user sees success banner, then jump to Orders tab
                 await Task.Delay(1800);
-                await Shell.Current.GoToAsync(AppRoutes.Track);
+                await Shell.Current.GoToAsync(AppRoutes.Orders);
             }
             else if (payError != null && payError.Contains("already", StringComparison.OrdinalIgnoreCase))
             {
                 // Already paid — treat as success and navigate rather than show error
                 PaymentDone = true;
-                SuccessMessage = "Pickup fee already recorded. Navigating to tracker…";
+                SuccessMessage = "Pickup fee already recorded. Opening your orders.";
                 await Task.Delay(900);
-                await Shell.Current.GoToAsync(AppRoutes.Track);
+                await Shell.Current.GoToAsync(AppRoutes.Orders);
             }
             else
             {
-                ErrorMessage = payError ?? "Payment failed. Please try again.";
+                SetError(ApiErrorHelper.FriendlyContextMessage(payError, "payment"));
             }
         }
         catch (Exception ex)
         {
-            ErrorMessage = ex.Message;
+            SetError(ApiErrorHelper.ForException(ex));
         }
         finally { IsBusy = false; }
     }
 
     [RelayCommand]
     private async Task TrackOrderAsync()
-        // Navigate to the Track tab — shows active order card
-        => await Shell.Current.GoToAsync(AppRoutes.Track);
+        => await Shell.Current.GoToAsync(AppRoutes.Orders);
 }
 
 // ─── ORDERS LIST ─────────────────────────────────────────────────
@@ -335,7 +348,7 @@ public partial class OrdersViewModel : BaseViewModel
     [RelayCommand]
     private async Task LoadAsync()
     {
-        var (data, _) = await SafeCallAsync(() => _orders.GetMyOrdersAsync(CurrentPage));
+        var (data, _) = await SafeCallAsync(() => _orders.GetMyOrdersAsync(CurrentPage), "orders");
         Orders_.Clear();
         foreach (var o in data ?? Enumerable.Empty<OrderDto>())
             Orders_.Add(o);
@@ -344,7 +357,7 @@ public partial class OrdersViewModel : BaseViewModel
 
     [RelayCommand]
     private async Task SelectOrderAsync(OrderDto order)
-        => await Shell.Current.GoToAsync($"orderDetails?orderId={order.Id}");
+        => await Shell.Current.GoToAsync($"{AppRoutes.OrderTracking}?orderId={order.Id}");
 }
 
 // ─── ORDER DETAILS ───────────────────────────────────────────────
@@ -368,7 +381,7 @@ public partial class OrderDetailsViewModel : BaseViewModel
     private async Task LoadAsync()
     {
         if (!Guid.TryParse(OrderId, out var id)) return;
-        var (data, _) = await SafeCallAsync(() => _orders.GetOrderAsync(id));
+        var (data, _) = await SafeCallAsync(() => _orders.GetOrderAsync(id), "orders");
         Order = data;
     }
 
@@ -427,7 +440,7 @@ public partial class BalancePaymentViewModel : BaseViewModel
     private async Task LoadAsync()
     {
         if (!Guid.TryParse(OrderId, out var id)) return;
-        var (data, _) = await SafeCallAsync(() => _orders.GetOrderAsync(id));
+        var (data, _) = await SafeCallAsync(() => _orders.GetOrderAsync(id), "orders");
         Order = data;
     }
 
@@ -461,12 +474,12 @@ public partial class BalancePaymentViewModel : BaseViewModel
             }
             else
             {
-                ErrorMessage = balError ?? "Payment failed. Please try again.";
+                SetError(ApiErrorHelper.FriendlyContextMessage(balError, "payment"));
             }
         }
         catch (Exception ex)
         {
-            ErrorMessage = ex.Message;
+            SetError(ApiErrorHelper.ForException(ex));
         }
         finally { IsBusy = false; }
     }

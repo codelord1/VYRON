@@ -20,6 +20,7 @@ public class OrderProgressStep
 }
 
 // ─── TRACK (active order live status) ────────────────────────────
+[QueryProperty(nameof(OrderId), "orderId")]
 public partial class TrackViewModel : BaseViewModel
 {
     private readonly OrderService _orders;
@@ -42,18 +43,35 @@ public partial class TrackViewModel : BaseViewModel
     [ObservableProperty]
     private List<OrderProgressStep> _progressSteps = new();
 
+    [ObservableProperty] private string _orderId = "";
+
     public bool IsEmpty => !HasActiveOrder && !IsBusy;
 
     public TrackViewModel(OrderService orders) => _orders = orders;
 
     public async Task InitAsync() => await LoadAsync();
 
+    partial void OnOrderIdChanged(string value)
+    {
+        if (Guid.TryParse(value, out _))
+            MainThread.BeginInvokeOnMainThread(async () => await LoadAsync());
+    }
+
     [RelayCommand]
     private async Task LoadAsync()
     {
         IsBusy = true;
-        var (orders, _) = await SafeCallAsync(() => _orders.GetMyOrdersAsync());
-        var active = orders?.FirstOrDefault(o => ActiveStatuses.Contains(o.Status));
+        OrderDto? active = null;
+        if (Guid.TryParse(OrderId, out var id))
+        {
+            var (order, _) = await SafeCallAsync(() => _orders.GetOrderAsync(id), "orders");
+            active = order;
+        }
+        else
+        {
+            var (orders, _) = await SafeCallAsync(() => _orders.GetMyOrdersAsync(), "orders");
+            active = orders?.FirstOrDefault(o => ActiveStatuses.Contains(o.Status));
+        }
         ActiveOrder = active;
         HasActiveOrder = active != null;
         ProgressSteps = active != null ? BuildProgressSteps(active) : new();
@@ -190,7 +208,7 @@ public partial class MoreViewModel : BaseViewModel
         if (!confirm) return;
 
         await _auth.LogoutAsync();
-        await Shell.Current.GoToAsync("//login", animate: false);
+        await Shell.Current.GoToAsync(AppRoutes.Login, animate: false);
     }
 }
 
@@ -212,7 +230,7 @@ public partial class DisputeHistoryViewModel : BaseViewModel
     [RelayCommand]
     private async Task LoadAsync()
     {
-        var (data, _) = await SafeCallAsync(() => _disputes.GetMyDisputesAsync());
+        var (data, _) = await SafeCallAsync(() => _disputes.GetMyDisputesAsync(), "disputes");
         Items.Clear();
         foreach (var d in data ?? Enumerable.Empty<DisputeDetailDto>())
             Items.Add(d);
@@ -322,7 +340,7 @@ public partial class NotificationsViewModel : BaseViewModel
     private async Task LoadAsync()
     {
         IsBusy = true;
-        var (data, _) = await SafeCallAsync(() => _notifications.GetMyNotificationsAsync());
+        var (data, _) = await SafeCallAsync(() => _notifications.GetMyNotificationsAsync(), "notifications");
         Items.Clear();
         foreach (var n in data ?? Enumerable.Empty<NotificationDto>())
             Items.Add(n);
@@ -459,6 +477,6 @@ public partial class ProfileViewModel : BaseViewModel
         if (!confirm) return;
 
         await _auth.LogoutAsync();
-        await Shell.Current.GoToAsync("//login", animate: false);
+        await Shell.Current.GoToAsync(AppRoutes.Login, animate: false);
     }
 }

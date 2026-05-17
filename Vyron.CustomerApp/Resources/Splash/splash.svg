@@ -1,4 +1,6 @@
 <svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
-  <text x="64" y="80" font-family="Arial, sans-serif" font-size="44" font-weight="800"
-        text-anchor="middle" fill="#00C9A7">VYRON</text>
+  <rect width="128" height="128" rx="28" fill="#ffffff"/>
+  <path d="M34 52 C44 44 52 60 64 52 C76 44 84 60 94 52" fill="none" stroke="#007A58" stroke-width="7" stroke-linecap="round"/>
+  <path d="M34 66 C44 58 52 74 64 66 C76 58 84 74 94 66" fill="none" stroke="#007A58" stroke-width="7" stroke-linecap="round"/>
+  <path d="M34 80 C44 72 52 88 64 80 C76 72 84 88 94 80" fill="none" stroke="#007A58" stroke-width="7" stroke-linecap="round"/>
 </svg>

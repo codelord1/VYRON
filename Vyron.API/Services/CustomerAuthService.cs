@@ -176,8 +176,15 @@ public class CustomerAuthService : ICustomerAuthService
         });
         await _db.SaveChangesAsync();
 
-        await _notifications.SendSmsAsync(user.Phone,
-            $"Welcome to VYRON, {user.FullName.Split(' ')[0]}! 🧺");
+        try
+        {
+            await _notifications.SendSmsAsync(user.Phone,
+                $"Welcome to VYRON, {user.FullName.Split(' ')[0]}!");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Welcome SMS failed after customer account creation for {Phone}", user.Phone);
+        }
 
         var roleNames = GetRoleNames(user);
         var access = _tokens.GenerateAccessToken(user, roleNames.Count > 0 ? roleNames : null);

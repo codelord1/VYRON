@@ -17,17 +17,18 @@ public abstract partial class BaseViewModel : ObservableObject
 
     public bool IsNotBusy => !IsBusy;
 
-    protected void SetError(string? message) => ErrorMessage = message;
+    protected void SetError(string? message) => ErrorMessage = FriendlyError(message);
     protected void ClearMessages() { ErrorMessage = null; SuccessMessage = null; }
 
     protected static async Task HandleUnauthorized()
     {
         Models.AppSession.Current.Clear();
-        await Shell.Current.GoToAsync("//login", animate: false);
+        await Shell.Current.GoToAsync(AppRoutes.Login, animate: false);
     }
 
     protected async Task<(T? result, bool handled)> SafeCallAsync<T>(
-        Func<Task<(T? Data, string? Error)>> call)
+        Func<Task<(T? Data, string? Error)>> call,
+        string? errorContext = null)
     {
         ClearMessages();
         IsBusy = true;
@@ -41,11 +42,37 @@ public abstract partial class BaseViewModel : ObservableObject
             }
             if (error != null)
             {
-                ErrorMessage = error;
+                ErrorMessage = FriendlyError(errorContext == null
+                    ? error
+                    : Services.ApiErrorHelper.FriendlyContextMessage(error, errorContext));
                 return (default, false);
             }
             return (data, false);
         }
         finally { IsBusy = false; }
+    }
+
+    private static string? FriendlyError(string? message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+            return message;
+
+        if (message == "SESSION_EXPIRED")
+            return "Your session has expired. Please login again.";
+
+        if (message.Contains("WebSocket", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("Exception", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("stack", StringComparison.OrdinalIgnoreCase))
+            return "Something went wrong. Please try again.";
+
+        if (message.Contains("Error 400", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("400 Bad Request", StringComparison.OrdinalIgnoreCase))
+            return "Something looks incorrect. Please check your details and try again.";
+
+        if (message.Contains("Error 500", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("500", StringComparison.OrdinalIgnoreCase))
+            return "Something went wrong on our side. Please try again shortly.";
+
+        return message;
     }
 }

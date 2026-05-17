@@ -19,5 +19,5 @@ public partial class AddReviewPage : ContentPage
     }
 
     private async void OnBackToOrders(object sender, EventArgs e)
-        => await Shell.Current.GoToAsync("//orders");
+        => await Shell.Current.GoToAsync(AppRoutes.Orders);
 }

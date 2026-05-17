@@ -74,6 +74,9 @@
                         </Grid>
                         <BoxView HeightRequest="1" Color="{StaticResource CardStroke}" />
                         <Grid ColumnDefinitions="52,*,Auto" ColumnSpacing="12" Padding="16,16">
+                            <Grid.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnPaymentMethodsTapped" />
+                            </Grid.GestureRecognizers>
                             <Border BackgroundColor="{StaticResource Mint}" WidthRequest="42" HeightRequest="42" Stroke="Transparent" StrokeShape="RoundRectangle 21">
                                 <Label Text="Card" FontSize="11" TextColor="{StaticResource TealDark}" HorizontalOptions="Center" VerticalOptions="Center" />
                             </Border>
@@ -147,7 +150,7 @@
                         TextColor="{StaticResource Danger}"
                         Margin="0,0,0,8" />
 
-                <Label Text="VYRON v1.0.0 · Made in Lagos"
+                <Label Text="VYRON v1.0.0"
                        FontSize="11"
                        TextColor="{StaticResource Gray3}"
                        HorizontalOptions="Center" />

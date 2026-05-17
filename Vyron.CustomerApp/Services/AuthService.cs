@@ -1,4 +1,5 @@
 using Vyron.CustomerApp.DTOs;
+using Vyron.CustomerApp.Helpers;
 using Vyron.CustomerApp.Models;
 
 namespace Vyron.CustomerApp.Services;
@@ -138,7 +139,7 @@ public class AuthService : IAuthService
         var (response, error) = await _api.PostAsync<OtpSentResponse>("api/customer-auth/request-signup-otp",
             new SignupOtpRequest(phone));
 
-        if (error != null) return (false, null, error);
+        if (error != null) return (false, null, FriendlyAuthError(error));
         if (response == null) return (false, null, "Could not send verification code. Please try again.");
         return (true, response.DevOtp, null);
     }
@@ -151,7 +152,7 @@ public class AuthService : IAuthService
             new CompleteProfileRequest(phone, code, fullName, email, password));
 
         if (response == null)
-            return (false, error ?? "Account creation failed. Please try again.");
+            return (false, FriendlyAuthError(error ?? "Account creation failed. Please try again."));
 
         // ── Session isolation: clear any previous user's state before setting new auth ──
         _draft.Clear();
@@ -176,7 +177,7 @@ public class AuthService : IAuthService
         var (response, error) = await _api.PostAsync<OtpSentResponse>("api/customer-auth/request-password-reset-otp",
             new PasswordResetOtpRequest(phone));
 
-        if (error != null) return (false, null, error);
+        if (error != null) return (false, null, FriendlyAuthError(error));
         if (response == null) return (false, null, "Could not send reset code. Please try again.");
         return (true, response.DevOtp, null);
     }
@@ -187,7 +188,7 @@ public class AuthService : IAuthService
         var (_, error) = await _api.PostAsync<object>("api/customer-auth/reset-password",
             new ResetPasswordRequest(phone, code, newPassword));
 
-        return error != null ? (false, error) : (true, null);
+        return error != null ? (false, FriendlyAuthError(error)) : (true, null);
     }
 
     public async Task<bool> TryRestoreSessionAsync()
@@ -281,5 +282,17 @@ public class AuthService : IAuthService
         SecureStorage.Default.Remove(KeyUserPhone);
         SecureStorage.Default.Remove(KeyRememberMe);
         await Task.CompletedTask;
+    }
+
+    private static string FriendlyAuthError(string error)
+    {
+        if (error.Contains("already exists", StringComparison.OrdinalIgnoreCase) ||
+            error.Contains("duplicate", StringComparison.OrdinalIgnoreCase))
+            return PhoneHelper.FriendlyDuplicateMessage;
+
+        if (error.Contains("websocket", StringComparison.OrdinalIgnoreCase))
+            return "Account setup completed, but the app could not start live updates. Please login to continue.";
+
+        return error;
     }
 }

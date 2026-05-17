@@ -276,10 +276,14 @@ public class ServiceSummaryDto
     public bool    IsActive      { get; set; }
     public int     EstimatedHours{ get; set; }
 
-    public string PriceDisplay     => PricingMode == "PerKg"
-        ? $"₦{BasePrice:N0}/kg"
-        : $"₦{BasePrice:N0}/item";
-    public string MinChargeDisplay => $"Min ₦{MinimumCharge:N0}";
+    public string PriceDisplay => PricingMode switch
+    {
+        "PerKg" => $"₦{BasePrice:N0}/kg",
+        "PerItem" => $"₦{BasePrice:N0}/item",
+        "Fixed" => $"₦{BasePrice:N0} fixed",
+        _ => $"₦{BasePrice:N0}"
+    };
+    public string MinChargeDisplay => MinimumCharge > 0 ? $"Min ₦{MinimumCharge:N0}" : "";
     public string TimeDisplay      => EstimatedHours > 0 ? $"~{EstimatedHours}h" : "";
 }
 
@@ -470,9 +474,13 @@ public class OrderItemDto
     public decimal LineTotal          { get; set; }
 
     public string LineTotalDisplay => $"₦{LineTotal:N0}";
-    public string QtyDisplay => PricingMode == "PerKg"
-        ? $"{Weight:F1} kg"
-        : $"{Pieces} pcs";
+    public string QtyDisplay => PricingMode switch
+    {
+        "PerKg" => $"{Weight:F1} kg",
+        "PerItem" => $"{Pieces} pcs",
+        "Fixed" => "Fixed",
+        _ => Pieces > 0 ? $"{Pieces} pcs" : $"{Weight:F1} kg"
+    };
 }
 
 // ─── REVIEW ───────────────────────────────────────────────────────

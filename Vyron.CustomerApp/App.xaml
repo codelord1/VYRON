@@ -58,6 +58,15 @@
                 <Setter Property="TextColor" Value="{StaticResource Gray5}" />
             </Style>
 
+            <Style TargetType="CollectionView">
+                <Setter Property="SelectionMode" Value="None" />
+            </Style>
+
+            <Style TargetType="ListView">
+                <Setter Property="SelectionMode" Value="None" />
+                <Setter Property="SeparatorColor" Value="{StaticResource CardStroke}" />
+            </Style>
+
             <Style TargetType="Shell" ApplyToDerivedTypes="True">
                 <Setter Property="Shell.BackgroundColor" Value="{StaticResource Bg}" />
                 <Setter Property="Shell.ForegroundColor" Value="{StaticResource Gray5}" />

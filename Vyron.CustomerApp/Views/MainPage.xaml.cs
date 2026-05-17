@@ -4,12 +4,12 @@ namespace Vyron.CustomerApp.Views;
 
 public partial class MainPage : ContentPage
 {
-    private readonly (string Icon, string Title, string Subtitle)[] _slides =
+    private readonly (string Title, string Subtitle)[] _slides =
     {
-        ("Truck", "Book laundry pickup from your phone", "Schedule pickup in under a minute. No more hauling baskets across town."),
-        ("Pin", "Choose trusted laundry stores near you", "Verified stores, real reviews, and transparent pricing picked for your area."),
-        ("Spark", "Track pickup, washing, ironing and delivery", "Live status updates from your door to the laundry and back."),
-        ("Shirt", "Get clean clothes delivered safely", "Sealed bags, careful handling, and support on every order.")
+        ("Book laundry pickup from your phone", "Schedule pickup in under a minute. No more hauling baskets across town."),
+        ("Choose trusted laundry stores near you", "Verified stores, real reviews, transparent pricing — picked just for your area."),
+        ("Track pickup, washing, ironing & delivery", "Live status updates from your door to the laundry and back."),
+        ("Get clean clothes delivered safely", "Sealed bags, careful handling, full refund protection on every order.")
     };
 
     private int _index;
@@ -23,9 +23,12 @@ public partial class MainPage : ContentPage
     private void RenderSlide()
     {
         var slide = _slides[_index];
-        IconLabel.Text = slide.Icon;
         TitleLabel.Text = slide.Title;
         SubtitleLabel.Text = slide.Subtitle;
+        TruckIcon.IsVisible = _index == 0;
+        PinIcon.IsVisible = _index == 1;
+        SparkIcon.IsVisible = _index == 2;
+        ShirtIcon.IsVisible = _index == 3;
         BackButton.IsVisible = _index > 0;
         NextButton.Text = _index == _slides.Length - 1 ? "Get Started" : "Next";
 
@@ -63,7 +66,7 @@ public partial class MainPage : ContentPage
 
     private static async Task CompleteOnboardingAsync()
     {
-        Preferences.Default.Set("Vyron.Customer.OnboardingDone", true);
-        await Shell.Current.GoToAsync(AppRoutes.Login, animate: true);
+        Preferences.Default.Set("Vyron.Customer.HasCompletedOnboarding", true);
+        await Shell.Current.GoToAsync(AppRoutes.PickupLocation, animate: true);
     }
 }

@@ -11,16 +11,21 @@ public partial class OrderDraftItem : ObservableObject
 {
     public Guid   ServiceId   { get; init; }
     public string ServiceName { get; init; } = "";
-    public string PricingMode { get; init; } = "PerKg";   // "PerKg" | "PerPiece"
+    public string PricingMode { get; init; } = "PerKg";   // "PerKg" | "PerItem" | "Fixed"
     public decimal BasePrice  { get; init; }
     public decimal MinimumCharge { get; init; }
 
+    public bool IsPerKg => PricingMode.Equals("PerKg", StringComparison.OrdinalIgnoreCase);
+    public bool IsPerItem => PricingMode.Equals("PerItem", StringComparison.OrdinalIgnoreCase);
+    public bool IsFixed => PricingMode.Equals("Fixed", StringComparison.OrdinalIgnoreCase);
+    public bool HasMinimumCharge => IsPerKg && MinimumCharge > 0;
+
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(LineTotal), nameof(LineTotalDisplay), nameof(QtyDisplay))]
+    [NotifyPropertyChangedFor(nameof(LineTotal), nameof(LineTotalDisplay), nameof(QtyDisplay), nameof(LineSummary))]
     private decimal _weight = 1;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(LineTotal), nameof(LineTotalDisplay), nameof(QtyDisplay))]
+    [NotifyPropertyChangedFor(nameof(LineTotal), nameof(LineTotalDisplay), nameof(QtyDisplay), nameof(LineSummary))]
     private int _pieces = 1;
 
     // ── String wrappers for Entry two-way binding ─────────────────
@@ -68,20 +73,65 @@ public partial class OrderDraftItem : ObservableObject
         if (_piecesText != formatted) { _piecesText = formatted; OnPropertyChanged(nameof(PiecesText)); }
     }
 
-    public decimal LineTotal =>
-        PricingMode == "PerKg"
-            ? Math.Max(Weight * BasePrice, MinimumCharge)
-            : Math.Max(Pieces * BasePrice, MinimumCharge);
+    public decimal LineTotal
+    {
+        get
+        {
+            if (IsPerKg)
+                return MinimumCharge > 0 ? Math.Max(Weight * BasePrice, MinimumCharge) : Weight * BasePrice;
+            if (IsPerItem)
+                return Pieces * BasePrice;
+            return BasePrice;
+        }
+    }
 
     public string LineTotalDisplay => $"₦{LineTotal:N0}";
 
-    public string QtyDisplay => PricingMode == "PerKg"
-        ? $"{Weight:F1} kg"
-        : $"{Pieces} pcs";
+    public string QtyDisplay
+    {
+        get
+        {
+            if (IsPerKg) return $"{Weight:F1} kg";
+            if (IsPerItem) return $"{Pieces} items";
+            return "Fixed";
+        }
+    }
 
-    public string PriceDisplay => PricingMode == "PerKg"
-        ? $"₦{BasePrice:N0}/kg"
-        : $"₦{BasePrice:N0}/item";
+    public string PricingModeLabel
+    {
+        get
+        {
+            if (IsPerKg) return "Per kg";
+            if (IsPerItem) return "Per item";
+            return "Fixed";
+        }
+    }
+
+    public string PriceDisplay
+    {
+        get
+        {
+            if (IsPerKg) return $"₦{BasePrice:N0}/kg";
+            if (IsPerItem) return $"₦{BasePrice:N0}/item";
+            return $"₦{BasePrice:N0} fixed";
+        }
+    }
+
+    public string MinimumChargeDisplay => $"Minimum charge: ₦{MinimumCharge:N0}";
+
+    public string LineSummary
+    {
+        get
+        {
+            if (IsPerKg) return $"{ServiceName} - {Weight:F1}kg x ₦{BasePrice:N0}/kg = {LineTotalDisplay}";
+            if (IsPerItem) return $"{ServiceName} - {Pieces} items x ₦{BasePrice:N0}/item = {LineTotalDisplay}";
+            return $"{ServiceName} - fixed price = {LineTotalDisplay}";
+        }
+    }
+
+    public bool IsValid => (IsPerKg && Weight >= 0.5m && BasePrice > 0)
+        || (IsPerItem && Pieces >= 1 && BasePrice > 0)
+        || (IsFixed && BasePrice > 0);
 
     // ── Stepper commands ─────────────────────────────────────────────
     [RelayCommand]
@@ -112,8 +162,8 @@ public partial class OrderDraftItem : ObservableObject
     public CreateOrderItemRequest ToRequest() => new()
     {
         ServiceOfferingId = ServiceId,
-        Weight = Weight,
-        Pieces = Pieces
+        Weight = IsPerKg ? Weight : 0,
+        Pieces = IsPerItem ? Pieces : IsFixed ? 1 : 0
     };
 }
 
@@ -138,7 +188,7 @@ public class OrderDraftService
     public decimal TotalLaundryCost => Items.Sum(i => i.LineTotal);
     public decimal TotalEstimate    => TotalLaundryCost + PickupFee + DeliveryFee;
     public decimal AmountDueNow     => PickupFee;
-    public decimal BalanceDueLater  => TotalLaundryCost + DeliveryFee;
+    public decimal BalanceDueLater  => TotalEstimate - AmountDueNow;
     public bool    HasItems         => Items.Count > 0;
 
     // ── Summary text for checkout ───────────────────────────────────
@@ -162,16 +212,16 @@ public class OrderDraftService
 
     /// <summary>
     /// Add a service to the cart. If the same service is already in the cart
-    /// the weight (PerKg) or pieces (PerPiece) are incremented instead.
+    /// the relevant customer-facing quantity is incremented instead.
     /// </summary>
     public void AddService(ServiceSummaryDto svc)
     {
         var existing = Items.FirstOrDefault(i => i.ServiceId == svc.Id);
         if (existing != null)
         {
-            if (svc.PricingMode == "PerKg")
-                existing.Weight += 1;
-            else
+            if (existing.IsPerKg)
+                existing.Weight = Math.Round(existing.Weight + 0.5m, 1);
+            else if (existing.IsPerItem)
                 existing.Pieces += 1;
         }
         else
@@ -223,8 +273,8 @@ public class OrderDraftService
         {
             StoreId              = StoreId,
             ServiceOfferingId    = primary?.ServiceId ?? Guid.Empty,
-            EstimatedWeight      = Items.Sum(i => i.Weight),
-            EstimatedPieces      = Items.Sum(i => i.Pieces),
+            EstimatedWeight      = Items.Where(i => i.IsPerKg).Sum(i => i.Weight),
+            EstimatedPieces      = Items.Where(i => i.IsPerItem || i.IsFixed).Sum(i => i.ToRequest().Pieces),
             PickupAddress        = pickupAddress,
             DeliveryAddress      = deliveryAddress,
             RequestedPickupDate  = pickupDate,

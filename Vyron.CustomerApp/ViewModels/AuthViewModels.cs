@@ -27,6 +27,12 @@ public partial class LoginViewModel : BaseViewModel
 
     public LoginViewModel(IAuthService auth) => _auth = auth;
 
+    partial void OnLocalPhoneChanged(string value)
+    {
+        var clean = PhoneHelper.SanitizeLocalInput(value, SelectedCountry.DialCode);
+        if (clean != value) LocalPhone = clean;
+    }
+
     [RelayCommand]
     private void TogglePassword()
     {
@@ -37,6 +43,7 @@ public partial class LoginViewModel : BaseViewModel
     [RelayCommand]
     private async Task LoginAsync()
     {
+        if (IsBusy) return;
         ErrorMessage = null;
 
         if (string.IsNullOrWhiteSpace(LocalPhone))
@@ -54,7 +61,7 @@ public partial class LoginViewModel : BaseViewModel
         IsBusy = false;
 
         if (ok)
-            await Shell.Current.GoToAsync("//main/storesTab/stores", animate: false);
+            await Shell.Current.GoToAsync(AppRoutes.Home, animate: false);
         else
             SetError(error ?? "Login failed. Please check your credentials.");
     }
@@ -80,9 +87,16 @@ public partial class SignupViewModel : BaseViewModel
 
     public SignupViewModel(IAuthService auth) => _auth = auth;
 
+    partial void OnLocalPhoneChanged(string value)
+    {
+        var clean = PhoneHelper.SanitizeLocalInput(value, SelectedCountry.DialCode);
+        if (clean != value) LocalPhone = clean;
+    }
+
     [RelayCommand]
     private async Task RequestOtpAsync()
     {
+        if (IsBusy) return;
         ErrorMessage = null;
 
         if (string.IsNullOrWhiteSpace(LocalPhone))
@@ -144,6 +158,7 @@ public partial class CompleteProfileViewModel : BaseViewModel
     [RelayCommand]
     private async Task SaveAsync()
     {
+        if (IsBusy) return;
         ErrorMessage = null;
 
         if (string.IsNullOrWhiteSpace(OtpCode) || OtpCode.Length < 6)
@@ -166,7 +181,7 @@ public partial class CompleteProfileViewModel : BaseViewModel
         IsBusy = false;
 
         if (ok)
-            await Shell.Current.GoToAsync(AppRoutes.Stores, animate: false);
+            await Shell.Current.GoToAsync(AppRoutes.Home, animate: false);
         else
             SetError(error ?? "Failed to create account. Please try again.");
     }
@@ -257,9 +272,16 @@ public partial class ForgotPasswordViewModel : BaseViewModel
 
     public ForgotPasswordViewModel(IAuthService auth) => _auth = auth;
 
+    partial void OnLocalPhoneChanged(string value)
+    {
+        var clean = PhoneHelper.SanitizeLocalInput(value, SelectedCountry.DialCode);
+        if (clean != value) LocalPhone = clean;
+    }
+
     [RelayCommand]
     private async Task RequestResetOtpAsync()
     {
+        if (IsBusy) return;
         ErrorMessage = null;
 
         if (string.IsNullOrWhiteSpace(LocalPhone))
@@ -323,6 +345,7 @@ public partial class ResetPasswordViewModel : BaseViewModel
     [RelayCommand]
     private async Task ResetAsync()
     {
+        if (IsBusy) return;
         ErrorMessage = null;
 
         if (string.IsNullOrWhiteSpace(OtpCode) || OtpCode.Length < 6)
@@ -342,7 +365,7 @@ public partial class ResetPasswordViewModel : BaseViewModel
         {
             SuccessMessage = "Password reset successfully! Please login with your new password.";
             await Task.Delay(1500);
-            await Shell.Current.GoToAsync("//login", animate: false);
+            await Shell.Current.GoToAsync(AppRoutes.Login, animate: false);
         }
         else
         {

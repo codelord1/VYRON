@@ -2,6 +2,7 @@ using CommunityToolkit.Maui;
 using Microsoft.Extensions.Logging;
 using Vyron.CustomerApp.Services;
 using Vyron.CustomerApp.ViewModels;
+using Vyron.CustomerApp.Views;
 using Vyron.CustomerApp.Views.Auth;
 using Vyron.CustomerApp.Views.Disputes;
 using Vyron.CustomerApp.Views.Orders;
@@ -35,8 +36,11 @@ public static class AppConstants
     // ── PRODUCTION ──────────────────────────────────────────────────
     // Replace with https://api.vyron.com/
     // The DEBUG certificate bypass is NOT compiled into Release builds.
-    public const string ApiBaseUrl = "http://10.0.2.2:50680/";
-    public const string SignalRUrl  = "http://10.0.2.2:50680/hubs/tracking";
+    //public const string ApiBaseUrl = "http://10.0.2.2:50680/";
+    //public const string SignalRUrl  = "http://10.0.2.2:50680/hubs/tracking";
+
+    public const string ApiBaseUrl = "http://192.168.0.166:50680/";
+    public const string SignalRUrl = "http://192.168.0.166:50680/hubs/tracking";
 }
 
 public static class MauiProgram
@@ -105,6 +109,7 @@ public static class MauiProgram
         builder.Services.AddTransient<CompleteProfileViewModel>();
         builder.Services.AddTransient<ForgotPasswordViewModel>();
         builder.Services.AddTransient<ResetPasswordViewModel>();
+        builder.Services.AddTransient<HomeViewModel>();
         builder.Services.AddTransient<StoresViewModel>();
         builder.Services.AddTransient<StoreDetailsViewModel>();
         builder.Services.AddTransient<ServiceSelectionViewModel>();
@@ -130,6 +135,8 @@ public static class MauiProgram
         builder.Services.AddTransient<CompleteProfilePage>();
         builder.Services.AddTransient<ForgotPasswordPage>();
         builder.Services.AddTransient<ResetPasswordPage>();
+        builder.Services.AddTransient<PickupLocationPage>();
+        builder.Services.AddTransient<HomePage>();
         builder.Services.AddTransient<StoresPage>();
         builder.Services.AddTransient<StoreDetailsPage>();
         builder.Services.AddTransient<ServiceSelectionPage>();

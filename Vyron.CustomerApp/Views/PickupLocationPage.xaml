@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Vyron.CustomerApp.Views.PickupLocationPage"
+             Shell.NavBarIsVisible="False"
+             Shell.TabBarIsVisible="False"
+             BackgroundColor="{StaticResource Bg}">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Border BackgroundColor="{StaticResource Bg}" Stroke="{StaticResource CardStroke}" StrokeThickness="0,0,0,1" Padding="18,16">
+            <Grid ColumnDefinitions="40,*" ColumnSpacing="12">
+                <Border BackgroundColor="{StaticResource Mint}" Stroke="Transparent" StrokeShape="RoundRectangle 20" WidthRequest="40" HeightRequest="40">
+                    <Label Text="←" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center" TextColor="{StaticResource Gray5}" />
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnBackTapped" />
+                    </Border.GestureRecognizers>
+                </Border>
+                <Label Grid.Column="1" Text="Pickup location" FontFamily="OpenSansSemibold" FontSize="18" VerticalOptions="Center" />
+            </Grid>
+        </Border>
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="22,20,22,24" Spacing="18">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Where should we pick up your laundry?" FontFamily="OpenSansSemibold" FontSize="24" />
+                    <Label Text="We'll use this to match you with the closest stores." TextColor="{StaticResource Gray3}" FontSize="15" />
+                </VerticalStackLayout>
+
+                <Border BackgroundColor="{StaticResource Mint}" Stroke="Transparent" StrokeShape="RoundRectangle 24" Padding="16">
+                    <Grid ColumnDefinitions="52,*,Auto" ColumnSpacing="12">
+                        <Border BackgroundColor="White" WidthRequest="44" HeightRequest="44" Stroke="Transparent" StrokeShape="RoundRectangle 22">
+                            <Path Stroke="{StaticResource TealDark}" StrokeThickness="2" StrokeLineCap="Round" StrokeLineJoin="Round" Data="M15,31 L34,16 L28,38 L24,29 Z" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                            <Label Text="Use current location" FontFamily="OpenSansSemibold" FontSize="14" />
+                            <Label Text="15 Admiralty Way, Lekki Phase 1" TextColor="{StaticResource Gray3}" FontSize="12" />
+                        </VerticalStackLayout>
+                        <Border Grid.Column="2" BackgroundColor="{StaticResource TealDark}" Stroke="Transparent" StrokeShape="RoundRectangle 14" Padding="10,5" VerticalOptions="Center">
+                            <Label Text="GPS" TextColor="White" FontSize="11" FontFamily="OpenSansSemibold" />
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <Label Text="SAVED ADDRESSES" FontSize="12" TextColor="{StaticResource Gray5}" Margin="0,8,0,-4" />
+
+                <Border x:Name="HomeAddress" Style="{StaticResource CardBorderStyle}" Padding="16">
+                    <Grid ColumnDefinitions="52,*,Auto" ColumnSpacing="12">
+                        <Border BackgroundColor="{StaticResource Mint}" WidthRequest="44" HeightRequest="44" Stroke="Transparent" StrokeShape="RoundRectangle 22">
+                            <Path Stroke="{StaticResource TealDark}" StrokeThickness="2" StrokeLineCap="Round" StrokeLineJoin="Round" Data="M14,25 L24,16 L34,25 M17,24 L17,36 L31,36 L31,24 M21,36 L21,29 L27,29 L27,36" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                            <HorizontalStackLayout Spacing="8">
+                                <Label Text="Home" FontFamily="OpenSansSemibold" FontSize="15" />
+                                <Border BackgroundColor="{StaticResource Mint}" Stroke="Transparent" StrokeShape="RoundRectangle 12" Padding="8,2">
+                                    <Label Text="DEFAULT" TextColor="{StaticResource TealDark}" FontSize="10" FontFamily="OpenSansSemibold" />
+                                </Border>
+                            </HorizontalStackLayout>
+                            <Label Text="14 Admiralty Way, Lekki Phase 1" TextColor="{StaticResource Gray3}" FontSize="12" />
+                        </VerticalStackLayout>
+                        <RadioButton Grid.Column="2" IsChecked="True" VerticalOptions="Center" />
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource CardBorderStyle}" Padding="16">
+                    <Grid ColumnDefinitions="52,*,Auto" ColumnSpacing="12">
+                        <Border BackgroundColor="{StaticResource Mint}" WidthRequest="44" HeightRequest="44" Stroke="Transparent" StrokeShape="RoundRectangle 22">
+                            <Path Stroke="{StaticResource TealDark}" StrokeThickness="2" StrokeLineCap="Round" StrokeLineJoin="Round" Data="M16,36 L16,18 L32,18 L32,36 M20,22 L20,24 M28,22 L28,24 M20,29 L20,31 M28,29 L28,31" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                            <Label Text="Office" FontFamily="OpenSansSemibold" FontSize="15" />
+                            <Label Text="Plot 22, Adeola Odeku, Victoria Island" TextColor="{StaticResource Gray3}" FontSize="12" />
+                        </VerticalStackLayout>
+                        <RadioButton Grid.Column="2" VerticalOptions="Center" />
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource CardBorderStyle}" Padding="16">
+                    <Grid ColumnDefinitions="52,*,Auto" ColumnSpacing="12">
+                        <Border BackgroundColor="{StaticResource Mint}" WidthRequest="44" HeightRequest="44" Stroke="Transparent" StrokeShape="RoundRectangle 22">
+                            <Path Stroke="{StaticResource TealDark}" StrokeThickness="2" StrokeLineCap="Round" StrokeLineJoin="Round" Data="M24,37 C24,37 34,28 34,21 A10,10 0 1 0 14,21 C14,28 24,37 24,37 Z M24,24 A3,3 0 1 0 24,18 A3,3 0 1 0 24,24" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                            <Label Text="Mum's place" FontFamily="OpenSansSemibold" FontSize="15" />
+                            <Label Text="6 Allen Avenue, Ikeja" TextColor="{StaticResource Gray3}" FontSize="12" />
+                        </VerticalStackLayout>
+                        <RadioButton Grid.Column="2" VerticalOptions="Center" />
+                    </Grid>
+                </Border>
+
+                <Border BackgroundColor="Transparent" Stroke="{StaticResource CardStroke}" StrokeDashArray="6,5" StrokeShape="RoundRectangle 24" Padding="18">
+                    <Label Text="+  Add a new address" TextColor="{StaticResource TealDark}" FontFamily="OpenSansSemibold" FontSize="15" HorizontalOptions="Center" />
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Border Grid.Row="2" BackgroundColor="{StaticResource Bg}" Stroke="Transparent" Padding="18,10">
+            <Button Text="Continue" Clicked="OnContinueClicked" />
+        </Border>
+    </Grid>
+</ContentPage>

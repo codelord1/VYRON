@@ -15,6 +15,12 @@
                   Shell.NavBarIsVisible="False"
                   Shell.TabBarIsVisible="False" />
 
+    <ShellContent x:Name="PickupLocationShell"
+                  Route="pickupLocation"
+                  ContentTemplate="{DataTemplate views:PickupLocationPage}"
+                  Shell.NavBarIsVisible="False"
+                  Shell.TabBarIsVisible="False" />
+
     <ShellContent x:Name="LoginShell"
                   Route="login"
                   ContentTemplate="{DataTemplate auth:LoginPage}"
@@ -22,22 +28,22 @@
                   Shell.TabBarIsVisible="False" />
 
     <TabBar x:Name="MainTabs" Route="main">
-        <Tab Route="storesTab" Title="Stores" Icon="store_tab.png">
+        <Tab Route="homeTab" Title="Home" Icon="home_tab.svg">
+            <ShellContent Route="home"
+                          ContentTemplate="{DataTemplate stores:HomePage}" />
+        </Tab>
+
+        <Tab Route="storesTab" Title="Stores" Icon="store_tab.svg">
             <ShellContent Route="stores"
                           ContentTemplate="{DataTemplate stores:StoresPage}" />
         </Tab>
 
-        <Tab Route="ordersTab" Title="Order" Icon="orders_tab.png">
+        <Tab Route="ordersTab" Title="Orders" Icon="orders_tab.svg">
             <ShellContent Route="orders"
                           ContentTemplate="{DataTemplate orders:OrdersPage}" />
         </Tab>
 
-        <Tab Route="trackTab" Title="Track" Icon="track_tab.png">
-            <ShellContent Route="track"
-                          ContentTemplate="{DataTemplate orders:TrackPage}" />
-        </Tab>
-
-        <Tab Route="moreTab" Title="More" Icon="more_tab.png">
+        <Tab Route="moreTab" Title="More" Icon="more_tab.svg">
             <ShellContent Route="more"
                           ContentTemplate="{DataTemplate more:MorePage}" />
         </Tab>

@@ -4,7 +4,6 @@ namespace Vyron.CustomerApp.Helpers;
 
 public static class PhoneHelper
 {
-    // ── Supported country codes (shown in the login picker) ──────────
     public static readonly IReadOnlyList<CountryCodeOption> CountryOptions =
         new List<CountryCodeOption>
         {
@@ -17,44 +16,37 @@ public static class PhoneHelper
             new() { FlagEmoji = "🇨🇦", CountryName = "Canada",         DialCode = "+1",   CountryIso = "CA" },
         };
 
-    /// <summary>Default country (Nigeria).</summary>
     public static CountryCodeOption DefaultCountry => CountryOptions[0];
 
-    /// <summary>
-    /// Normalize a local phone number + dial code to E.164.
-    /// Examples:
-    ///   "08012345678" + "+234" → "+2348012345678"
-    ///   "8012345678"  + "+234" → "+2348012345678"
-    ///   "07911123456" + "+44"  → "+447911123456"
-    ///   "+2348012345678"       → "+2348012345678" (already E.164 — returned as-is)
-    /// </summary>
     public static string Normalize(string localPhone, string dialCode = "+234")
     {
-        // Strip whitespace, dashes, parentheses
-        var phone = localPhone.Trim()
-            .Replace(" ", "")
-            .Replace("-", "")
-            .Replace("(", "")
-            .Replace(")", "");
-
-        // Already E.164 → return as-is (handles if user typed full number)
-        if (phone.StartsWith("+"))
-            return phone;
-
-        // Strip leading 0 (common in many countries: Nigeria 08xx, UK 07xx, etc.)
-        if (phone.StartsWith("0"))
-            phone = phone[1..];
-
-        return $"{dialCode}{phone}";
+        var digits = SanitizeLocalInput(localPhone, dialCode);
+        return $"{dialCode}{digits}";
     }
 
-    /// <summary>Validates an E.164 phone number.</summary>
+    public static string SanitizeLocalInput(string localPhone, string dialCode = "+234")
+    {
+        var digits = new string(localPhone.Where(char.IsDigit).ToArray());
+        var dialDigits = new string(dialCode.Where(char.IsDigit).ToArray());
+
+        if (digits.StartsWith(dialDigits, StringComparison.Ordinal))
+            digits = digits[dialDigits.Length..];
+
+        while (digits.StartsWith("0", StringComparison.Ordinal) && digits.Length > 1)
+            digits = digits[1..];
+
+        return digits;
+    }
+
     public static bool IsValid(string phone)
     {
         var p = phone.Trim();
-        return p.StartsWith("+")
-            && p.Length >= 8   // +1 + 7 digits minimum
+        return p.StartsWith("+", StringComparison.Ordinal)
+            && p.Length >= 8
             && p.Length <= 16
             && p[1..].All(char.IsDigit);
     }
+
+    public static string FriendlyDuplicateMessage =>
+        "This phone number already exists. Please login instead.";
 }

@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.CustomerApp.ViewModels"
+             xmlns:dto="clr-namespace:Vyron.CustomerApp.DTOs"
+             x:Class="Vyron.CustomerApp.Views.Stores.HomePage"
+             x:Name="ThisPage"
+             x:DataType="vm:HomeViewModel"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{StaticResource Bg}">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="0">
+            <Grid BackgroundColor="{StaticResource TealDark}" Padding="18,38,18,28">
+                <VerticalStackLayout Spacing="20">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Pickup at" TextColor="#C9F4E6" FontSize="12" />
+                            <HorizontalStackLayout Spacing="5">
+                                <Label Text="PIN" TextColor="White" FontSize="11" VerticalOptions="Center" />
+                                <Label Text="{Binding PickupLocation}" TextColor="White" FontSize="14" FontFamily="OpenSansSemibold" />
+                                <Label Text="⌄" TextColor="White" FontSize="14" />
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                        <Border Grid.Column="1" WidthRequest="42" HeightRequest="42" BackgroundColor="#1F9678" Stroke="Transparent" StrokeShape="RoundRectangle 21">
+                            <Grid>
+                                <Label Text="BELL" FontSize="9" TextColor="White" HorizontalOptions="Center" VerticalOptions="Center" />
+                                <Ellipse Fill="#F4C542" WidthRequest="8" HeightRequest="8" HorizontalOptions="End" VerticalOptions="Start" Margin="0,8,8,0" />
+                            </Grid>
+                        </Border>
+                    </Grid>
+
+                    <VerticalStackLayout Spacing="2">
+                        <Label Text="{Binding CustomerName, StringFormat='Hello, {0}'}" TextColor="White" FontSize="24" FontFamily="OpenSansSemibold" />
+                        <Label Text="Let's get your laundry sorted today." TextColor="#E3FFF6" FontSize="15" />
+                    </VerticalStackLayout>
+
+                    <Border BackgroundColor="White" Stroke="Transparent" StrokeShape="RoundRectangle 24" HeightRequest="54">
+                        <Grid ColumnDefinitions="Auto,*" Padding="16,0" ColumnSpacing="10">
+                            <Label Text="SEARCH" FontSize="10" TextColor="{StaticResource Gray3}" VerticalOptions="Center" />
+                            <Entry Grid.Column="1" Placeholder="Search laundry store or service" Text="{Binding SearchText}" />
+                        </Grid>
+                    </Border>
+
+                    <Border BackgroundColor="White" Stroke="Transparent" StrokeShape="RoundRectangle 28" Padding="20" Margin="0,12,0,-86">
+                        <Grid ColumnDefinitions="*,100" ColumnSpacing="14">
+                            <VerticalStackLayout Spacing="9">
+                                <Border BackgroundColor="{StaticResource Mint}" Stroke="Transparent" StrokeShape="RoundRectangle 14" Padding="10,5" HorizontalOptions="Start">
+                                    <Label Text="Schedule today" FontSize="12" TextColor="{StaticResource TealDark}" FontFamily="OpenSansSemibold" />
+                                </Border>
+                                <Label Text="Schedule a laundry pickup today" FontFamily="OpenSansSemibold" FontSize="20" />
+                                <Label Text="Free pickup over N5,000 · Pay on delivery" FontSize="13" TextColor="{StaticResource Gray3}" />
+                                <Button Text="Book Pickup  >" Command="{Binding StartPickupCommand}" HeightRequest="38" WidthRequest="132" FontSize="12" Padding="0" HorizontalOptions="Start" />
+                            </VerticalStackLayout>
+                            <Border Grid.Column="1" WidthRequest="86" HeightRequest="86" BackgroundColor="{StaticResource Mint}" Stroke="Transparent" StrokeShape="RoundRectangle 28" VerticalOptions="Center">
+                                <Path Stroke="{StaticResource TealDark}" StrokeThickness="2.6" StrokeLineCap="Round" StrokeLineJoin="Round" Data="M22,52 L22,36 L50,36 L50,52 M50,42 L60,42 L68,52 L68,58 L62,58 M34,58 L54,58 M29,58 A5,5 0 1 0 29,68 A5,5 0 1 0 29,58 M59,58 A5,5 0 1 0 59,68 A5,5 0 1 0 59,58" />
+                            </Border>
+                        </Grid>
+                    </Border>
+                </VerticalStackLayout>
+            </Grid>
+
+            <VerticalStackLayout Padding="20,104,20,24" Spacing="22">
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="Quick services" FontFamily="OpenSansSemibold" FontSize="17" />
+                    <Label Grid.Column="1" Text="See all" TextColor="{StaticResource TealDark}" FontSize="13" />
+                </Grid>
+
+                <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+                    <Border Style="{StaticResource CardBorderStyle}" Padding="12" HeightRequest="94">
+                        <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+                            <Border BackgroundColor="{StaticResource Mint}" WidthRequest="44" HeightRequest="44" Stroke="Transparent" StrokeShape="RoundRectangle 22">
+                                <Path Stroke="{StaticResource TealDark}" StrokeThickness="2" StrokeLineCap="Round" Data="M13,24 C20,17 27,31 35,22" />
+                            </Border>
+                            <Label Text="Wash Only" FontSize="12" FontFamily="OpenSansSemibold" HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Column="1" Style="{StaticResource CardBorderStyle}" Padding="12" HeightRequest="94">
+                        <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+                            <Border BackgroundColor="{StaticResource Mint}" WidthRequest="44" HeightRequest="44" Stroke="Transparent" StrokeShape="RoundRectangle 22">
+                                <Path Stroke="{StaticResource TealDark}" StrokeThickness="2" StrokeLineCap="Round" StrokeLineJoin="Round" Data="M20,32 L30,14 M22,18 L30,14 L34,22 M15,24 C22,17 28,31 36,23" />
+                            </Border>
+                            <Label Text="Wash &amp; Iron" FontSize="12" FontFamily="OpenSansSemibold" HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}" Padding="12" HeightRequest="94">
+                        <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+                            <Border BackgroundColor="{StaticResource Mint}" WidthRequest="44" HeightRequest="44" Stroke="Transparent" StrokeShape="RoundRectangle 22">
+                                <Path Stroke="{StaticResource TealDark}" StrokeThickness="2" StrokeLineCap="Round" StrokeLineJoin="Round" Data="M16,20 L24,16 L32,20 L28,24 L28,34 L20,34 L20,24 Z" />
+                            </Border>
+                            <Label Text="Iron Only" FontSize="12" FontFamily="OpenSansSemibold" HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}" Padding="12" HeightRequest="94">
+                        <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+                            <Border BackgroundColor="{StaticResource Mint}" WidthRequest="44" HeightRequest="44" Stroke="Transparent" StrokeShape="RoundRectangle 22">
+                                <Path Stroke="{StaticResource TealDark}" StrokeThickness="2" StrokeLineCap="Round" StrokeLineJoin="Round" Data="M15,30 L19,20 L24,28 L29,20 L33,30 Z M16,34 L32,34" />
+                            </Border>
+                            <Label Text="Dry Clean" FontSize="12" FontFamily="OpenSansSemibold" HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource CardBorderStyle}" Padding="12" HeightRequest="94">
+                        <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+                            <Border BackgroundColor="{StaticResource Mint}" WidthRequest="44" HeightRequest="44" Stroke="Transparent" StrokeShape="RoundRectangle 22">
+                                <Path Stroke="{StaticResource TealDark}" StrokeThickness="2" StrokeLineCap="Round" StrokeLineJoin="Round" Data="M14,30 L14,22 L34,22 L34,34 M14,34 L34,34 M17,22 L17,18 L31,18 L31,22" />
+                            </Border>
+                            <Label Text="Bedsheets" FontSize="12" FontFamily="OpenSansSemibold" HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource CardBorderStyle}" Padding="12" HeightRequest="94">
+                        <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+                            <Border BackgroundColor="{StaticResource Mint}" WidthRequest="44" HeightRequest="44" Stroke="Transparent" StrokeShape="RoundRectangle 22">
+                                <Path Stroke="{StaticResource TealDark}" StrokeThickness="2" StrokeLineCap="Round" StrokeLineJoin="Round" Data="M15,30 L19,20 L24,28 L29,20 L33,30 Z M16,34 L32,34" />
+                            </Border>
+                            <Label Text="Suits" FontSize="12" FontFamily="OpenSansSemibold" HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                    </Border>
+                </Grid>
+
+                <Border BackgroundColor="{StaticResource Mint}" Stroke="{StaticResource CardStroke}" StrokeShape="RoundRectangle 24" Padding="0" IsVisible="{Binding HasActiveOrder}">
+                    <VerticalStackLayout Spacing="0">
+                        <Grid ColumnDefinitions="*,Auto" Padding="16,9">
+                            <Label Text="{Binding ActiveOrder.OrderNumber, StringFormat='●  ACTIVE ORDER · {0}'}" TextColor="{StaticResource TealDark}" FontFamily="OpenSansSemibold" FontSize="13" />
+                            <Label Grid.Column="1" Text=">" TextColor="{StaticResource TealDark}" FontSize="18" />
+                        </Grid>
+                        <Grid BackgroundColor="White" ColumnDefinitions="54,*" ColumnSpacing="12" Padding="16,14">
+                            <Border BackgroundColor="{StaticResource Mint}" WidthRequest="44" HeightRequest="44" Stroke="Transparent" StrokeShape="RoundRectangle 22">
+                                <Path Stroke="{StaticResource TealDark}" StrokeThickness="2" StrokeLineCap="Round" StrokeLineJoin="Round" Data="M10,26 L10,18 L28,18 L28,26 M28,21 L34,21 L38,27 L38,31 L34,31 M18,31 L30,31 M15,31 A3,3 0 1 0 15,37 A3,3 0 1 0 15,31 M33,31 A3,3 0 1 0 33,37 A3,3 0 1 0 33,31" />
+                            </Border>
+                            <VerticalStackLayout Grid.Column="1" Spacing="7">
+                                <Label Text="{Binding ActiveOrder.StatusDescription}" FontFamily="OpenSansSemibold" FontSize="15" />
+                                <Label Text="{Binding ActiveOrder.StatusSubtitle}" FontSize="12" TextColor="{StaticResource Gray3}" />
+                                <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="6">
+                                    <BoxView HeightRequest="5" CornerRadius="3" Color="{StaticResource TealDark}" />
+                                    <BoxView Grid.Column="1" HeightRequest="5" CornerRadius="3" Color="{StaticResource TealDark}" />
+                                    <BoxView Grid.Column="2" HeightRequest="5" CornerRadius="3" Color="{StaticResource TealDark}" />
+                                    <BoxView Grid.Column="3" HeightRequest="5" CornerRadius="3" Color="{StaticResource TealDark}" />
+                                    <BoxView Grid.Column="4" HeightRequest="5" CornerRadius="3" Color="{StaticResource CardStroke}" />
+                                </Grid>
+                            </VerticalStackLayout>
+                        </Grid>
+                    </VerticalStackLayout>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding ViewActiveOrderCommand}" />
+                    </Border.GestureRecognizers>
+                </Border>
+
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="Nearby trusted stores" FontFamily="OpenSansSemibold" FontSize="18" />
+                    <Label Grid.Column="1" Text="View all" TextColor="{StaticResource TealDark}" FontSize="13" VerticalOptions="Center">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding GoToStoresCommand}" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                </Grid>
+
+                <CollectionView ItemsSource="{Binding StoreItems}" ItemsLayout="HorizontalList" HeightRequest="190" SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="dto:StoreListItemDto">
+                            <Grid WidthRequest="238" Padding="0,0,14,0">
+                                <Border BackgroundColor="White" Stroke="{StaticResource CardStroke}" StrokeShape="RoundRectangle 22">
+                                    <Grid RowDefinitions="96,Auto">
+                                        <Grid BackgroundColor="#0AA37F">
+                                            <Image Source="{Binding FullLogoUrl}" Aspect="AspectFill" IsVisible="{Binding HasLogo}" />
+                                        </Grid>
+                                        <VerticalStackLayout Grid.Row="1" Padding="14,10" Spacing="4">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <Border BackgroundColor="{StaticResource Mint}" Stroke="Transparent" StrokeShape="RoundRectangle 14" Padding="10,4" HorizontalOptions="Start">
+                                                    <Label Text="{Binding BadgeText}" FontSize="11" TextColor="{StaticResource TealDark}" />
+                                                </Border>
+                                                <Label Grid.Column="1" Text="{Binding RatingDisplay}" FontSize="12" FontFamily="OpenSansSemibold" />
+                                            </Grid>
+                                            <Label Text="{Binding Name}" FontFamily="OpenSansSemibold" FontSize="14" LineBreakMode="TailTruncation" />
+                                            <Label Text="{Binding StartingFromText}" FontSize="12" TextColor="{StaticResource Gray3}" />
+                                        </VerticalStackLayout>
+                                    </Grid>
+                                </Border>
+                                <Grid.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding Source={x:Reference ThisPage}, Path=BindingContext.SelectStoreCommand}" CommandParameter="{Binding .}" />
+                                </Grid.GestureRecognizers>
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <Border BackgroundColor="{StaticResource TealDark}" Stroke="Transparent" StrokeShape="RoundRectangle 26" Padding="20,18">
+                    <Grid ColumnDefinitions="54,*,Auto" ColumnSpacing="12">
+                        <Border BackgroundColor="#2B9278" WidthRequest="48" HeightRequest="48" Stroke="Transparent" StrokeShape="RoundRectangle 24">
+                            <Path Stroke="White" StrokeThickness="2" StrokeLineCap="Round" StrokeLineJoin="Round" Data="M17,24 L30,15 L35,20 L22,32 Z M28,17 L33,22" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                            <Label Text="20% off your first 3 orders" TextColor="White" FontFamily="OpenSansSemibold" FontSize="15" />
+                            <Label Text="Use code VYRON20" TextColor="#D9F8EC" FontSize="12" />
+                        </VerticalStackLayout>
+                        <Label Grid.Column="2" Text=">" TextColor="White" FontSize="24" VerticalOptions="Center" />
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource CardBorderStyle}">
+                    <Grid ColumnDefinitions="54,*,Auto" ColumnSpacing="12">
+                        <Border BackgroundColor="{StaticResource Mint}" WidthRequest="44" HeightRequest="44" Stroke="Transparent" StrokeShape="RoundRectangle 22">
+                            <Path Stroke="{StaticResource TealDark}" StrokeThickness="2" StrokeLineCap="Round" StrokeLineJoin="Round" Data="M14,18 L24,13 L34,18 L34,30 L24,35 L14,30 Z M24,13 L24,35 M14,18 L24,23 L34,18" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                            <Label Text="Reorder from FreshFold" FontFamily="OpenSansSemibold" FontSize="14" />
+                            <Label Text="Wash Only · 5 kg · N3,000" FontSize="12" TextColor="{StaticResource Gray3}" />
+                        </VerticalStackLayout>
+                        <Border Grid.Column="2" BackgroundColor="{StaticResource Mint}" Stroke="Transparent" StrokeShape="RoundRectangle 18" Padding="14,8" VerticalOptions="Center">
+                            <Label Text="Reorder" TextColor="{StaticResource TealDark}" FontSize="12" FontFamily="OpenSansSemibold" />
+                        </Border>
+                    </Grid>
+                </Border>
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

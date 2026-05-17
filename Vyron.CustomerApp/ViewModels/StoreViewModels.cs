@@ -19,6 +19,80 @@ public partial class ServiceCardViewModel : ObservableObject
     public ServiceCardViewModel(ServiceSummaryDto svc) => Service = svc;
 }
 
+public partial class HomeViewModel : BaseViewModel
+{
+    private readonly StoreService _stores;
+    private readonly OrderService _orders;
+
+    [ObservableProperty] private ObservableCollection<StoreListItemDto> _storeItems = new();
+    [ObservableProperty] private OrderDto? _activeOrder;
+    [ObservableProperty] private bool _hasActiveOrder;
+    [ObservableProperty] private string _searchText = "";
+
+    public string CustomerName
+    {
+        get
+        {
+            var name = AppSession.Current.User?.FullName;
+            if (string.IsNullOrWhiteSpace(name)) return "there";
+            return name.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0];
+        }
+    }
+
+    public string PickupLocation =>
+        Preferences.Default.Get("Vyron.Customer.PickupLocation", "Lekki Phase 1");
+
+    public HomeViewModel(StoreService stores, OrderService orders)
+    {
+        _stores = stores;
+        _orders = orders;
+    }
+
+    public async Task InitAsync() => await LoadAsync();
+
+    [RelayCommand]
+    private async Task LoadAsync()
+    {
+        IsBusy = true;
+
+        var (stores, _) = await SafeCallAsync(() => _stores.GetStoresAsync(sort: "rating"), "stores");
+        StoreItems.Clear();
+        foreach (var store in stores?.Take(6) ?? Enumerable.Empty<StoreListItemDto>())
+            StoreItems.Add(store);
+
+        var (orders, _) = await SafeCallAsync(() => _orders.GetMyOrdersAsync(), "orders");
+        ActiveOrder = orders?.FirstOrDefault(o => o.Status is not ("Completed" or "Cancelled" or "BalancePaid"));
+        HasActiveOrder = ActiveOrder != null;
+
+        IsBusy = false;
+    }
+
+    [RelayCommand]
+    private async Task GoToStoresAsync() => await Shell.Current.GoToAsync(AppRoutes.Stores);
+
+    [RelayCommand]
+    private async Task GoToOrdersAsync() => await Shell.Current.GoToAsync(AppRoutes.Orders);
+
+    [RelayCommand]
+    private async Task SelectStoreAsync(StoreListItemDto store)
+        => await Shell.Current.GoToAsync($"{AppRoutes.StoreDetails}?storeId={store.Id}");
+
+    [RelayCommand]
+    private async Task ViewActiveOrderAsync()
+    {
+        if (ActiveOrder == null)
+        {
+            await Shell.Current.GoToAsync(AppRoutes.Orders);
+            return;
+        }
+
+        await Shell.Current.GoToAsync($"{AppRoutes.OrderTracking}?orderId={ActiveOrder.Id}");
+    }
+
+    [RelayCommand]
+    private async Task StartPickupAsync() => await Shell.Current.GoToAsync(AppRoutes.Stores);
+}
+
 // ─── STORES LIST ─────────────────────────────────────────────────
 public partial class StoresViewModel : BaseViewModel
 {
@@ -86,7 +160,7 @@ public partial class StoresViewModel : BaseViewModel
             _stores.GetStoresAsync(
                 search: string.IsNullOrWhiteSpace(SearchText) ? null : SearchText,
                 sort:   sort,
-                filter: filter));
+                filter: filter), "stores");
 
         StoreItems.Clear();
         foreach (var s in data ?? Enumerable.Empty<StoreListItemDto>())
@@ -111,7 +185,7 @@ public partial class StoresViewModel : BaseViewModel
 
     [RelayCommand]
     private async Task GoToProfileAsync()
-        => await Shell.Current.GoToAsync("//profile");
+        => await Shell.Current.GoToAsync(AppRoutes.Profile);
 }
 
 // ─── STORE DETAILS ───────────────────────────────────────────────
@@ -137,7 +211,7 @@ public partial class StoreDetailsViewModel : BaseViewModel
     {
         if (!Guid.TryParse(StoreId, out var id)) return;
 
-        var (data, _) = await SafeCallAsync(() => _stores.GetStoreAsync(id));
+        var (data, _) = await SafeCallAsync(() => _stores.GetStoreAsync(id), "stores");
         Store      = data;
         HasReviews = Store?.RecentReviews?.Count > 0;
     }

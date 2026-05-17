@@ -4,6 +4,7 @@
              xmlns:vm="clr-namespace:Vyron.CustomerApp.ViewModels"
              xmlns:dto="clr-namespace:Vyron.CustomerApp.DTOs"
              x:Class="Vyron.CustomerApp.Views.Orders.OrdersPage"
+             x:Name="ThisPage"
              x:DataType="vm:OrdersViewModel"
              Title="My Orders"
              Shell.NavBarIsVisible="False"
@@ -12,9 +13,7 @@
     <RefreshView Command="{Binding LoadCommand}"
                  IsRefreshing="{Binding IsBusy}">
         <CollectionView ItemsSource="{Binding Orders_}"
-                        SelectionMode="Single"
-                        SelectionChangedCommand="{Binding SelectOrderCommand}"
-                        SelectionChangedCommandParameter="{Binding SelectedItem, Source={RelativeSource Self}}">
+                        SelectionMode="None">
 
             <CollectionView.Header>
                 <VerticalStackLayout Padding="20,18,20,16" Spacing="18">
@@ -72,6 +71,10 @@
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="dto:OrderDto">
                     <Grid Padding="20,7">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding Source={x:Reference ThisPage}, Path=BindingContext.SelectOrderCommand}"
+                                                  CommandParameter="{Binding .}" />
+                        </Grid.GestureRecognizers>
                         <Border BackgroundColor="White"
                                 Stroke="{StaticResource CardStroke}"
                                 StrokeShape="RoundRectangle 24"

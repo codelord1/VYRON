@@ -18,4 +18,11 @@ public partial class MorePage : ContentPage
         base.OnAppearing();
         _vm.RefreshUserInfo();
     }
+
+    private async void OnPaymentMethodsTapped(object sender, TappedEventArgs e)
+    {
+        await DisplayAlert("Coming soon",
+            "Payment methods and wallet features will be available in a future release.",
+            "OK");
+    }
 }

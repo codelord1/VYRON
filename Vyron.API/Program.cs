@@ -15,6 +15,17 @@ using Vyron.Shared.Enums;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ─── LOCAL NETWORK ACCESS FOR PHYSICAL ANDROID TESTING ─────────────
+// Allows TECNO / physical Android device on same Wi-Fi to reach the API.
+// Phone URL: http://192.168.0.166:50680/swagger/index.html
+if (builder.Environment.IsDevelopment())
+{
+    builder.WebHost.UseUrls(
+        "http://0.0.0.0:50680",
+        "https://0.0.0.0:50677"
+    );
+}
+
 // ─── LOGGING ──────────────────────────────────────────────────────
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
