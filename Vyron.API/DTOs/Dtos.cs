@@ -46,7 +46,8 @@ public record StoreListItemDto(
     bool IsVerified, bool IsTopRated, bool FastPickup,
     StoreStatus Status, string? LogoUrl,
     double Latitude, double Longitude,
-    List<ServiceSummaryDto> Services);
+    List<ServiceSummaryDto> Services,
+    bool IsCurrentlyOpen = true);
 
 public record StoreDetailDto(
     Guid Id, string Name, string Description, string Phone, string Email,
@@ -57,7 +58,8 @@ public record StoreDetailDto(
     string? OpeningHours, string? LogoUrl, string? BannerUrl,
     StoreStatus Status, DateTime CreatedAt,
     List<ServiceSummaryDto> Services,
-    List<ReviewDto> RecentReviews);
+    List<ReviewDto> RecentReviews,
+    bool IsCurrentlyOpen = true);
 
 public record ServiceSummaryDto(
     Guid Id, ServiceType ServiceType, string Name, string? Description,
@@ -105,6 +107,7 @@ public record PriceEstimateResponse(
 
 public record UpdateOrderStatusRequest(OrderStatus Status, string? Note);
 public record AssignRiderRequest(Guid RiderId);
+public record AssignDeliveryRiderRequest(Guid RiderId);
 public record OverridePriceRequest(decimal ActualLaundryCost, string Reason);
 
 public record OrderDto(
@@ -131,6 +134,7 @@ public record OrderDto(
     DateTime CreatedAt,
     List<StatusHistoryDto> StatusHistory,
     ReviewDto? Review, DisputeSummaryDto? Dispute,
+    RiderSummaryDto? DeliveryRider = null,
     List<OrderItemDto>? Items = null);
 
 public record CustomerSummaryDto(Guid Id, string FullName, string Phone);

@@ -28,7 +28,13 @@ else
             <div class="card">
                 <div class="flex-between mb-2">
                     <h3 class="card-title mb-0">@s.Name</h3>
-                    <span class="badge badge-@(s.Status == StoreStatus.Active ? "success" : s.Status == StoreStatus.Pending ? "warning" : "danger")">@s.Status</span>
+                    <div class="flex gap-1">
+                        <span class="badge badge-@(s.Status == StoreStatus.Active ? "success" : s.Status == StoreStatus.Pending ? "warning" : "danger")">@s.Status</span>
+                        @if (s.Status == StoreStatus.Active)
+                        {
+                            <span class="badge badge-@(s.IsManuallyClosed ? "danger" : "success")">@(s.IsManuallyClosed ? "Closed" : "Open")</span>
+                        }
+                    </div>
                 </div>
                 <p class="text-muted mb-2">@s.Description</p>
 
@@ -51,6 +57,16 @@ else
                     <a href="/StoreOwner/StoreEdit/@s.Id" class="btn btn-primary btn-sm flex-1">Edit Store</a>
                     <a href="/StoreOwner/ServiceOfferings" class="btn btn-secondary btn-sm flex-1">Services</a>
                 </div>
+
+                @if (s.Status == StoreStatus.Active)
+                {
+                    <form asp-action="ToggleStoreOpen" asp-route-id="@s.Id" method="post" class="mt-2">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-block @(s.IsManuallyClosed ? "btn-success" : "btn-warning")">
+                            @(s.IsManuallyClosed ? "🟢 Open Store" : "🔴 Close Store")
+                        </button>
+                    </form>
+                }
 
                 @if (s.IsVerified || s.IsTopRated)
                 {

@@ -1,3 +1,4 @@
+using Vyron.CustomerApp.Views;
 using Vyron.CustomerApp.Views.Auth;
 using Vyron.CustomerApp.Views.Disputes;
 using Vyron.CustomerApp.Views.More;
@@ -5,7 +6,6 @@ using Vyron.CustomerApp.Views.Orders;
 using Vyron.CustomerApp.Views.Profile;
 using Vyron.CustomerApp.Views.Reviews;
 using Vyron.CustomerApp.Views.Stores;
-using Vyron.CustomerApp.Views;
 
 namespace Vyron.CustomerApp;
 
@@ -18,17 +18,16 @@ public partial class AppShell : Shell
         InitializeComponent();
         RegisterRoutes();
 
-        // ── Stores-tab navigation reset ──────────────────────────────
-        // When the user taps the Stores tab while sub-pages (StoreDetails,
-        // ServiceSelection, etc.) are on the navigation stack, MAUI Shell does NOT
-        // automatically pop them.  We listen to the Navigated event and, whenever
-        // the shell lands back on the Stores root due to a tab-change or an
-        // explicit Stores tab navigation, pop everything above the root page so
-        // the user always sees a clean StoresPage (search/list).
+        // Keep bottom tabs predictable: selecting a tab lands on its root page.
         Navigated += OnShellNavigated;
     }
 
-    private async void OnShellNavigated(object? sender, ShellNavigatedEventArgs e)
+    public Task NavigateHomeRootAsync() => ResetTabToRootAsync(AppRoutes.Home);
+    public Task NavigateStoresRootAsync() => ResetTabToRootAsync(AppRoutes.Stores);
+    public Task NavigateOrdersRootAsync() => ResetTabToRootAsync(AppRoutes.Orders);
+    public Task NavigateMoreRootAsync() => ResetTabToRootAsync(AppRoutes.More);
+
+    private void OnShellNavigated(object? sender, ShellNavigatedEventArgs e)
     {
         if (_resettingTab ||
             (e.Source != ShellNavigationSource.ShellSectionChanged &&
@@ -48,9 +47,20 @@ public partial class AppShell : Shell
             e.Current.Location.OriginalString == targetRoute)
             return;
 
+        Dispatcher.Dispatch(async () => await ResetTabToRootAsync(targetRoute));
+    }
+
+    private async Task ResetTabToRootAsync(string targetRoute)
+    {
+        if (_resettingTab)
+            return;
+
         try
         {
             _resettingTab = true;
+            if (CurrentState?.Location?.OriginalString == targetRoute)
+                return;
+
             await GoToAsync(targetRoute, animate: false);
         }
         finally
@@ -61,37 +71,29 @@ public partial class AppShell : Shell
 
     private static void RegisterRoutes()
     {
-        // Auth routes (no tab bar — pages set Shell.TabBarIsVisible="False" themselves)
-        Routing.RegisterRoute("verifyOtp",       typeof(VerifyOtpPage));
+        Routing.RegisterRoute("verifyOtp", typeof(VerifyOtpPage));
         Routing.RegisterRoute("completeProfile", typeof(CompleteProfilePage));
-        Routing.RegisterRoute("signup",          typeof(SignupPage));
-        Routing.RegisterRoute("forgotPassword",  typeof(ForgotPasswordPage));
-        Routing.RegisterRoute("resetPassword",   typeof(ResetPasswordPage));
+        Routing.RegisterRoute("signup", typeof(SignupPage));
+        Routing.RegisterRoute("forgotPassword", typeof(ForgotPasswordPage));
+        Routing.RegisterRoute("resetPassword", typeof(ResetPasswordPage));
 
-        // Profile (navigable from More tab)
         Routing.RegisterRoute("profile", typeof(ProfilePage));
 
-        // Store routes
-        Routing.RegisterRoute("storeDetails",     typeof(StoreDetailsPage));
+        Routing.RegisterRoute("storeDetails", typeof(StoreDetailsPage));
 
-        // Order routes
         Routing.RegisterRoute("serviceSelection", typeof(ServiceSelectionPage));
-        Routing.RegisterRoute("createOrder",      typeof(CreateOrderPage));
-        Routing.RegisterRoute("orderSuccess",     typeof(OrderSuccessPage));
-        Routing.RegisterRoute("orderDetails",     typeof(OrderDetailsPage));
-        Routing.RegisterRoute("orderTracking",    typeof(TrackPage));
+        Routing.RegisterRoute("createOrder", typeof(CreateOrderPage));
+        Routing.RegisterRoute("orderSuccess", typeof(OrderSuccessPage));
+        Routing.RegisterRoute("orderDetails", typeof(OrderDetailsPage));
+        Routing.RegisterRoute("orderTracking", typeof(TrackPage));
         Routing.RegisterRoute("pickupFeePayment", typeof(PickupFeePaymentPage));
-        Routing.RegisterRoute("balancePayment",   typeof(BalancePaymentPage));
+        Routing.RegisterRoute("balancePayment", typeof(BalancePaymentPage));
 
-        // Dispute & review
-        Routing.RegisterRoute("raiseDispute",     typeof(RaiseDisputePage));
-        Routing.RegisterRoute("disputeHistory",   typeof(DisputeHistoryPage));
-        Routing.RegisterRoute("addReview",        typeof(AddReviewPage));
+        Routing.RegisterRoute("raiseDispute", typeof(RaiseDisputePage));
+        Routing.RegisterRoute("disputeHistory", typeof(DisputeHistoryPage));
+        Routing.RegisterRoute("addReview", typeof(AddReviewPage));
 
-        // Notifications (More tab)
-        Routing.RegisterRoute("notifications",    typeof(NotificationsPage));
-
-        // Message Rider
-        Routing.RegisterRoute("messageRider",     typeof(MessageRiderPage));
+        Routing.RegisterRoute("notifications", typeof(NotificationsPage));
+        Routing.RegisterRoute("messageRider", typeof(MessageRiderPage));
     }
 }

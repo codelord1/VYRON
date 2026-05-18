@@ -156,24 +156,25 @@
                         </Grid>
                     </Border>
 
+                    <!-- Pickup rider card -->
                     <Border Style="{StaticResource CardBorderStyle}"
-                            IsVisible="{Binding ActiveOrder.Rider, Converter={StaticResource NotNullToBool}}">
+                            IsVisible="{Binding HasPickupRider}">
                         <Grid ColumnDefinitions="54,*,Auto,Auto" ColumnSpacing="12">
                             <Border BackgroundColor="{StaticResource Mint}"
                                     WidthRequest="48"
                                     HeightRequest="48"
                                     Stroke="Transparent"
                                     StrokeShape="RoundRectangle 24">
-                                <Label Text="{Binding ActiveOrder.Rider.FullName, Converter={StaticResource InitialsConverter}}"
+                                <Label Text="{Binding PickupRider.FullName, Converter={StaticResource InitialsConverter}}"
                                        FontFamily="OpenSansSemibold"
                                        TextColor="{StaticResource TealDark}"
                                        HorizontalOptions="Center"
                                        VerticalOptions="Center" />
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                                <Label Text="{Binding ActiveOrder.Rider.FullName}" FontFamily="OpenSansSemibold" FontSize="15" />
-                                <Label Text="{Binding ActiveOrder.Rider.VehiclePlate, StringFormat='Bike - {0}'}" FontSize="12" TextColor="{StaticResource Gray3}" />
-                                <Label Text="{Binding ActiveOrder.Rider.VehicleType}" FontSize="12" TextColor="{StaticResource Gray3}" />
+                                <Label Text="Pickup Rider" FontSize="11" TextColor="{StaticResource Gray3}" />
+                                <Label Text="{Binding PickupRider.FullName}" FontFamily="OpenSansSemibold" FontSize="15" />
+                                <Label Text="{Binding PickupRider.VehiclePlate, StringFormat='Bike - {0}'}" FontSize="12" TextColor="{StaticResource Gray3}" />
                             </VerticalStackLayout>
                             <Button Grid.Column="2"
                                     Text="Chat"
@@ -187,6 +188,38 @@
                             <Button Grid.Column="3"
                                     Text="Call"
                                     Command="{Binding CallRiderCommand}"
+                                    WidthRequest="54"
+                                    HeightRequest="44"
+                                    Padding="0"
+                                    FontSize="12" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Delivery rider card -->
+                    <Border Style="{StaticResource CardBorderStyle}"
+                            IsVisible="{Binding HasDeliveryRider}">
+                        <Grid ColumnDefinitions="54,*,Auto" ColumnSpacing="12">
+                            <Border BackgroundColor="{StaticResource Mint}"
+                                    WidthRequest="48"
+                                    HeightRequest="48"
+                                    Stroke="Transparent"
+                                    StrokeShape="RoundRectangle 24">
+                                <Label Text="{Binding DeliveryRider.FullName, Converter={StaticResource InitialsConverter}}"
+                                       FontFamily="OpenSansSemibold"
+                                       TextColor="{StaticResource TealDark}"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center" />
+                            </Border>
+                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                <Label Text="Delivery Rider" FontSize="11" TextColor="{StaticResource Gray3}" />
+                                <Label Text="{Binding DeliveryRider.FullName}" FontFamily="OpenSansSemibold" FontSize="15" />
+                                <Label Text="{Binding DeliveryRider.VehiclePlate, StringFormat='Bike - {0}'}" FontSize="12" TextColor="{StaticResource Gray3}" />
+                            </VerticalStackLayout>
+                            <Button Grid.Column="2"
+                                    Text="Call"
+                                    Command="{Binding CallRiderCommand}"
+                                    BackgroundColor="{StaticResource Mint}"
+                                    TextColor="{StaticResource TealDark}"
                                     WidthRequest="54"
                                     HeightRequest="44"
                                     Padding="0"

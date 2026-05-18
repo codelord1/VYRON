@@ -84,6 +84,10 @@ public class VyronDbContext : DbContext
             e.Property(x => x.City).HasMaxLength(100);
             e.Property(x => x.State).HasMaxLength(100);
             e.Property(x => x.OpeningHours).HasMaxLength(100);
+            e.Property(x => x.OpeningDays).HasMaxLength(100);
+            // TimeOnly maps to SQL Server 'time' column in EF Core 6+
+            e.Property(x => x.OpeningTime).HasColumnType("time");
+            e.Property(x => x.ClosingTime).HasColumnType("time");
             e.Property(x => x.LogoUrl).HasMaxLength(500);
             e.Property(x => x.BannerUrl).HasMaxLength(500);
             e.Property(x => x.AverageRating).HasColumnType("decimal(3,2)");
@@ -139,6 +143,8 @@ public class VyronDbContext : DbContext
              .OnDelete(DeleteBehavior.Restrict);
             e.HasOne(x => x.Rider).WithMany(r => r.Orders).HasForeignKey(x => x.RiderId)
              .OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(x => x.DeliveryRider).WithMany().HasForeignKey(x => x.DeliveryRiderId)
+             .OnDelete(DeleteBehavior.SetNull).IsRequired(false);
             e.HasOne(x => x.Review).WithOne(r => r.Order).HasForeignKey<Review>(r => r.OrderId);
             e.HasOne(x => x.Dispute).WithOne(d => d.Order).HasForeignKey<Dispute>(d => d.OrderId);
         });

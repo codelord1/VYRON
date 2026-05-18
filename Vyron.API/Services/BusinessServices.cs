@@ -21,6 +21,8 @@ public interface IStoreService
     Task<bool> UpdateStatusAsync(Guid id, StoreStatus status, Guid adminId);
     Task<ServiceOffering> UpsertServiceAsync(Guid storeId, UpsertServiceRequest request, Guid? existingId = null);
     Task RecalculateRatingAsync(Guid storeId);
+    /// <summary>Store owner or admin manually opens/closes a store.</summary>
+    Task<bool> SetStoreOpenAsync(Guid storeId, bool open, Guid userId);
 }
 
 public class StoreService : IStoreService
@@ -77,7 +79,8 @@ public class StoreService : IStoreService
             store.IsVerified, store.IsTopRated, store.FastPickup,
             store.OpeningHours, store.LogoUrl, store.BannerUrl, store.Status, store.CreatedAt,
             store.Services.Where(s => s.IsActive).Select(MapService).ToList(),
-            store.Reviews.Select(MapReview).ToList());
+            store.Reviews.Select(MapReview).ToList(),
+            ComputeIsOpen(store));
     }
 
     public async Task<LaundryStore> CreateStoreAsync(Guid ownerId, CreateStoreRequest req)
@@ -143,6 +146,19 @@ public class StoreService : IStoreService
         return svc;
     }
 
+    public async Task<bool> SetStoreOpenAsync(Guid storeId, bool open, Guid userId)
+    {
+        var store = await _db.Stores.FindAsync(storeId);
+        if (store == null) return false;
+        store.IsManuallyClosed = !open;
+        if (open)  store.LastOpenedAt = DateTime.UtcNow;
+        else       store.LastClosedAt = DateTime.UtcNow;
+        store.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        await _audit.LogAsync(userId, open ? "STORE_OPEN" : "STORE_CLOSE", "LaundryStore", storeId);
+        return true;
+    }
+
     public async Task RecalculateRatingAsync(Guid storeId)
     {
         var reviews = await _db.Reviews.Where(r => r.StoreId == storeId && r.IsVisible).ToListAsync();
@@ -152,6 +168,42 @@ public class StoreService : IStoreService
         store.AverageRating = reviews.Any()
             ? Math.Round((decimal)reviews.Average(r => r.Rating), 1) : 0;
         await _db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Computes real-time open status: respects IsManuallyClosed, structured hours, and opening days.
+    /// Falls back to true (open) when no structured hours are configured.
+    /// </summary>
+    internal static bool ComputeIsOpenStatic(LaundryStore s) => ComputeIsOpen(s);
+
+    private static bool ComputeIsOpen(LaundryStore s)
+    {
+        if (s.IsManuallyClosed) return false;
+
+        if (s.OpeningTime.HasValue && s.ClosingTime.HasValue)
+        {
+            var now = TimeOnly.FromDateTime(DateTime.Now);
+
+            if (!string.IsNullOrEmpty(s.OpeningDays))
+            {
+                var dayAbbr = DateTime.Today.DayOfWeek switch
+                {
+                    DayOfWeek.Monday    => "Mon", DayOfWeek.Tuesday   => "Tue",
+                    DayOfWeek.Wednesday => "Wed", DayOfWeek.Thursday  => "Thu",
+                    DayOfWeek.Friday    => "Fri", DayOfWeek.Saturday  => "Sat",
+                    _                   => "Sun"
+                };
+                if (!s.OpeningDays.Contains(dayAbbr, StringComparison.OrdinalIgnoreCase))
+                    return false;
+            }
+
+            // Handle both normal and overnight spans
+            return s.ClosingTime.Value > s.OpeningTime.Value
+                ? now >= s.OpeningTime.Value && now <= s.ClosingTime.Value
+                : now >= s.OpeningTime.Value || now <= s.ClosingTime.Value;
+        }
+
+        return true; // No structured hours → assume open
     }
 
     private static double Haversine(double lat1, double lon1, double lat2, double lon2)
@@ -170,7 +222,8 @@ public class StoreService : IStoreService
         s.PickupFee, s.DeliveryFee, s.EstimatedPickupMinutes,
         s.IsVerified, s.IsTopRated, s.FastPickup, s.Status, s.LogoUrl,
         s.Latitude, s.Longitude,
-        s.Services.Where(x => x.IsActive).Select(MapService).ToList());
+        s.Services.Where(x => x.IsActive).Select(MapService).ToList(),
+        ComputeIsOpen(s));
 
     private static ServiceSummaryDto MapService(ServiceOffering s) =>
         new(s.Id, s.ServiceType, s.Name, s.Description, s.PricingMode,
@@ -196,6 +249,8 @@ public interface IOrderService
     Task<List<OrderDto>> GetRiderOrdersAsync(Guid riderId);
     Task<OrderDto?> UpdateStatusAsync(Guid orderId, OrderStatus newStatus, string? note, Guid? changedBy);
     Task<OrderDto?> AssignRiderAsync(Guid orderId, Guid riderId, Guid adminId);
+    /// <summary>Assigns a delivery rider (separate from the pickup rider) when the order is Ready.</summary>
+    Task<OrderDto?> AssignDeliveryRiderAsync(Guid orderId, Guid riderId, Guid adminId);
     Task<OrderDto?> OverridePriceAsync(Guid orderId, OverridePriceRequest req, Guid adminId);
 }
 
@@ -238,6 +293,10 @@ public class OrderService : IOrderService
         var svc = await _db.ServiceOfferings.Include(s => s.Store)
             .FirstOrDefaultAsync(s => s.Id == req.ServiceOfferingId && s.IsActive)
             ?? throw new InvalidOperationException("Service not found.");
+
+        // Guard: reject orders when store is closed
+        if (!StoreService.ComputeIsOpenStatic(svc.Store))
+            throw new InvalidOperationException("This store is currently closed. Please try again later.");
 
         var estimate = await EstimatePriceAsync(new PriceEstimateRequest(req.ServiceOfferingId, req.EstimatedWeight, req.EstimatedPieces));
         var count = await _db.Orders.CountAsync();
@@ -441,6 +500,38 @@ public class OrderService : IOrderService
         return await GetOrderDtoAsync(orderId);
     }
 
+    public async Task<OrderDto?> AssignDeliveryRiderAsync(Guid orderId, Guid riderId, Guid adminId)
+    {
+        var order = await _db.Orders.Include(o => o.Customer).FirstOrDefaultAsync(o => o.Id == orderId);
+        var rider = await _db.Riders.Include(r => r.User).FirstOrDefaultAsync(r => r.Id == riderId);
+        if (order == null || rider == null) return null;
+
+        order.DeliveryRiderId = riderId; order.UpdatedAt = DateTime.UtcNow;
+
+        // Auto-transition to OutForDelivery when order is Ready and delivery rider is assigned
+        if (order.Status == OrderStatus.Ready)
+        {
+            order.Status = OrderStatus.OutForDelivery;
+            order.OutForDeliveryAt = DateTime.UtcNow;
+            _db.OrderStatusHistories.Add(new OrderStatusHistory
+            {
+                OrderId = orderId, Status = OrderStatus.OutForDelivery,
+                Note = $"Delivery rider {rider.User.FullName} assigned — out for delivery",
+                ChangedByUserId = adminId
+            });
+        }
+
+        await _db.SaveChangesAsync();
+
+        await _notifications.SendInAppAsync(order.CustomerId,
+            "Out for Delivery",
+            $"Your clean laundry (#{order.OrderNumber}) is on its way! Your delivery rider is {rider.User.FullName}.",
+            "order");
+
+        await _audit.LogAsync(adminId, "DELIVERY_RIDER_ASSIGN", "Order", orderId);
+        return await GetOrderDtoAsync(orderId);
+    }
+
     public async Task<OrderDto?> OverridePriceAsync(Guid orderId, OverridePriceRequest req, Guid adminId)
     {
         var order = await _db.Orders.FindAsync(orderId);
@@ -541,6 +632,7 @@ public class OrderService : IOrderService
         var o = await _db.Orders
             .Include(x => x.Customer).Include(x => x.Store).Include(x => x.Service)
             .Include(x => x.Rider).ThenInclude(r => r!.User)
+            .Include(x => x.DeliveryRider).ThenInclude(r => r!.User)
             .Include(x => x.StatusHistory)
             .Include(x => x.Items)
             .Include(x => x.Review).ThenInclude(r => r!.Customer)
@@ -577,6 +669,9 @@ public class OrderService : IOrderService
                 o.Review.PhotoUrl, o.Review.IsVisible, o.Review.CreatedAt),
             o.Dispute == null ? null : new DisputeSummaryDto(o.Dispute.Id, o.Dispute.Type,
                 o.Dispute.Status, o.Dispute.CreatedAt),
+            o.DeliveryRider == null ? null : new RiderSummaryDto(o.DeliveryRider.Id,
+                o.DeliveryRider.User.FullName, o.DeliveryRider.User.Phone,
+                o.DeliveryRider.VehicleType, o.DeliveryRider.VehiclePlate),
             o.Items.Select(i => new OrderItemDto(
                 i.Id, i.ServiceOfferingId, i.ServiceName,
                 i.PricingMode, i.Weight, i.Pieces,

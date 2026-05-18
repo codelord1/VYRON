@@ -34,6 +34,8 @@ public partial class TrackViewModel : BaseViewModel
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsEmpty))]
+    [NotifyPropertyChangedFor(nameof(HasPickupRider))]
+    [NotifyPropertyChangedFor(nameof(HasDeliveryRider))]
     private OrderDto? _activeOrder;
 
     [ObservableProperty]
@@ -46,6 +48,13 @@ public partial class TrackViewModel : BaseViewModel
     [ObservableProperty] private string _orderId = "";
 
     public bool IsEmpty => !HasActiveOrder && !IsBusy;
+
+    /// <summary>Pickup rider — assigned for pickup leg.</summary>
+    public RiderSummaryDto? PickupRider   => ActiveOrder?.Rider;
+    /// <summary>Delivery rider — assigned to deliver the clean laundry.</summary>
+    public RiderSummaryDto? DeliveryRider => ActiveOrder?.DeliveryRider;
+    public bool HasPickupRider   => PickupRider   != null;
+    public bool HasDeliveryRider => DeliveryRider != null;
 
     public TrackViewModel(OrderService orders) => _orders = orders;
 
@@ -124,7 +133,7 @@ public partial class TrackViewModel : BaseViewModel
     private async Task ViewOrderAsync()
     {
         if (ActiveOrder == null) return;
-        await Shell.Current.GoToAsync($"orderDetails?orderId={ActiveOrder.Id}");
+        await Shell.Current.GoToAsync($"{AppRoutes.OrderDetails}?orderId={ActiveOrder.Id}");
     }
 
     [RelayCommand]
@@ -156,7 +165,7 @@ public partial class TrackViewModel : BaseViewModel
     private async Task MessageRiderAsync()
     {
         if (ActiveOrder == null) return;
-        await Shell.Current.GoToAsync($"messageRider?orderId={ActiveOrder.Id}");
+        await Shell.Current.GoToAsync($"{AppRoutes.MessageRider}?orderId={ActiveOrder.Id}");
     }
 }
 
@@ -186,7 +195,7 @@ public partial class MoreViewModel : BaseViewModel
 
     [RelayCommand]
     private async Task GoToProfileAsync()
-        => await Shell.Current.GoToAsync("profile");
+        => await Shell.Current.GoToAsync(AppRoutes.Profile);
 
     [RelayCommand]
     private async Task GoToOrderHistoryAsync()
@@ -194,11 +203,11 @@ public partial class MoreViewModel : BaseViewModel
 
     [RelayCommand]
     private async Task GoToDisputeHistoryAsync()
-        => await Shell.Current.GoToAsync("disputeHistory");
+        => await Shell.Current.GoToAsync(AppRoutes.DisputeHistory);
 
     [RelayCommand]
     private async Task GoToNotificationsAsync()
-        => await Shell.Current.GoToAsync("notifications");
+        => await Shell.Current.GoToAsync(AppRoutes.Notifications);
 
     [RelayCommand]
     private async Task LogoutAsync()

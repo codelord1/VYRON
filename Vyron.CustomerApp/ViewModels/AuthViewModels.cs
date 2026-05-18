@@ -56,23 +56,39 @@ public partial class LoginViewModel : BaseViewModel
         if (string.IsNullOrWhiteSpace(Password))
         { SetError("Please enter your password."); return; }
 
-        IsBusy = true;
-        var (ok, error) = await _auth.LoginAsync(phone, Password, RememberMe);
-        IsBusy = false;
+        if (!ApiErrorHelper.HasInternetAccess)
+        {
+            SetError(ApiErrorHelper.OfflineMessage);
+            return;
+        }
 
-        if (ok)
-            await Shell.Current.GoToAsync(AppRoutes.Home, animate: false);
-        else
-            SetError(error ?? "Login failed. Please check your credentials.");
+        IsBusy = true;
+        try
+        {
+            var (ok, error) = await _auth.LoginAsync(phone, Password, RememberMe);
+
+            if (ok)
+                await Shell.Current.GoToAsync(AppRoutes.Home, animate: false);
+            else
+                SetError(error ?? "Login failed. Please check your credentials.");
+        }
+        catch (Exception ex)
+        {
+            SetError(ApiErrorHelper.ForException(ex));
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     [RelayCommand]
     private async Task GoToSignupAsync()
-        => await Shell.Current.GoToAsync("signup");
+        => await Shell.Current.GoToAsync(AppRoutes.Signup);
 
     [RelayCommand]
     private async Task GoToForgotPasswordAsync()
-        => await Shell.Current.GoToAsync("forgotPassword");
+        => await Shell.Current.GoToAsync(AppRoutes.ForgotPassword);
 }
 
 // ─── SIGNUP (step 1: phone entry — new customers only) ────────────
@@ -112,7 +128,7 @@ public partial class SignupViewModel : BaseViewModel
 
         if (ok)
         {
-            var url = $"completeProfile?phone={Uri.EscapeDataString(phone)}";
+            var url = $"{AppRoutes.CompleteProfile}?phone={Uri.EscapeDataString(phone)}";
             if (!string.IsNullOrEmpty(devOtp))
                 url += $"&devOtp={Uri.EscapeDataString(devOtp)}";
             await Shell.Current.GoToAsync(url);
@@ -223,7 +239,7 @@ public partial class VerifyOtpViewModel : BaseViewModel
         if (ok)
         {
             if (requiresProfile)
-                await Shell.Current.GoToAsync("completeProfile");
+                await Shell.Current.GoToAsync(AppRoutes.CompleteProfile);
             else
                 await Shell.Current.GoToAsync(AppRoutes.Stores, animate: false);
         }
@@ -297,7 +313,7 @@ public partial class ForgotPasswordViewModel : BaseViewModel
 
         if (ok)
         {
-            var url = $"resetPassword?phone={Uri.EscapeDataString(phone)}";
+            var url = $"{AppRoutes.ResetPassword}?phone={Uri.EscapeDataString(phone)}";
             if (!string.IsNullOrEmpty(devOtp))
                 url += $"&devOtp={Uri.EscapeDataString(devOtp)}";
             await Shell.Current.GoToAsync(url);

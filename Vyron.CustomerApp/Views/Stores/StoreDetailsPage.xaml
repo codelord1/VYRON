@@ -305,11 +305,25 @@
             </VerticalStackLayout>
         </ScrollView>
 
+        <!-- ── Closed store banner ───────────────────────────────── -->
+        <Border Grid.Row="1"
+                BackgroundColor="#FDECEA"
+                Stroke="#F5C6CB"
+                StrokeShape="RoundRectangle 0"
+                Padding="16,10"
+                IsVisible="{Binding Store.IsCurrentlyOpen, Converter={StaticResource InvertBool}}">
+            <Label Text="🔴  This store is currently closed and not accepting orders."
+                   FontSize="13"
+                   TextColor="#C0392B"
+                   HorizontalTextAlignment="Center" />
+        </Border>
+
         <!-- ── Sticky "Start Order" CTA ──────────────────────────── -->
         <Border Grid.Row="1"
                 BackgroundColor="White"
                 Stroke="#ECEAE4"
-                Padding="20,12">
+                Padding="20,12"
+                IsVisible="{Binding Store.IsCurrentlyOpen}">
             <Button Text="🧺  Start Order"
                     Command="{Binding StartOrderCommand}"
                     IsEnabled="{Binding IsNotBusy}" />

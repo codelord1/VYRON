@@ -40,6 +40,12 @@ public static class ApiErrorHelper
     {
         LogDebug($"{ex.GetType().Name}: {ex}");
 
+        if (ex.Message.Contains("WebSocket", StringComparison.OrdinalIgnoreCase) ||
+            ex.Message.Contains("connection", StringComparison.OrdinalIgnoreCase))
+        {
+            return "We couldn't connect to Vyron right now. Please check your connection and try again.";
+        }
+
         return ex switch
         {
             TaskCanceledException => "The request took too long. Please try again.",

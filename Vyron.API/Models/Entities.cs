@@ -61,6 +61,15 @@ public class LaundryStore
     public decimal PickupFee { get; set; } = 1000;
     public decimal DeliveryFee { get; set; } = 1000;
     public string? OpeningHours { get; set; } = "8:00 AM - 8:00 PM";
+
+    // ─── Availability ─────────────────────────────────────────────
+    public bool      IsManuallyClosed { get; set; } = false;
+    public TimeOnly? OpeningTime      { get; set; }               // e.g., 08:00
+    public TimeOnly? ClosingTime      { get; set; }               // e.g., 20:00
+    public string?   OpeningDays      { get; set; }               // "Mon,Tue,Wed,Thu,Fri,Sat"
+    public DateTime? LastOpenedAt     { get; set; }
+    public DateTime? LastClosedAt     { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
@@ -124,7 +133,8 @@ public class Order
     public Guid CustomerId { get; set; }
     public Guid StoreId { get; set; }
     public Guid ServiceOfferingId { get; set; }
-    public Guid? RiderId { get; set; }
+    public Guid? RiderId         { get; set; }   // pickup rider
+    public Guid? DeliveryRiderId { get; set; }   // delivery rider (assigned when Ready)
     public OrderStatus Status { get; set; } = OrderStatus.Pending;
     public PaymentState PaymentState { get; set; } = PaymentState.Unpaid;
     public PaymentMethod PaymentMethod { get; set; } = PaymentMethod.CashOnDelivery;
@@ -162,6 +172,7 @@ public class Order
     public LaundryStore Store { get; set; } = null!;
     public ServiceOffering Service { get; set; } = null!;
     public Rider? Rider { get; set; }
+    public Rider? DeliveryRider { get; set; }
     public ICollection<OrderStatusHistory> StatusHistory { get; set; } = new List<OrderStatusHistory>();
     public ICollection<Payment> Payments { get; set; } = new List<Payment>();
     public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();

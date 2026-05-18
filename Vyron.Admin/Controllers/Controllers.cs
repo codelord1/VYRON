@@ -306,6 +306,14 @@ public class OrdersController : VyronAdminController
         TempData["Success"] = "Price overridden.";
         return RedirectToAction("Detail", new { id });
     }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> AssignDeliveryRider(Guid id, Guid deliveryRiderId)
+    {
+        await _orders.AssignDeliveryRiderAsync(id, deliveryRiderId, CurrentUserId);
+        TempData["Success"] = "Delivery rider assigned.";
+        return RedirectToAction("Detail", new { id });
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -431,6 +439,16 @@ public class StoresController : VyronAdminController
     public async Task<IActionResult> ToggleTopRated(Guid id)
     {
         await _stores.ToggleTopRatedAsync(id);
+        return RedirectToAction("Detail", new { id });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleStoreOpen(Guid id)
+    {
+        var store = await _stores.GetByIdAsync(id);
+        if (store == null) return NotFound();
+        await _stores.ToggleManualCloseAsync(id, !store.IsManuallyClosed);
+        TempData["Success"] = store.IsManuallyClosed ? "Store is now open." : "Store is now closed.";
         return RedirectToAction("Detail", new { id });
     }
 
@@ -742,6 +760,17 @@ public class StoreOwnerController : VyronAdminController
 
     public async Task<IActionResult> Stores()
         => View(await _stores.GetByOwnerAsync(CurrentUserId));
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleStoreOpen(Guid id)
+    {
+        var store = await _stores.GetByIdAsync(id);
+        if (store == null) return NotFound();
+        if (!IsAdmin && store.OwnerId != CurrentUserId) return Forbid();
+        await _stores.ToggleManualCloseAsync(id, !store.IsManuallyClosed);
+        TempData["Success"] = store.IsManuallyClosed ? "Store is now open." : "Store is now closed.";
+        return RedirectToAction("Stores");
+    }
 
     public async Task<IActionResult> StoreEdit(Guid id, [FromServices] IStoreImageRepo images)
     {

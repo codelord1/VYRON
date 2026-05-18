@@ -61,7 +61,10 @@ public abstract partial class BaseViewModel : ObservableObject
             return "Your session has expired. Please login again.";
 
         if (message.Contains("WebSocket", StringComparison.OrdinalIgnoreCase)
-            || message.Contains("Exception", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("connection", StringComparison.OrdinalIgnoreCase))
+            return "We couldn't connect to Vyron right now. Please check your connection and try again.";
+
+        if (message.Contains("Exception", StringComparison.OrdinalIgnoreCase)
             || message.Contains("stack", StringComparison.OrdinalIgnoreCase))
             return "Something went wrong. Please try again.";
 

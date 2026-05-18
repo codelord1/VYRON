@@ -28,6 +28,11 @@ public partial class HomeViewModel : BaseViewModel
     [ObservableProperty] private OrderDto? _activeOrder;
     [ObservableProperty] private bool _hasActiveOrder;
     [ObservableProperty] private string _searchText = "";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNotTrackingOrder))]
+    private bool _isTrackingOrder;
+
+    public bool IsNotTrackingOrder => !IsTrackingOrder;
 
     public string CustomerName
     {
@@ -80,13 +85,35 @@ public partial class HomeViewModel : BaseViewModel
     [RelayCommand]
     private async Task ViewActiveOrderAsync()
     {
+        if (IsTrackingOrder)
+            return;
+
         if (ActiveOrder == null)
         {
             await Shell.Current.GoToAsync(AppRoutes.Orders);
             return;
         }
 
-        await Shell.Current.GoToAsync($"{AppRoutes.OrderTracking}?orderId={ActiveOrder.Id}");
+        if (!ApiErrorHelper.HasInternetAccess)
+        {
+            SetError(ApiErrorHelper.OfflineMessage);
+            return;
+        }
+
+        IsTrackingOrder = true;
+        ClearMessages();
+        try
+        {
+            await Shell.Current.GoToAsync($"{AppRoutes.OrderTracking}?orderId={ActiveOrder.Id}");
+        }
+        catch (Exception ex)
+        {
+            SetError(ApiErrorHelper.ForException(ex));
+        }
+        finally
+        {
+            IsTrackingOrder = false;
+        }
     }
 
     [RelayCommand]
@@ -181,7 +208,7 @@ public partial class StoresViewModel : BaseViewModel
 
     [RelayCommand]
     private async Task SelectStoreAsync(StoreListItemDto store)
-        => await Shell.Current.GoToAsync($"storeDetails?storeId={store.Id}");
+        => await Shell.Current.GoToAsync($"{AppRoutes.StoreDetails}?storeId={store.Id}");
 
     [RelayCommand]
     private async Task GoToProfileAsync()
@@ -220,12 +247,12 @@ public partial class StoreDetailsViewModel : BaseViewModel
     private async Task StartOrderAsync()
     {
         if (Store == null) return;
-        if (Store.Status != "Active")
+        if (Store.Status != "Active" || !Store.IsCurrentlyOpen)
         {
-            await Shell.Current.DisplayAlert("Store unavailable",
-                "This store is not currently accepting orders.", "OK");
+            await Shell.Current.DisplayAlert("Store closed",
+                "This store is currently closed and not accepting orders. Please check back later.", "OK");
             return;
         }
-        await Shell.Current.GoToAsync($"serviceSelection?storeId={Store.Id}");
+        await Shell.Current.GoToAsync($"{AppRoutes.ServiceSelection}?storeId={Store.Id}");
     }
 }

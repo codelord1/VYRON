@@ -115,6 +115,8 @@ public interface IOrderRepo
     Task<Order?> GetByIdAsync(Guid id);
     Task<bool> UpdateStatusAsync(Guid id, OrderStatus newStatus, string? note, Guid changedBy);
     Task<bool> AssignRiderAsync(Guid orderId, Guid riderId, Guid adminId);
+    /// <summary>Assigns a delivery rider to the order (separate from the pickup rider).</summary>
+    Task<bool> AssignDeliveryRiderAsync(Guid orderId, Guid riderId, Guid adminId);
     Task<bool> OverridePriceAsync(Guid orderId, decimal newCost, string reason, Guid adminId);
     Task<int> GetTotalCountAsync(OrderStatus? status, string? search);
 }
@@ -154,6 +156,7 @@ public class OrderRepo : IOrderRepo
     public Task<Order?> GetByIdAsync(Guid id) =>
         _db.Orders.Include(o => o.Customer).Include(o => o.Store).Include(o => o.Service)
             .Include(o => o.Rider).ThenInclude(r => r!.User)
+            .Include(o => o.DeliveryRider).ThenInclude(r => r!.User)
             .Include(o => o.StatusHistory)
             .Include(o => o.Payments)
             .Include(o => o.Review).Include(o => o.Dispute)
@@ -199,6 +202,27 @@ public class OrderRepo : IOrderRepo
         return true;
     }
 
+    public async Task<bool> AssignDeliveryRiderAsync(Guid orderId, Guid riderId, Guid adminId)
+    {
+        var o = await _db.Orders.FindAsync(orderId);
+        var rider = await _db.Riders.Include(r => r.User).FirstOrDefaultAsync(r => r.Id == riderId);
+        if (o == null || rider == null) return false;
+        o.DeliveryRiderId = riderId; o.UpdatedAt = DateTime.UtcNow;
+        if (o.Status == OrderStatus.Ready)
+        {
+            o.Status = OrderStatus.OutForDelivery;
+            o.OutForDeliveryAt = DateTime.UtcNow;
+            _db.OrderStatusHistories.Add(new OrderStatusHistory
+            {
+                OrderId = orderId, Status = OrderStatus.OutForDelivery,
+                Note = $"Delivery rider {rider.User.FullName} assigned — out for delivery",
+                ChangedByUserId = adminId
+            });
+        }
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
     public async Task<bool> OverridePriceAsync(Guid orderId, decimal newCost, string reason, Guid adminId)
     {
         var o = await _db.Orders.FindAsync(orderId);
@@ -232,6 +256,8 @@ public interface IStoreRepo
     Task<bool> ToggleVerifiedAsync(Guid id);
     Task<bool> ToggleTopRatedAsync(Guid id);
     Task<bool> UpdateProfileAsync(LaundryStore updated);
+    /// <summary>Manually opens or closes a store (sets IsManuallyClosed).</summary>
+    Task<bool> ToggleManualCloseAsync(Guid id, bool isClosed);
 }
 
 public class StoreRepo : IStoreRepo
@@ -288,6 +314,18 @@ public class StoreRepo : IStoreRepo
         s.Address = updated.Address; s.Area = updated.Area;
         s.OpeningHours = updated.OpeningHours;
         s.PickupFee = updated.PickupFee; s.DeliveryFee = updated.DeliveryFee;
+        s.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> ToggleManualCloseAsync(Guid id, bool isClosed)
+    {
+        var s = await _db.Stores.FindAsync(id);
+        if (s == null) return false;
+        s.IsManuallyClosed = isClosed;
+        if (isClosed) s.LastClosedAt = DateTime.UtcNow;
+        else          s.LastOpenedAt = DateTime.UtcNow;
         s.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
         return true;

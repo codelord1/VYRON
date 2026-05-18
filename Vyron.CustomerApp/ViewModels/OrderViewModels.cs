@@ -126,7 +126,7 @@ public partial class ServiceSelectionViewModel : BaseViewModel
             SetError("The order estimate is not valid yet. Please review your services and fees.");
             return;
         }
-        await Shell.Current.GoToAsync($"createOrder?storeId={StoreId}");
+        await Shell.Current.GoToAsync($"{AppRoutes.CreateOrder}?storeId={StoreId}");
     }
 }
 
@@ -199,7 +199,7 @@ public partial class CreateOrderViewModel : BaseViewModel
         if (order != null)
         {
             _draft.Clear();   // cart is submitted — clear draft
-            await Shell.Current.GoToAsync($"orderSuccess?orderId={order.Id}");
+            await Shell.Current.GoToAsync($"{AppRoutes.OrderSuccess}?orderId={order.Id}");
         }
     }
 }
@@ -232,7 +232,7 @@ public partial class OrderSuccessViewModel : BaseViewModel
     private async Task PayPickupFeeAsync()
     {
         if (Order != null)
-            await Shell.Current.GoToAsync($"pickupFeePayment?orderId={Order.Id}");
+            await Shell.Current.GoToAsync($"{AppRoutes.PickupFeePayment}?orderId={Order.Id}");
     }
 
     [RelayCommand]
@@ -340,6 +340,11 @@ public partial class OrdersViewModel : BaseViewModel
     [ObservableProperty] private ObservableCollection<OrderDto> _orders_ = new();
     [ObservableProperty] private bool _isEmpty;
     [ObservableProperty] private int _currentPage = 1;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNotOpeningOrder))]
+    private bool _isOpeningOrder;
+
+    public bool IsNotOpeningOrder => !IsOpeningOrder;
 
     public OrdersViewModel(OrderService orders) => _orders = orders;
 
@@ -357,7 +362,31 @@ public partial class OrdersViewModel : BaseViewModel
 
     [RelayCommand]
     private async Task SelectOrderAsync(OrderDto order)
-        => await Shell.Current.GoToAsync($"{AppRoutes.OrderTracking}?orderId={order.Id}");
+    {
+        if (IsOpeningOrder || order == null)
+            return;
+
+        if (!ApiErrorHelper.HasInternetAccess)
+        {
+            SetError(ApiErrorHelper.OfflineMessage);
+            return;
+        }
+
+        IsOpeningOrder = true;
+        ClearMessages();
+        try
+        {
+            await Shell.Current.GoToAsync($"{AppRoutes.OrderTracking}?orderId={order.Id}");
+        }
+        catch (Exception ex)
+        {
+            SetError(ApiErrorHelper.ForException(ex));
+        }
+        finally
+        {
+            IsOpeningOrder = false;
+        }
+    }
 }
 
 // ─── ORDER DETAILS ───────────────────────────────────────────────
@@ -389,28 +418,28 @@ public partial class OrderDetailsViewModel : BaseViewModel
     private async Task PayPickupFeeAsync()
     {
         if (Order != null)
-            await Shell.Current.GoToAsync($"pickupFeePayment?orderId={Order.Id}");
+            await Shell.Current.GoToAsync($"{AppRoutes.PickupFeePayment}?orderId={Order.Id}");
     }
 
     [RelayCommand]
     private async Task PayBalanceAsync()
     {
         if (Order != null)
-            await Shell.Current.GoToAsync($"balancePayment?orderId={Order.Id}");
+            await Shell.Current.GoToAsync($"{AppRoutes.BalancePayment}?orderId={Order.Id}");
     }
 
     [RelayCommand]
     private async Task RaiseDisputeAsync()
     {
         if (Order != null)
-            await Shell.Current.GoToAsync($"raiseDispute?orderId={Order.Id}");
+            await Shell.Current.GoToAsync($"{AppRoutes.RaiseDispute}?orderId={Order.Id}");
     }
 
     [RelayCommand]
     private async Task AddReviewAsync()
     {
         if (Order != null)
-            await Shell.Current.GoToAsync($"addReview?orderId={Order.Id}&storeId={Order.Store.Id}");
+            await Shell.Current.GoToAsync($"{AppRoutes.AddReview}?orderId={Order.Id}&storeId={Order.Store.Id}");
     }
 }
 

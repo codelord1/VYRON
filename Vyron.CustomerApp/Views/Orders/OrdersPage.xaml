@@ -10,8 +10,10 @@
              Shell.NavBarIsVisible="False"
              BackgroundColor="{StaticResource Bg}">
 
+    <Grid>
     <RefreshView Command="{Binding LoadCommand}"
-                 IsRefreshing="{Binding IsBusy}">
+                 IsRefreshing="{Binding IsBusy}"
+                 IsEnabled="{Binding IsNotOpeningOrder}">
         <CollectionView ItemsSource="{Binding Orders_}"
                         SelectionMode="None">
 
@@ -25,6 +27,16 @@
                                FontSize="13"
                                TextColor="{StaticResource Gray3}" />
                     </VerticalStackLayout>
+
+                    <Border BackgroundColor="#FFF4F3"
+                            Stroke="#FFD4D1"
+                            StrokeShape="RoundRectangle 16"
+                            Padding="14,12"
+                            IsVisible="{Binding ErrorMessage, Converter={StaticResource NotNullToBool}}">
+                        <Label Text="{Binding ErrorMessage}"
+                               TextColor="#C73535"
+                               FontSize="13" />
+                    </Border>
 
                     <Border BackgroundColor="{StaticResource Mint}"
                             Stroke="Transparent"
@@ -152,4 +164,18 @@
             </CollectionView.Footer>
         </CollectionView>
     </RefreshView>
+    <Grid BackgroundColor="#66F4FAF7"
+          IsVisible="{Binding IsOpeningOrder}">
+        <VerticalStackLayout HorizontalOptions="Center"
+                             VerticalOptions="Center"
+                             Spacing="10">
+            <ActivityIndicator IsRunning="{Binding IsOpeningOrder}"
+                               Color="{StaticResource Teal}" />
+            <Label Text="Opening order..."
+                   TextColor="{StaticResource TealDark}"
+                   FontSize="13"
+                   FontFamily="OpenSansSemibold" />
+        </VerticalStackLayout>
+    </Grid>
+    </Grid>
 </ContentPage>

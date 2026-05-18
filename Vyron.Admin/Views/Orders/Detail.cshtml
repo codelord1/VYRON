@@ -68,9 +68,18 @@
         @if (Model.Rider != null)
         {
             <div class="card">
-                <h3 class="card-title">Rider</h3>
+                <h3 class="card-title">Pickup Rider</h3>
                 <p class="text-bold mb-0">@Model.Rider.User.FullName</p>
                 <p class="text-muted mb-0">@Model.Rider.User.Phone · @Model.Rider.VehicleType (@Model.Rider.VehiclePlate)</p>
+            </div>
+        }
+
+        @if (Model.DeliveryRider != null)
+        {
+            <div class="card">
+                <h3 class="card-title">Delivery Rider</h3>
+                <p class="text-bold mb-0">@Model.DeliveryRider.User.FullName</p>
+                <p class="text-muted mb-0">@Model.DeliveryRider.User.Phone · @Model.DeliveryRider.VehicleType (@Model.DeliveryRider.VehiclePlate)</p>
             </div>
         }
     </div>
@@ -121,6 +130,31 @@
                         </select>
                     </div>
                     <button type="submit" class="btn btn-primary btn-block">Assign Rider</button>
+                </form>
+            </div>
+        }
+
+        <!-- Assign delivery rider -->
+        @if (Model.Status is OrderStatus.Ready or OrderStatus.OutForDelivery)
+        {
+            <div class="card">
+                <h3 class="card-title">Assign Delivery Rider</h3>
+                <form asp-action="AssignDeliveryRider" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <div class="form-group">
+                        <label>Pick rider</label>
+                        <select name="deliveryRiderId" required>
+                            <option value="">— Select delivery rider —</option>
+                            @foreach (var r in riders.Where(x => x.Status == RiderStatus.OnlineAvailable || Model.DeliveryRiderId == x.Id))
+                            {
+                                <option value="@r.Id" selected="@(Model.DeliveryRiderId == r.Id)">
+                                    @r.User.FullName (@r.VehicleType) — @r.Status
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Assign Delivery Rider</button>
                 </form>
             </div>
         }

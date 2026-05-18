@@ -61,6 +61,16 @@
             </Grid>
 
             <VerticalStackLayout Padding="20,104,20,24" Spacing="22">
+                <Border BackgroundColor="#FFF4F3"
+                        Stroke="#FFD4D1"
+                        StrokeShape="RoundRectangle 16"
+                        Padding="14,12"
+                        IsVisible="{Binding ErrorMessage, Converter={StaticResource NotNullToBool}}">
+                    <Label Text="{Binding ErrorMessage}"
+                           TextColor="#C73535"
+                           FontSize="13" />
+                </Border>
+
                 <Grid ColumnDefinitions="*,Auto">
                     <Label Text="Quick services" FontFamily="OpenSansSemibold" FontSize="17" />
                     <Label Grid.Column="1" Text="See all" TextColor="{StaticResource TealDark}" FontSize="13" />
@@ -117,11 +127,26 @@
                     </Border>
                 </Grid>
 
-                <Border BackgroundColor="{StaticResource Mint}" Stroke="{StaticResource CardStroke}" StrokeShape="RoundRectangle 24" Padding="0" IsVisible="{Binding HasActiveOrder}">
+                <Border BackgroundColor="{StaticResource Mint}"
+                        Stroke="{StaticResource CardStroke}"
+                        StrokeShape="RoundRectangle 24"
+                        Padding="0"
+                        IsVisible="{Binding HasActiveOrder}"
+                        InputTransparent="{Binding IsTrackingOrder}">
                     <VerticalStackLayout Spacing="0">
                         <Grid ColumnDefinitions="*,Auto" Padding="16,9">
                             <Label Text="{Binding ActiveOrder.OrderNumber, StringFormat='●  ACTIVE ORDER · {0}'}" TextColor="{StaticResource TealDark}" FontFamily="OpenSansSemibold" FontSize="13" />
-                            <Label Grid.Column="1" Text=">" TextColor="{StaticResource TealDark}" FontSize="18" />
+                            <Label Grid.Column="1"
+                                   Text=">"
+                                   TextColor="{StaticResource TealDark}"
+                                   FontSize="18"
+                                   IsVisible="{Binding IsNotTrackingOrder}" />
+                            <ActivityIndicator Grid.Column="1"
+                                               IsRunning="{Binding IsTrackingOrder}"
+                                               IsVisible="{Binding IsTrackingOrder}"
+                                               Color="{StaticResource TealDark}"
+                                               WidthRequest="18"
+                                               HeightRequest="18" />
                         </Grid>
                         <Grid BackgroundColor="White" ColumnDefinitions="54,*" ColumnSpacing="12" Padding="16,14">
                             <Border BackgroundColor="{StaticResource Mint}" WidthRequest="44" HeightRequest="44" Stroke="Transparent" StrokeShape="RoundRectangle 22">

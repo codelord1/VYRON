@@ -88,6 +88,30 @@
     </div>
 </form>
 
+@if (Model.Status == StoreStatus.Active)
+{
+    <div class="card" style="margin-top:20px;">
+        <h3 class="card-title">Store Availability</h3>
+        <div class="flex-between mb-2">
+            <div>
+                <p class="text-bold mb-0">Current status: <span class="badge badge-@(Model.IsManuallyClosed ? "danger" : "success")">@(Model.IsManuallyClosed ? "Closed" : "Open")</span></p>
+                @if (Model.LastOpenedAt.HasValue) { <small class="text-muted">Last opened @Model.LastOpenedAt.Value.ToString("MMM dd 'at' HH:mm")</small> }
+                @if (Model.LastClosedAt.HasValue) { <small class="text-muted d-block">Last closed @Model.LastClosedAt.Value.ToString("MMM dd 'at' HH:mm")</small> }
+            </div>
+        </div>
+        <form asp-action="ToggleStoreOpen" asp-route-id="@Model.Id" method="post">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn @(Model.IsManuallyClosed ? "btn-success" : "btn-warning")">
+                @(Model.IsManuallyClosed ? "🟢 Open Store Now" : "🔴 Close Store Now")
+            </button>
+        </form>
+        <p class="text-muted mt-2" style="font-size:11px;">
+            This manually overrides availability regardless of your configured opening hours.
+            Customers will see a "Closed" banner and cannot place orders when the store is closed.
+        </p>
+    </div>
+}
+
 <div class="card" style="margin-top:20px;">
     <h3 class="card-title">Store Images</h3>
     @{

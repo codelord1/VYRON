@@ -163,12 +163,6 @@
                     Command="{Binding LoginCommand}"
                     IsEnabled="{Binding IsNotBusy}" />
 
-            <ActivityIndicator IsRunning="{Binding IsBusy}"
-                               Color="{StaticResource Teal}"
-                               IsVisible="{Binding IsBusy}"
-                               HorizontalOptions="Center"
-                               Margin="0,16,0,0" />
-
             <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="10" Margin="0,30,0,28">
                 <BoxView HeightRequest="1" Color="{StaticResource CardStroke}" VerticalOptions="Center" />
                 <Label Grid.Column="1" Text="or continue with" FontSize="12" TextColor="{StaticResource Gray3}" />

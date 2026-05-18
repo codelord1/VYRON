@@ -130,6 +130,7 @@ public class StoreListItemDto
     public double Latitude                { get; set; }
     public double Longitude               { get; set; }
     public List<ServiceSummaryDto> Services { get; set; } = new();
+    public bool   IsCurrentlyOpen { get; set; } = true;
 
     // ── Display helpers ───────────────────────────────────────────
     public string BadgeText =>
@@ -146,7 +147,7 @@ public class StoreListItemDto
     public string PickupFeeDisplay     => $"₦{PickupFee:N0} pickup";
     public string DeliveryFeeDisplay   => $"₦{DeliveryFee:N0} delivery";
 
-    public bool   IsOpen         => Status == "Active";
+    public bool   IsOpen         => Status == "Active" && IsCurrentlyOpen;
     public string OpenStatusText => IsOpen ? "Open" : "Closed";
 
     public string ServiceCountText => Services.Count switch
@@ -215,6 +216,7 @@ public class StoreDetailDto
     public DateTime CreatedAt            { get; set; }
     public List<ServiceSummaryDto> Services     { get; set; } = new();
     public List<ReviewDto>         RecentReviews{ get; set; } = new();
+    public bool   IsCurrentlyOpen { get; set; } = true;
 
     // ── Display helpers ───────────────────────────────────────────
     public string BadgeText =>
@@ -231,7 +233,7 @@ public class StoreDetailDto
     public string DeliveryFeeDisplay   => $"₦{DeliveryFee:N0}";
     public string EstimatedTimeDisplay => $"~{EstimatedPickupMinutes} min pickup";
 
-    public bool   IsOpen         => Status == "Active";
+    public bool   IsOpen         => Status == "Active" && IsCurrentlyOpen;
     public string OpenStatusText => IsOpen ? "Open" : "Closed";
 
     // ── Image helpers ─────────────────────────────────────────────
@@ -332,7 +334,8 @@ public class OrderDto
     public CustomerSummaryDto Customer { get; set; } = new();
     public StoreSummaryDto    Store    { get; set; } = new();
     public ServiceSummaryDto  Service  { get; set; } = new();
-    public RiderSummaryDto?   Rider    { get; set; }
+    public RiderSummaryDto?   Rider         { get; set; }
+    public RiderSummaryDto?   DeliveryRider { get; set; }
     public string Status              { get; set; } = "";
     public string StatusName          { get; set; } = "";
     public string PaymentState        { get; set; } = "";

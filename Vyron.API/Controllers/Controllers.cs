@@ -102,6 +102,20 @@ public class StoresController : VyronController
     [HttpPost("{id:guid}/services"), Authorize(Roles = "StoreOwner,Admin,SuperAdmin")]
     public async Task<IActionResult> AddService(Guid id, [FromBody] UpsertServiceRequest req)
         => Ok(await _stores.UpsertServiceAsync(id, req));
+
+    [HttpPost("{id:guid}/open"), Authorize(Roles = "StoreOwner,Admin,SuperAdmin")]
+    public async Task<IActionResult> Open(Guid id)
+    {
+        var ok = await _stores.SetStoreOpenAsync(id, open: true, CurrentUserId);
+        return ok ? Ok(new { message = "Store is now open." }) : NotFound();
+    }
+
+    [HttpPost("{id:guid}/close"), Authorize(Roles = "StoreOwner,Admin,SuperAdmin")]
+    public async Task<IActionResult> Close(Guid id)
+    {
+        var ok = await _stores.SetStoreOpenAsync(id, open: false, CurrentUserId);
+        return ok ? Ok(new { message = "Store is now closed." }) : NotFound();
+    }
 }
 
 // ─── ORDERS (customer-facing) ─────────────────────────────────────
@@ -178,6 +192,13 @@ public class AdminOrdersController : VyronController
     public async Task<IActionResult> Override(Guid id, [FromBody] OverridePriceRequest req)
     {
         var o = await _orders.OverridePriceAsync(id, req, CurrentUserId);
+        return o != null ? Ok(o) : NotFound();
+    }
+
+    [HttpPut("{id:guid}/assign-delivery-rider")]
+    public async Task<IActionResult> AssignDeliveryRider(Guid id, [FromBody] AssignDeliveryRiderRequest req)
+    {
+        var o = await _orders.AssignDeliveryRiderAsync(id, req.RiderId, CurrentUserId);
         return o != null ? Ok(o) : NotFound();
     }
 }
