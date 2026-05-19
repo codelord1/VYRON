@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:behaviors="clr-namespace:Vyron.CustomerApp.Behaviors"
              xmlns:vm="clr-namespace:Vyron.CustomerApp.ViewModels"
              xmlns:svc="clr-namespace:Vyron.CustomerApp.Services"
              xmlns:dto="clr-namespace:Vyron.CustomerApp.DTOs"
@@ -35,6 +36,9 @@
                         <DataTemplate x:DataType="vm:ServiceCardViewModel">
                             <Border StrokeShape="RoundRectangle 14"
                                     Padding="14,12">
+                                <Border.Behaviors>
+                                    <behaviors:TapFeedbackBehavior />
+                                </Border.Behaviors>
                                 <!-- Selected = teal border + light teal bg; unselected = gray border + white -->
                                 <Border.Triggers>
                                     <DataTrigger TargetType="Border"
@@ -359,7 +363,11 @@
         <Border Grid.Row="1" BackgroundColor="White" Stroke="#EDEDEA" Padding="16,12">
             <Button Text="Continue to Order Details →"
                     Command="{Binding ContinueCommand}"
-                    IsEnabled="{Binding IsNotBusy}" />
+                    IsEnabled="{Binding IsNotBusy}">
+                <Button.Behaviors>
+                    <behaviors:TapFeedbackBehavior />
+                </Button.Behaviors>
+            </Button>
         </Border>
 
     </Grid>

@@ -336,6 +336,8 @@ public partial class PickupFeeViewModel : BaseViewModel
 public partial class OrdersViewModel : BaseViewModel
 {
     private readonly OrderService _orders;
+    private DateTime _lastLoadedAt = DateTime.MinValue;
+    private bool _hasLoaded;
 
     [ObservableProperty] private ObservableCollection<OrderDto> _orders_ = new();
     [ObservableProperty] private bool _isEmpty;
@@ -348,16 +350,27 @@ public partial class OrdersViewModel : BaseViewModel
 
     public OrdersViewModel(OrderService orders) => _orders = orders;
 
-    public async Task InitAsync() => await LoadAsync();
+    public async Task InitAsync()
+    {
+        if (_hasLoaded && DateTime.UtcNow - _lastLoadedAt < TimeSpan.FromMinutes(2))
+            return;
+
+        await LoadAsync();
+    }
 
     [RelayCommand]
     private async Task LoadAsync()
     {
+        if (IsBusy)
+            return;
+
         var (data, _) = await SafeCallAsync(() => _orders.GetMyOrdersAsync(CurrentPage), "orders");
         Orders_.Clear();
         foreach (var o in data ?? Enumerable.Empty<OrderDto>())
             Orders_.Add(o);
         IsEmpty = Orders_.Count == 0;
+        _hasLoaded = true;
+        _lastLoadedAt = DateTime.UtcNow;
     }
 
     [RelayCommand]
@@ -376,6 +389,7 @@ public partial class OrdersViewModel : BaseViewModel
         ClearMessages();
         try
         {
+            TapFeedback.HapticClick();
             await Shell.Current.GoToAsync($"{AppRoutes.OrderTracking}?orderId={order.Id}");
         }
         catch (Exception ex)

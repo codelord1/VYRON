@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:behaviors="clr-namespace:Vyron.CustomerApp.Behaviors"
              xmlns:vm="clr-namespace:Vyron.CustomerApp.ViewModels"
              xmlns:dto="clr-namespace:Vyron.CustomerApp.DTOs"
              x:Class="Vyron.CustomerApp.Views.Stores.HomePage"
@@ -50,7 +51,11 @@
                                 </Border>
                                 <Label Text="Schedule a laundry pickup today" FontFamily="OpenSansSemibold" FontSize="20" />
                                 <Label Text="Free pickup over N5,000 · Pay on delivery" FontSize="13" TextColor="{StaticResource Gray3}" />
-                                <Button Text="Book Pickup  >" Command="{Binding StartPickupCommand}" HeightRequest="38" WidthRequest="132" FontSize="12" Padding="0" HorizontalOptions="Start" />
+                                <Button Text="Book Pickup  >" Command="{Binding StartPickupCommand}" HeightRequest="38" WidthRequest="132" FontSize="12" Padding="0" HorizontalOptions="Start">
+                                    <Button.Behaviors>
+                                        <behaviors:TapFeedbackBehavior />
+                                    </Button.Behaviors>
+                                </Button>
                             </VerticalStackLayout>
                             <Border Grid.Column="1" WidthRequest="86" HeightRequest="86" BackgroundColor="{StaticResource Mint}" Stroke="Transparent" StrokeShape="RoundRectangle 28" VerticalOptions="Center">
                                 <Path Stroke="{StaticResource TealDark}" StrokeThickness="2.6" StrokeLineCap="Round" StrokeLineJoin="Round" Data="M22,52 L22,36 L50,36 L50,52 M50,42 L60,42 L68,52 L68,58 L62,58 M34,58 L54,58 M29,58 A5,5 0 1 0 29,68 A5,5 0 1 0 29,58 M59,58 A5,5 0 1 0 59,68 A5,5 0 1 0 59,58" />
@@ -133,6 +138,9 @@
                         Padding="0"
                         IsVisible="{Binding HasActiveOrder}"
                         InputTransparent="{Binding IsTrackingOrder}">
+                    <Border.Behaviors>
+                        <behaviors:TapFeedbackBehavior />
+                    </Border.Behaviors>
                     <VerticalStackLayout Spacing="0">
                         <Grid ColumnDefinitions="*,Auto" Padding="16,9">
                             <Label Text="{Binding ActiveOrder.OrderNumber, StringFormat='●  ACTIVE ORDER · {0}'}" TextColor="{StaticResource TealDark}" FontFamily="OpenSansSemibold" FontSize="13" />
@@ -183,6 +191,9 @@
                     <CollectionView.ItemTemplate>
                         <DataTemplate x:DataType="dto:StoreListItemDto">
                             <Grid WidthRequest="238" Padding="0,0,14,0">
+                                <Grid.Behaviors>
+                                    <behaviors:TapFeedbackBehavior />
+                                </Grid.Behaviors>
                                 <Border BackgroundColor="White" Stroke="{StaticResource CardStroke}" StrokeShape="RoundRectangle 22">
                                     <Grid RowDefinitions="96,Auto">
                                         <Grid BackgroundColor="#0AA37F">

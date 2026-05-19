@@ -5,13 +5,17 @@ namespace Vyron.CustomerApp;
 public partial class App : Application
 {
     private readonly IAuthService _auth;
+    private readonly AppShell _shell;
 
     public App(IAuthService auth, AppShell shell)
     {
         InitializeComponent();
         _auth = auth;
-        MainPage = shell;
+        _shell = shell;
     }
+
+    protected override Window CreateWindow(IActivationState? activationState) =>
+        new(_shell);
 
     protected override async void OnStart()
     {

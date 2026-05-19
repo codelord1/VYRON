@@ -23,6 +23,8 @@ public partial class HomeViewModel : BaseViewModel
 {
     private readonly StoreService _stores;
     private readonly OrderService _orders;
+    private DateTime _lastLoadedAt = DateTime.MinValue;
+    private bool _hasLoaded;
 
     [ObservableProperty] private ObservableCollection<StoreListItemDto> _storeItems = new();
     [ObservableProperty] private OrderDto? _activeOrder;
@@ -53,11 +55,20 @@ public partial class HomeViewModel : BaseViewModel
         _orders = orders;
     }
 
-    public async Task InitAsync() => await LoadAsync();
+    public async Task InitAsync()
+    {
+        if (_hasLoaded && DateTime.UtcNow - _lastLoadedAt < TimeSpan.FromMinutes(2))
+            return;
+
+        await LoadAsync();
+    }
 
     [RelayCommand]
     private async Task LoadAsync()
     {
+        if (IsBusy)
+            return;
+
         IsBusy = true;
 
         var (stores, _) = await SafeCallAsync(() => _stores.GetStoresAsync(sort: "rating"), "stores");
@@ -69,6 +80,8 @@ public partial class HomeViewModel : BaseViewModel
         ActiveOrder = orders?.FirstOrDefault(o => o.Status is not ("Completed" or "Cancelled" or "BalancePaid"));
         HasActiveOrder = ActiveOrder != null;
 
+        _hasLoaded = true;
+        _lastLoadedAt = DateTime.UtcNow;
         IsBusy = false;
     }
 
@@ -80,7 +93,21 @@ public partial class HomeViewModel : BaseViewModel
 
     [RelayCommand]
     private async Task SelectStoreAsync(StoreListItemDto store)
-        => await Shell.Current.GoToAsync($"{AppRoutes.StoreDetails}?storeId={store.Id}");
+    {
+        if (IsTrackingOrder || store == null)
+            return;
+
+        TapFeedback.HapticClick();
+        IsTrackingOrder = true;
+        try
+        {
+            await Shell.Current.GoToAsync($"{AppRoutes.StoreDetails}?storeId={store.Id}");
+        }
+        finally
+        {
+            IsTrackingOrder = false;
+        }
+    }
 
     [RelayCommand]
     private async Task ViewActiveOrderAsync()
@@ -104,6 +131,7 @@ public partial class HomeViewModel : BaseViewModel
         ClearMessages();
         try
         {
+            TapFeedback.HapticClick();
             await Shell.Current.GoToAsync($"{AppRoutes.OrderTracking}?orderId={ActiveOrder.Id}");
         }
         catch (Exception ex)
@@ -117,20 +145,30 @@ public partial class HomeViewModel : BaseViewModel
     }
 
     [RelayCommand]
-    private async Task StartPickupAsync() => await Shell.Current.GoToAsync(AppRoutes.Stores);
+    private async Task StartPickupAsync()
+    {
+        TapFeedback.HapticClick();
+        await Shell.Current.GoToAsync(AppRoutes.Stores);
+    }
 }
 
 // ─── STORES LIST ─────────────────────────────────────────────────
 public partial class StoresViewModel : BaseViewModel
 {
     private readonly StoreService _stores;
+    private DateTime _lastLoadedAt = DateTime.MinValue;
+    private bool _hasLoaded;
 
     [ObservableProperty] private ObservableCollection<StoreListItemDto> _storeItems = new();
     [ObservableProperty] private string _searchText    = "";
     [ObservableProperty] private string _selectedFilter = "";   // "", "toprated", "fast", "verified"
     [ObservableProperty] private bool   _isEmpty;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNotNavigating))]
+    private bool _isNavigating;
 
     private CancellationTokenSource? _searchDebounce;
+    public bool IsNotNavigating => !IsNavigating;
 
     // ── Personalised greeting ────────────────────────────────────
     public string Greeting
@@ -157,7 +195,13 @@ public partial class StoresViewModel : BaseViewModel
 
     public StoresViewModel(StoreService stores) => _stores = stores;
 
-    public async Task InitAsync() => await LoadAsync();
+    public async Task InitAsync()
+    {
+        if (_hasLoaded && DateTime.UtcNow - _lastLoadedAt < TimeSpan.FromMinutes(2))
+            return;
+
+        await LoadAsync();
+    }
 
     /// <summary>Debounce live search: fires LoadAsync 400ms after user stops typing.</summary>
     partial void OnSearchTextChanged(string value)
@@ -174,6 +218,9 @@ public partial class StoresViewModel : BaseViewModel
     [RelayCommand]
     private async Task LoadAsync()
     {
+        if (IsBusy)
+            return;
+
         // "toprated" → sort by rating, do NOT filter by IsTopRated flag (flag may be empty)
         var sort = SelectedFilter == "toprated" ? "rating" : null;
         var filter = SelectedFilter switch
@@ -194,6 +241,8 @@ public partial class StoresViewModel : BaseViewModel
             StoreItems.Add(s);
 
         IsEmpty = StoreItems.Count == 0;
+        _hasLoaded = true;
+        _lastLoadedAt = DateTime.UtcNow;
     }
 
     [RelayCommand]
@@ -203,12 +252,27 @@ public partial class StoresViewModel : BaseViewModel
     private async Task SetFilterAsync(string value)
     {
         SelectedFilter = value;
+        _lastLoadedAt = DateTime.MinValue;
         await LoadAsync();
     }
 
     [RelayCommand]
     private async Task SelectStoreAsync(StoreListItemDto store)
-        => await Shell.Current.GoToAsync($"{AppRoutes.StoreDetails}?storeId={store.Id}");
+    {
+        if (IsNavigating || store == null)
+            return;
+
+        TapFeedback.HapticClick();
+        IsNavigating = true;
+        try
+        {
+            await Shell.Current.GoToAsync($"{AppRoutes.StoreDetails}?storeId={store.Id}");
+        }
+        finally
+        {
+            IsNavigating = false;
+        }
+    }
 
     [RelayCommand]
     private async Task GoToProfileAsync()
@@ -253,6 +317,7 @@ public partial class StoreDetailsViewModel : BaseViewModel
                 "This store is currently closed and not accepting orders. Please check back later.", "OK");
             return;
         }
+        TapFeedback.HapticClick();
         await Shell.Current.GoToAsync($"{AppRoutes.ServiceSelection}?storeId={Store.Id}");
     }
 }

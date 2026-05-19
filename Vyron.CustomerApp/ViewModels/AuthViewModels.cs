@@ -123,19 +123,29 @@ public partial class SignupViewModel : BaseViewModel
         { SetError("Please enter a valid phone number (digits only, e.g. 8012345678)."); return; }
 
         IsBusy = true;
-        var (ok, devOtp, error) = await _auth.RequestSignupOtpAsync(phone);
-        IsBusy = false;
+        try
+        {
+            var (ok, devOtp, error) = await _auth.RequestSignupOtpAsync(phone);
 
-        if (ok)
-        {
-            var url = $"{AppRoutes.CompleteProfile}?phone={Uri.EscapeDataString(phone)}";
-            if (!string.IsNullOrEmpty(devOtp))
-                url += $"&devOtp={Uri.EscapeDataString(devOtp)}";
-            await Shell.Current.GoToAsync(url);
+            if (ok)
+            {
+                var url = $"{AppRoutes.CompleteProfile}?phone={Uri.EscapeDataString(phone)}";
+                if (!string.IsNullOrEmpty(devOtp))
+                    url += $"&devOtp={Uri.EscapeDataString(devOtp)}";
+                await Shell.Current.GoToAsync(url);
+            }
+            else
+            {
+                SetError(error ?? "Failed to send verification code. Please try again.");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            SetError(error ?? "Failed to send verification code. Please try again.");
+            SetError(ApiErrorHelper.ForException(ex));
+        }
+        finally
+        {
+            IsBusy = false;
         }
     }
 }
@@ -190,16 +200,26 @@ public partial class CompleteProfileViewModel : BaseViewModel
         { SetError("Passwords do not match."); return; }
 
         IsBusy = true;
-        var (ok, error) = await _auth.CompleteProfileAsync(
-            Phone, OtpCode, FullName.Trim(),
-            string.IsNullOrWhiteSpace(Email) ? null : Email.Trim(),
-            Password);
-        IsBusy = false;
+        try
+        {
+            var (ok, error) = await _auth.CompleteProfileAsync(
+                Phone, OtpCode, FullName.Trim(),
+                string.IsNullOrWhiteSpace(Email) ? null : Email.Trim(),
+                Password);
 
-        if (ok)
-            await Shell.Current.GoToAsync(AppRoutes.Home, animate: false);
-        else
-            SetError(error ?? "Failed to create account. Please try again.");
+            if (ok)
+                await Shell.Current.GoToAsync(AppRoutes.Home, animate: false);
+            else
+                SetError(error ?? "Failed to create account. Please try again.");
+        }
+        catch (Exception ex)
+        {
+            SetError(ApiErrorHelper.ForException(ex));
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 }
 
@@ -227,47 +247,69 @@ public partial class VerifyOtpViewModel : BaseViewModel
     [RelayCommand]
     private async Task VerifyAsync()
     {
+        if (IsBusy) return;
         ErrorMessage = null;
 
         if (OtpCode.Length < 6)
         { SetError("Please enter the 6-digit verification code."); return; }
 
         IsBusy = true;
-        var (ok, requiresProfile, error) = await _auth.VerifyOtpAsync(Phone, OtpCode);
-        IsBusy = false;
+        try
+        {
+            var (ok, requiresProfile, error) = await _auth.VerifyOtpAsync(Phone, OtpCode);
 
-        if (ok)
-        {
-            if (requiresProfile)
-                await Shell.Current.GoToAsync(AppRoutes.CompleteProfile);
+            if (ok)
+            {
+                if (requiresProfile)
+                    await Shell.Current.GoToAsync(AppRoutes.CompleteProfile);
+                else
+                    await Shell.Current.GoToAsync(AppRoutes.Stores, animate: false);
+            }
             else
-                await Shell.Current.GoToAsync(AppRoutes.Stores, animate: false);
+            {
+                SetError(error ?? "Invalid code. Please try again.");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            SetError(error ?? "Invalid code. Please try again.");
+            SetError(ApiErrorHelper.ForException(ex));
+        }
+        finally
+        {
+            IsBusy = false;
         }
     }
 
     [RelayCommand]
     private async Task ResendAsync()
     {
+        if (IsBusy) return;
         ErrorMessage   = null;
         SuccessMessage = null;
 
         IsBusy = true;
-        var (ok, newDevOtp, error) = await _auth.SendOtpAsync(Phone);
-        IsBusy = false;
+        try
+        {
+            var (ok, newDevOtp, error) = await _auth.SendOtpAsync(Phone);
 
-        if (ok)
-        {
-            OtpCode        = "";
-            DevOtp         = newDevOtp ?? "";
-            SuccessMessage = "A new verification code has been sent.";
+            if (ok)
+            {
+                OtpCode        = "";
+                DevOtp         = newDevOtp ?? "";
+                SuccessMessage = "A new verification code has been sent.";
+            }
+            else
+            {
+                SetError(error ?? "Could not resend code. Please try again.");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            SetError(error ?? "Could not resend code. Please try again.");
+            SetError(ApiErrorHelper.ForException(ex));
+        }
+        finally
+        {
+            IsBusy = false;
         }
     }
 
@@ -308,19 +350,29 @@ public partial class ForgotPasswordViewModel : BaseViewModel
         { SetError("Please enter a valid phone number."); return; }
 
         IsBusy = true;
-        var (ok, devOtp, error) = await _auth.RequestPasswordResetAsync(phone);
-        IsBusy = false;
+        try
+        {
+            var (ok, devOtp, error) = await _auth.RequestPasswordResetAsync(phone);
 
-        if (ok)
-        {
-            var url = $"{AppRoutes.ResetPassword}?phone={Uri.EscapeDataString(phone)}";
-            if (!string.IsNullOrEmpty(devOtp))
-                url += $"&devOtp={Uri.EscapeDataString(devOtp)}";
-            await Shell.Current.GoToAsync(url);
+            if (ok)
+            {
+                var url = $"{AppRoutes.ResetPassword}?phone={Uri.EscapeDataString(phone)}";
+                if (!string.IsNullOrEmpty(devOtp))
+                    url += $"&devOtp={Uri.EscapeDataString(devOtp)}";
+                await Shell.Current.GoToAsync(url);
+            }
+            else
+            {
+                SetError(error ?? "Failed to send reset code. Please try again.");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            SetError(error ?? "Failed to send reset code. Please try again.");
+            SetError(ApiErrorHelper.ForException(ex));
+        }
+        finally
+        {
+            IsBusy = false;
         }
     }
 
@@ -374,18 +426,28 @@ public partial class ResetPasswordViewModel : BaseViewModel
         { SetError("Passwords do not match."); return; }
 
         IsBusy = true;
-        var (ok, error) = await _auth.ResetPasswordAsync(Phone, OtpCode, NewPassword);
-        IsBusy = false;
+        try
+        {
+            var (ok, error) = await _auth.ResetPasswordAsync(Phone, OtpCode, NewPassword);
 
-        if (ok)
-        {
-            SuccessMessage = "Password reset successfully! Please login with your new password.";
-            await Task.Delay(1500);
-            await Shell.Current.GoToAsync(AppRoutes.Login, animate: false);
+            if (ok)
+            {
+                SuccessMessage = "Password reset successfully! Please login with your new password.";
+                await Task.Delay(1500);
+                await Shell.Current.GoToAsync(AppRoutes.Login, animate: false);
+            }
+            else
+            {
+                SetError(error ?? "Failed to reset password. Please try again.");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            SetError(error ?? "Failed to reset password. Please try again.");
+            SetError(ApiErrorHelper.ForException(ex));
+        }
+        finally
+        {
+            IsBusy = false;
         }
     }
 }

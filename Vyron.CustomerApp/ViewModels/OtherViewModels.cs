@@ -98,17 +98,25 @@ public partial class TrackViewModel : BaseViewModel
         ("Ready",          "✨", "Ready for delivery"),
         ("OutForDelivery", "🚚", "Out for delivery"),
         ("Delivered",      "🏠", "Delivered"),
+        ("Completed",      "⭐", "Complete"),
     };
 
     private static List<OrderProgressStep> BuildProgressSteps(OrderDto order)
     {
-        // Determine current step index
+        // Determine current step index.
+        // Falls back to 0 for unknown/legacy statuses — never crashes.
         var currentIndex = Array.FindIndex(StepDefs, s => s.Status == order.Status);
         if (currentIndex < 0) currentIndex = 0;
 
-        // Build a lookup of timestamps from status history
-        var tsLookup = order.StatusHistory.ToDictionary(
-            h => h.Status, h => h.ChangedAt.ToLocalTime().ToString("d MMM, h:mm tt"));
+        // Build a lookup of timestamps from status history.
+        // GroupBy deduplicates keys (e.g. RiderAssigned re-assignments); keep the earliest
+        // occurrence so the timeline shows when each status was *first* reached.
+        var tsLookup = order.StatusHistory
+            .GroupBy(h => h.Status)
+            .ToDictionary(
+                g => g.Key,
+                g => g.OrderBy(h => h.ChangedAt).First()
+                      .ChangedAt.ToLocalTime().ToString("d MMM, h:mm tt"));
 
         var steps = new List<OrderProgressStep>();
         for (int i = 0; i < StepDefs.Length; i++)
@@ -177,6 +185,11 @@ public partial class MoreViewModel : BaseViewModel
     [ObservableProperty] private string _userName    = "VYRON User";
     [ObservableProperty] private string _userInitials = "V";
     [ObservableProperty] private string _userPhone   = "";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNotNavigating))]
+    private bool _isNavigating;
+
+    public bool IsNotNavigating => !IsNavigating;
 
     public MoreViewModel(IAuthService auth) => _auth = auth;
 
@@ -195,19 +208,36 @@ public partial class MoreViewModel : BaseViewModel
 
     [RelayCommand]
     private async Task GoToProfileAsync()
-        => await Shell.Current.GoToAsync(AppRoutes.Profile);
+        => await NavigateOnceAsync(AppRoutes.Profile);
 
     [RelayCommand]
     private async Task GoToOrderHistoryAsync()
-        => await Shell.Current.GoToAsync(AppRoutes.Orders);
+        => await NavigateOnceAsync(AppRoutes.Orders);
 
     [RelayCommand]
     private async Task GoToDisputeHistoryAsync()
-        => await Shell.Current.GoToAsync(AppRoutes.DisputeHistory);
+        => await NavigateOnceAsync(AppRoutes.DisputeHistory);
 
     [RelayCommand]
     private async Task GoToNotificationsAsync()
-        => await Shell.Current.GoToAsync(AppRoutes.Notifications);
+        => await NavigateOnceAsync(AppRoutes.Notifications);
+
+    private async Task NavigateOnceAsync(string route)
+    {
+        if (IsNavigating)
+            return;
+
+        TapFeedback.HapticClick();
+        IsNavigating = true;
+        try
+        {
+            await Shell.Current.GoToAsync(route);
+        }
+        finally
+        {
+            IsNavigating = false;
+        }
+    }
 
     [RelayCommand]
     private async Task LogoutAsync()
@@ -216,6 +246,7 @@ public partial class MoreViewModel : BaseViewModel
             "Sign Out", "Are you sure you want to sign out?", "Sign Out", "Cancel");
         if (!confirm) return;
 
+        TapFeedback.HapticClick();
         await _auth.LogoutAsync();
         await Shell.Current.GoToAsync(AppRoutes.Login, animate: false);
     }

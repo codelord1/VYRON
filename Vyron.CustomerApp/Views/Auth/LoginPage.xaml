@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:behaviors="clr-namespace:Vyron.CustomerApp.Behaviors"
+             xmlns:dto="clr-namespace:Vyron.CustomerApp.DTOs"
              xmlns:vm="clr-namespace:Vyron.CustomerApp.ViewModels"
              x:Class="Vyron.CustomerApp.Views.Auth.LoginPage"
              x:DataType="vm:LoginViewModel"
@@ -64,7 +66,7 @@
                         HeightRequest="52">
                     <Picker ItemsSource="{Binding CountryOptions}"
                             SelectedItem="{Binding SelectedCountry}"
-                            ItemDisplayBinding="{Binding DisplayText}"
+                            ItemDisplayBinding="{Binding DisplayText, x:DataType=dto:CountryCodeOption}"
                             BackgroundColor="Transparent"
                             Margin="12,0" />
                 </Border>
@@ -161,7 +163,11 @@
 
             <Button Text="Login"
                     Command="{Binding LoginCommand}"
-                    IsEnabled="{Binding IsNotBusy}" />
+                    IsEnabled="{Binding IsNotBusy}">
+                <Button.Behaviors>
+                    <behaviors:TapFeedbackBehavior />
+                </Button.Behaviors>
+            </Button>
 
             <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="10" Margin="0,30,0,28">
                 <BoxView HeightRequest="1" Color="{StaticResource CardStroke}" VerticalOptions="Center" />
@@ -174,6 +180,9 @@
                         Stroke="{StaticResource CardStroke}"
                         StrokeShape="RoundRectangle 24"
                         HeightRequest="50">
+                    <Border.Behaviors>
+                        <behaviors:TapFeedbackBehavior />
+                    </Border.Behaviors>
                     <Label Text="Google"
                            HorizontalOptions="Center"
                            VerticalOptions="Center"
@@ -185,6 +194,9 @@
                         Stroke="{StaticResource CardStroke}"
                         StrokeShape="RoundRectangle 24"
                         HeightRequest="50">
+                    <Border.Behaviors>
+                        <behaviors:TapFeedbackBehavior />
+                    </Border.Behaviors>
                     <Label Text="Apple"
                            HorizontalOptions="Center"
                            VerticalOptions="Center"

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:behaviors="clr-namespace:Vyron.CustomerApp.Behaviors"
              xmlns:vm="clr-namespace:Vyron.CustomerApp.ViewModels"
              xmlns:dto="clr-namespace:Vyron.CustomerApp.DTOs"
              x:Class="Vyron.CustomerApp.Views.Stores.StoresPage"
@@ -31,24 +32,36 @@
                     <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
                         <HorizontalStackLayout Spacing="8">
                             <Border BackgroundColor="{StaticResource Teal}" Stroke="{StaticResource Teal}" StrokeShape="RoundRectangle 18" Padding="16,9">
+                                <Border.Behaviors>
+                                    <behaviors:TapFeedbackBehavior />
+                                </Border.Behaviors>
                                 <Label Text="Nearest" FontSize="12" TextColor="White" FontFamily="OpenSansSemibold" />
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="" />
                                 </Border.GestureRecognizers>
                             </Border>
                             <Border BackgroundColor="White" Stroke="{StaticResource CardStroke}" StrokeShape="RoundRectangle 18" Padding="16,9">
+                                <Border.Behaviors>
+                                    <behaviors:TapFeedbackBehavior />
+                                </Border.Behaviors>
                                 <Label Text="Top Rated" FontSize="12" />
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="toprated" />
                                 </Border.GestureRecognizers>
                             </Border>
                             <Border BackgroundColor="White" Stroke="{StaticResource CardStroke}" StrokeShape="RoundRectangle 18" Padding="16,9">
+                                <Border.Behaviors>
+                                    <behaviors:TapFeedbackBehavior />
+                                </Border.Behaviors>
                                 <Label Text="Fastest" FontSize="12" />
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="fast" />
                                 </Border.GestureRecognizers>
                             </Border>
                             <Border BackgroundColor="White" Stroke="{StaticResource CardStroke}" StrokeShape="RoundRectangle 18" Padding="16,9">
+                                <Border.Behaviors>
+                                    <behaviors:TapFeedbackBehavior />
+                                </Border.Behaviors>
                                 <Label Text="Cheapest" FontSize="12" />
                             </Border>
                         </HorizontalStackLayout>
@@ -69,6 +82,9 @@
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="dto:StoreListItemDto">
                     <Grid Padding="20,8">
+                        <Grid.Behaviors>
+                            <behaviors:TapFeedbackBehavior />
+                        </Grid.Behaviors>
                         <Border BackgroundColor="White" Stroke="{StaticResource CardStroke}" StrokeShape="RoundRectangle 24">
                             <Grid RowDefinitions="128,Auto">
                                 <Grid BackgroundColor="#0AA37F">
