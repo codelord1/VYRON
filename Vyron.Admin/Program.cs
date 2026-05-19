@@ -45,6 +45,12 @@ builder.Services.AddScoped<IConfigRepo, ConfigRepo>();
 builder.Services.AddScoped<IServiceOfferingRepo, ServiceOfferingRepo>();
 builder.Services.AddScoped<IUserRepo, UserRepo>();
 builder.Services.AddScoped<IPasswordResetRepo, PasswordResetRepo>();
+builder.Services.AddScoped<IAdminUserRepo, AdminUserRepo>();
+builder.Services.AddScoped<IStoreOwnerApprovalRepo, StoreOwnerApprovalRepo>();
+builder.Services.AddScoped<IAuditLogRepo, AuditLogRepo>();
+builder.Services.AddScoped<IActivityLogRepo, ActivityLogRepo>();
+builder.Services.AddScoped<ICommunicationLogRepo, CommunicationLogRepo>();
+builder.Services.AddScoped<IStoreStaffRepo, StoreStaffRepo>();
 
 // ─── Idle timeout global filter ──────────────────────────────────
 builder.Services.AddScoped<IdleTimeoutFilter>();

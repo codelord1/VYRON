@@ -1,0 +1,67 @@
+@model List<StoreUserAssignment>
+@using Vyron.Shared.Enums
+@{ ViewData["Title"] = "Store Staff"; }
+
+<div class="page-header">
+    <h1>Store Staff</h1>
+    <a href="/StoreStaff/Create" class="btn btn-primary btn-sm">+ Add Staff Member</a>
+</div>
+
+@if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+@if (TempData["Error"] != null)   { <div class="alert alert-danger">@TempData["Error"]</div> }
+
+@if (!Model.Any())
+{
+    <div class="empty-state">
+        <div class="empty-icon">👥</div>
+        <div class="empty-title">No staff assigned</div>
+        <div class="empty-sub">Add a StoreManager or StoreStaff member to get started.</div>
+    </div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="table-mobile-card">
+            <thead>
+                <tr><th>Name</th><th>Phone</th><th>Store</th><th>Role</th><th>Assigned</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var a in Model)
+                {
+                    <tr>
+                        <td class="text-bold">@a.User?.FullName</td>
+                        <td><small>@a.User?.Phone</small></td>
+                        <td><small>@a.Store?.Name</small></td>
+                        <td>
+                            <span class="badge badge-@(a.StaffRole == "StoreManager" ? "primary" : "info")">
+                                @a.StaffRole
+                            </span>
+                        </td>
+                        <td><small>@a.AssignedAt.ToLocalTime().ToString("MMM d, yyyy")</small></td>
+                        <td>
+                            <span class="badge badge-@(a.IsActive ? "success" : "gray")">
+                                @(a.IsActive ? "Active" : "Revoked")
+                            </span>
+                        </td>
+                        <td>
+                            @if (a.IsActive)
+                            {
+                                <form asp-action="Revoke" asp-route-id="@a.Id" method="post" style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    <button class="btn btn-warning btn-sm"
+                                            onclick="return confirm('Revoke @a.User?.FullName from @a.Store?.Name?')">
+                                        Revoke
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">—</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

@@ -2,6 +2,52 @@ using Vyron.Shared.Enums;
 
 namespace Vyron.API.Models;
 
+// ─── STORE USER ASSIGNMENT ───────────────────────────────────────────
+/// <summary>
+/// Scopes a StoreManager or StoreStaff user to a specific store.
+/// Created by StoreOwner (or SuperAdmin). Multiple assignments allowed (multi-store).
+/// </summary>
+public class StoreUserAssignment
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    /// <summary>The staff user (StoreManager or StoreStaff).</summary>
+    public Guid UserId { get; set; }
+    public Guid StoreId { get; set; }
+    /// <summary>"StoreManager" or "StoreStaff"</summary>
+    public string StaffRole { get; set; } = "StoreStaff";
+    public bool IsActive { get; set; } = true;
+    public Guid AssignedByUserId { get; set; }
+    public DateTime AssignedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? RevokedAt { get; set; }
+    public Guid? RevokedByUserId { get; set; }
+
+    public User User { get; set; } = null!;
+    public LaundryStore Store { get; set; } = null!;
+    public User AssignedBy { get; set; } = null!;
+}
+
+// ─── ACTIVITY LOG ────────────────────────────────────────────────────
+/// <summary>
+/// User-facing activity trail (what happened and who did it).
+/// Separate from AuditLog (security/compliance events).
+/// Examples: order placed, store opened, rider approved, admin created.
+/// </summary>
+public class ActivityLog
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid? UserId { get; set; }
+    /// <summary>Machine-readable event type: ORDER_PLACED, STORE_OPENED, RIDER_APPROVED, etc.</summary>
+    public string ActivityType { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string? EntityType { get; set; }
+    public Guid? EntityId { get; set; }
+    public string? IpAddress { get; set; }
+    public string? UserAgent { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public User? User { get; set; }
+}
+
 // ─── USER ─────────────────────────────────────────────────────────
 public class User
 {
@@ -23,6 +69,15 @@ public class User
     public DateTime? PasswordChangedAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? LastLoginAt { get; set; }
+
+    // ─── StoreOwner registration approval ─────────────────────────
+    /// <summary>Null for non-StoreOwner users. Pending until SuperAdmin/Admin approves.</summary>
+    public ApprovalStatus? RegistrationApprovalStatus { get; set; }
+    public Guid? ApprovedByUserId { get; set; }
+    public DateTime? RegistrationApprovedAt { get; set; }
+    public Guid? RejectedByUserId { get; set; }
+    public DateTime? RegistrationRejectedAt { get; set; }
+    public string? RegistrationRejectionReason { get; set; }
 
     public ICollection<Order> Orders { get; set; } = new List<Order>();
     public ICollection<Address> Addresses { get; set; } = new List<Address>();
@@ -165,6 +220,13 @@ public class Order
     public DateTime? DeliveredAt { get; set; }
     public DateTime? BalancePaidAt { get; set; }
     public DateTime? CompletedAt { get; set; }
+
+    // ─── SLA delay notification tracking ─────────────────────────
+    /// <summary>Set when a pickup-delay notification has been sent (prevents duplicate spam).</summary>
+    public DateTime? PickupDelayNotifiedAt { get; set; }
+    /// <summary>Set when a processing-delay (SLA breach) notification has been sent.</summary>
+    public DateTime? SlaBreachNotifiedAt { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
@@ -222,9 +284,19 @@ public class Rider
     public double CurrentLongitude { get; set; }
     public int TotalDeliveries { get; set; }
     public decimal TotalEarnings { get; set; }
+
+    // ─── Approval workflow ────────────────────────────────────────
+    /// <summary>Legacy boolean; kept for backward compat. Use ApprovalStatus instead.</summary>
     public bool IsApproved { get; set; }
+    public ApprovalStatus ApprovalStatus { get; set; } = ApprovalStatus.Pending;
+    /// <summary>Admin/AdminUser who registered/created this rider.</summary>
+    public Guid? CreatedByUserId { get; set; }
     public DateTime? ApprovedAt { get; set; }
     public Guid? ApprovedByAdminId { get; set; }
+    public Guid? RejectedByUserId { get; set; }
+    public DateTime? RejectedAt { get; set; }
+    public string? RejectionReason { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public User User { get; set; } = null!;
@@ -404,10 +476,15 @@ public class Notification
     public Guid? UserId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
-    public string Type { get; set; } = "sms";
+    /// <summary>"inapp" | "sms" | "email" | "system"</summary>
+    public string Type { get; set; } = "inapp";
     public bool IsSent { get; set; }
     public bool IsRead { get; set; }
     public DateTime? SentAt { get; set; }
+    public DateTime? ReadAt { get; set; }
+    /// <summary>Optional: "Order" | "Store" | "Rider" | "Dispute" etc.</summary>
+    public string? RelatedEntityType { get; set; }
+    public Guid? RelatedEntityId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public User? User { get; set; }
 }
@@ -438,9 +515,9 @@ public class AppRole
 public class CommunicationLog
 {
     public Guid    Id                  { get; set; } = Guid.NewGuid();
-    /// <summary>InApp | SMS | Email</summary>
+    /// <summary>InApp | SMS | Email | System</summary>
     public string  Channel             { get; set; } = "InApp";
-    /// <summary>Pending | Sent | Failed</summary>
+    /// <summary>Pending | Sent | Failed | Skipped</summary>
     public string  Status              { get; set; } = "Pending";
     public Guid?   RecipientUserId     { get; set; }
     public string? RecipientName       { get; set; }
@@ -452,6 +529,10 @@ public class CommunicationLog
     public string? RelatedEntityType   { get; set; }
     public Guid?   RelatedEntityId     { get; set; }
     public Guid?   SentByAdminId       { get; set; }
+    /// <summary>SMS/Email provider name, e.g. "Termii", "Gmail", "InApp"</summary>
+    public string? Provider            { get; set; }
+    /// <summary>Provider's message ID or reference for tracing.</summary>
+    public string? ProviderReference   { get; set; }
     public string? ErrorMessage        { get; set; }
     public DateTime? SentAt            { get; set; }
     public DateTime  CreatedAt         { get; set; } = DateTime.UtcNow;

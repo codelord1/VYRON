@@ -12,10 +12,13 @@ namespace Vyron.API.Services;
 // ─── NOTIFICATION ─────────────────────────────────────────────────
 public interface INotificationService
 {
-    Task SendSmsAsync(string phone, string message);
-    Task SendEmailAsync(string to, string subject, string htmlBody);
+    Task SendSmsAsync(string phone, string message, Guid? userId = null,
+        string? entityType = null, Guid? entityId = null);
+    Task SendEmailAsync(string to, string subject, string htmlBody, Guid? userId = null,
+        string? entityType = null, Guid? entityId = null);
     /// <summary>Persist an in-app notification to the Notifications table.</summary>
-    Task SendInAppAsync(Guid userId, string title, string message, string type = "inapp");
+    Task SendInAppAsync(Guid userId, string title, string message, string type = "inapp",
+        string? entityType = null, Guid? entityId = null);
 }
 
 public class NotificationService : INotificationService
@@ -27,56 +30,120 @@ public class NotificationService : INotificationService
     public NotificationService(IConfiguration config, ILogger<NotificationService> logger, VyronDbContext db)
     { _config = config; _logger = logger; _db = db; }
 
-    public Task SendSmsAsync(string phone, string message)
+    public async Task SendSmsAsync(string phone, string message, Guid? userId = null,
+        string? entityType = null, Guid? entityId = null)
     {
-        // ── Termii (Nigeria) - uncomment for production ──────────
-        /*
-        using var client = new HttpClient();
-        var payload = new {
-            to = phone, from = _config["Sms:TermiiSenderId"] ?? "VYRON",
-            sms = message, type = "plain", channel = "generic",
-            api_key = _config["Sms:TermiiApiKey"]
-        };
-        client.PostAsJsonAsync("https://api.ng.termii.com/api/sms/send", payload).Wait();
-        */
-        _logger.LogWarning("📱 SMS → {Phone}: {Message}", phone, message);
-        return Task.CompletedTask;
-    }
-
-    public async Task SendEmailAsync(string to, string subject, string htmlBody)
-    {
-        try
+        var log = new CommunicationLog
         {
-            var email = new MimeMessage();
-            email.From.Add(new MailboxAddress(_config["Email:FromName"] ?? "VYRON", _config["Email:Username"]!));
-            email.To.Add(MailboxAddress.Parse(to));
-            email.Subject = subject;
-            email.Body = new BodyBuilder { HtmlBody = htmlBody }.ToMessageBody();
+            Channel = "SMS", RecipientUserId = userId, RecipientPhone = phone,
+            Subject = "SMS", Body = message.Length > 4000 ? message[..4000] : message,
+            RelatedEntityType = entityType, RelatedEntityId = entityId,
+            Provider = "Termii", Status = "Pending"
+        };
+        _db.CommunicationLogs.Add(log);
 
-            using var smtp = new SmtpClient();
-            await smtp.ConnectAsync(_config["Email:Host"] ?? "smtp.gmail.com",
-                int.Parse(_config["Email:Port"] ?? "587"), SecureSocketOptions.StartTls);
-            await smtp.AuthenticateAsync(_config["Email:Username"]!, _config["Email:Password"]!);
-            await smtp.SendAsync(email);
-            await smtp.DisconnectAsync(true);
+        var apiKey = _config["Sms:TermiiApiKey"];
+        if (!string.IsNullOrEmpty(apiKey))
+        {
+            try
+            {
+                using var client = new HttpClient();
+                var payload = new {
+                    to = phone, from = _config["Sms:TermiiSenderId"] ?? "VYRON",
+                    sms = message, type = "plain", channel = "generic", api_key = apiKey
+                };
+                var resp = await client.PostAsJsonAsync("https://api.ng.termii.com/api/sms/send", payload);
+                log.Status = resp.IsSuccessStatusCode ? "Sent" : "Failed";
+                log.SentAt = DateTime.UtcNow;
+                if (!resp.IsSuccessStatusCode)
+                    log.ErrorMessage = $"HTTP {(int)resp.StatusCode}";
+            }
+            catch (Exception ex)
+            {
+                log.Status = "Failed"; log.ErrorMessage = ex.Message;
+                _logger.LogError(ex, "SMS send failed to {Phone}", phone);
+            }
         }
-        catch (Exception ex) { _logger.LogError(ex, "Email failed to {To}", to); }
+        else
+        {
+            // No SMS provider configured — log as Skipped (graceful degradation)
+            log.Status = "Skipped"; log.ErrorMessage = "SMS provider not configured";
+            _logger.LogWarning("📱 SMS (no provider) → {Phone}: {Message}", phone, message);
+        }
+
+        try { await _db.SaveChangesAsync(); }
+        catch (Exception ex) { _logger.LogError(ex, "CommunicationLog save failed"); }
     }
 
-    public async Task SendInAppAsync(Guid userId, string title, string message, string type = "inapp")
+    public async Task SendEmailAsync(string to, string subject, string htmlBody, Guid? userId = null,
+        string? entityType = null, Guid? entityId = null)
+    {
+        var log = new CommunicationLog
+        {
+            Channel = "Email", RecipientUserId = userId, RecipientEmail = to,
+            Subject = subject.Length > 300 ? subject[..300] : subject,
+            Body = htmlBody.Length > 4000 ? htmlBody[..4000] : htmlBody,
+            RelatedEntityType = entityType, RelatedEntityId = entityId,
+            Provider = "SMTP", Status = "Pending"
+        };
+        _db.CommunicationLogs.Add(log);
+
+        var host = _config["Email:Host"];
+        var username = _config["Email:Username"];
+        var password = _config["Email:Password"];
+
+        if (!string.IsNullOrEmpty(host) && !string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
+        {
+            try
+            {
+                var email = new MimeMessage();
+                email.From.Add(new MailboxAddress(_config["Email:FromName"] ?? "VYRON", username));
+                email.To.Add(MailboxAddress.Parse(to));
+                email.Subject = subject;
+                email.Body = new BodyBuilder { HtmlBody = htmlBody }.ToMessageBody();
+
+                using var smtp = new SmtpClient();
+                await smtp.ConnectAsync(host, int.Parse(_config["Email:Port"] ?? "587"), SecureSocketOptions.StartTls);
+                await smtp.AuthenticateAsync(username, password);
+                await smtp.SendAsync(email);
+                await smtp.DisconnectAsync(true);
+                log.Status = "Sent"; log.SentAt = DateTime.UtcNow;
+            }
+            catch (Exception ex)
+            {
+                log.Status = "Failed"; log.ErrorMessage = ex.Message;
+                _logger.LogError(ex, "Email failed to {To}", to);
+            }
+        }
+        else
+        {
+            log.Status = "Skipped"; log.ErrorMessage = "Email provider not configured";
+            _logger.LogWarning("📧 Email (no provider) → {To}: {Subject}", to, subject);
+        }
+
+        try { await _db.SaveChangesAsync(); }
+        catch (Exception ex) { _logger.LogError(ex, "CommunicationLog email save failed"); }
+    }
+
+    public async Task SendInAppAsync(Guid userId, string title, string message, string type = "inapp",
+        string? entityType = null, Guid? entityId = null)
     {
         try
         {
             _db.Notifications.Add(new Models.Notification
             {
-                UserId    = userId,
-                Title     = title,
-                Message   = message,
-                Type      = type,
-                IsSent    = true,
-                IsRead    = false,
-                SentAt    = DateTime.UtcNow,
-                CreatedAt = DateTime.UtcNow
+                UserId = userId, Title = title, Message = message, Type = type,
+                IsSent = true, IsRead = false, SentAt = DateTime.UtcNow, CreatedAt = DateTime.UtcNow,
+                RelatedEntityType = entityType, RelatedEntityId = entityId
+            });
+            // Also log CommunicationLog for in-app
+            _db.CommunicationLogs.Add(new CommunicationLog
+            {
+                Channel = "InApp", RecipientUserId = userId,
+                Subject = title.Length > 300 ? title[..300] : title,
+                Body = message.Length > 4000 ? message[..4000] : message,
+                RelatedEntityType = entityType, RelatedEntityId = entityId,
+                Provider = "InApp", Status = "Sent", SentAt = DateTime.UtcNow
             });
             await _db.SaveChangesAsync();
         }
@@ -105,6 +172,40 @@ public class AuditService : IAuditService
             OldValue = oldValue, NewValue = newValue, IpAddress = ip
         });
         await _db.SaveChangesAsync();
+    }
+}
+
+// ─── ACTIVITY LOG ─────────────────────────────────────────────────
+public interface IActivityLogService
+{
+    Task LogAsync(Guid? userId, string activityType, string? description = null,
+        string? entityType = null, Guid? entityId = null, string? ip = null, string? ua = null);
+}
+
+public class ActivityLogService : IActivityLogService
+{
+    private readonly VyronDbContext _db;
+    private readonly ILogger<ActivityLogService> _logger;
+    public ActivityLogService(VyronDbContext db, ILogger<ActivityLogService> logger)
+    { _db = db; _logger = logger; }
+
+    public async Task LogAsync(Guid? userId, string activityType, string? description = null,
+        string? entityType = null, Guid? entityId = null, string? ip = null, string? ua = null)
+    {
+        try
+        {
+            _db.ActivityLogs.Add(new ActivityLog
+            {
+                UserId = userId, ActivityType = activityType, Description = description,
+                EntityType = entityType, EntityId = entityId,
+                IpAddress = ip, UserAgent = ua
+            });
+            await _db.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "ActivityLog failed for {Type}", activityType);
+        }
     }
 }
 

@@ -1,4 +1,5 @@
 @model Rider
+@using Vyron.Shared.Enums
 @{ ViewData["Title"] = "Rider Details — " + Model.User.FullName; }
 
 <div class="page-header">
@@ -8,6 +9,9 @@
         <a href="/Riders" class="btn btn-secondary btn-sm" style="margin-left:6px">← Back</a>
     </div>
 </div>
+
+@if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+@if (TempData["Error"] != null)   { <div class="alert alert-danger">@TempData["Error"]</div> }
 
 <div class="flex" style="gap:20px;align-items:flex-start;flex-wrap:wrap">
     <div class="card" style="min-width:220px;text-align:center">
@@ -37,32 +41,81 @@
                 default: <span class="badge badge-gray">@Model.Status</span> break;
             }
         </div>
+        <div style="margin-top:6px">
+            @{
+                var approvalBadge = Model.ApprovalStatus switch {
+                    ApprovalStatus.Approved => "success",
+                    ApprovalStatus.Rejected => "danger",
+                    _ => "warning"
+                };
+            }
+            <span class="badge badge-@approvalBadge">@Model.ApprovalStatus</span>
+        </div>
     </div>
 
     <div class="card flex-1" style="min-width:280px">
         <div class="card-title">Rider Information</div>
         <table style="width:100%;font-size:13px">
-            <tr><td class="text-muted" style="width:140px;padding:6px 0">Vehicle Type</td><td>@Model.VehicleType</td></tr>
+            <tr><td class="text-muted" style="width:160px;padding:6px 0">Vehicle Type</td><td>@Model.VehicleType</td></tr>
             <tr><td class="text-muted" style="padding:6px 0">Vehicle Plate</td><td>@(Model.VehiclePlate ?? "—")</td></tr>
             <tr><td class="text-muted" style="padding:6px 0">Total Deliveries</td><td>@Model.TotalDeliveries</td></tr>
             <tr><td class="text-muted" style="padding:6px 0">Total Earnings</td><td>₦@Model.TotalEarnings.ToString("N2")</td></tr>
-            <tr><td class="text-muted" style="padding:6px 0">Approved</td><td>@(Model.IsApproved ? "Yes — " + (Model.ApprovedAt?.ToString("dd MMM yyyy") ?? "") : "No")</td></tr>
-            <tr><td class="text-muted" style="padding:6px 0">Joined</td><td>@Model.CreatedAt.ToString("dd MMM yyyy")</td></tr>
+            <tr>
+                <td class="text-muted" style="padding:6px 0">Approval Status</td>
+                <td><span class="badge badge-@approvalBadge">@Model.ApprovalStatus</span></td>
+            </tr>
+            @if (Model.ApprovalStatus == ApprovalStatus.Approved)
+            {
+                <tr><td class="text-muted" style="padding:6px 0">Approved At</td><td>@(Model.ApprovedAt?.ToLocalTime().ToString("dd MMM yyyy HH:mm") ?? "—")</td></tr>
+            }
+            @if (Model.ApprovalStatus == ApprovalStatus.Rejected)
+            {
+                <tr><td class="text-muted" style="padding:6px 0">Rejected At</td><td>@(Model.RejectedAt?.ToLocalTime().ToString("dd MMM yyyy HH:mm") ?? "—")</td></tr>
+                <tr>
+                    <td class="text-muted" style="padding:6px 0">Rejection Reason</td>
+                    <td><span class="text-danger">@(Model.RejectionReason ?? "—")</span></td>
+                </tr>
+            }
+            @if (Model.CreatedByUserId.HasValue)
+            {
+                <tr>
+                    <td class="text-muted" style="padding:6px 0">Registered By</td>
+                    <td><small class="text-muted">@Model.CreatedByUserId.Value.ToString("N")[..8]…</small></td>
+                </tr>
+            }
+            <tr><td class="text-muted" style="padding:6px 0">Joined</td><td>@Model.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td></tr>
         </table>
 
-        @if (!Model.IsApproved)
+        @if (Model.ApprovalStatus == ApprovalStatus.Pending)
         {
             <div style="margin-top:16px">
                 @if (string.IsNullOrEmpty(Model.User.ProfilePhoto))
                 {
-                    <div class="alert alert-danger">Profile picture required before approval. <a href="/Riders/Edit/@Model.Id">Upload photo →</a></div>
+                    <div class="alert alert-warning">Profile picture required before approval. <a href="/Riders/Edit/@Model.Id">Upload photo →</a></div>
                 }
                 else
                 {
                     <form asp-action="Approve" asp-route-id="@Model.Id" method="post" style="display:inline">
                         @Html.AntiForgeryToken()
-                        <button type="submit" class="btn btn-success btn-sm">✓ Approve Rider</button>
+                        <button type="submit" class="btn btn-success btn-sm"
+                                onclick="return confirm('Approve @Model.User.FullName as a rider?')">✓ Approve Rider</button>
                     </form>
+                    <button class="btn btn-danger btn-sm" style="margin-left:6px"
+                            onclick="document.getElementById('reject-form').style.display='block'">✗ Reject</button>
+
+                    <div id="reject-form" style="display:none;margin-top:12px">
+                        <form asp-action="Reject" asp-route-id="@Model.Id" method="post">
+                            @Html.AntiForgeryToken()
+                            <div class="form-group">
+                                <label>Rejection Reason <span class="text-danger">*</span></label>
+                                <input type="text" name="reason" class="form-control"
+                                       placeholder="Enter reason for rejection" required style="max-width:400px" />
+                            </div>
+                            <button type="submit" class="btn btn-danger btn-sm">Confirm Rejection</button>
+                            <button type="button" class="btn btn-ghost btn-sm"
+                                    onclick="document.getElementById('reject-form').style.display='none'">Cancel</button>
+                        </form>
+                    </div>
                 }
             </div>
         }
@@ -81,7 +134,7 @@
                     <tr>
                         <td><a href="/Orders/Detail/@o.Id">@o.OrderNumber</a></td>
                         <td><span class="badge badge-info">@o.Status</span></td>
-                        <td>@o.CreatedAt.ToString("dd MMM yyyy")</td>
+                        <td>@o.CreatedAt.ToLocalTime().ToString("dd MMM yyyy")</td>
                     </tr>
                 }
             </tbody>

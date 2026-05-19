@@ -31,6 +31,8 @@ public class AdminDbContext : DbContext
     public DbSet<AppUserRole> UserRoles => Set<AppUserRole>();
     public DbSet<ServiceTypeEntity> ServiceTypes => Set<ServiceTypeEntity>();
     public DbSet<CommunicationLog> CommunicationLogs => Set<CommunicationLog>();
+    public DbSet<StoreUserAssignment> StoreUserAssignments => Set<StoreUserAssignment>();
+    public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
 
     protected override void OnModelCreating(ModelBuilder m)
     {
@@ -57,12 +59,16 @@ public class AdminDbContext : DbContext
         m.Entity<AppUserRole>().Property(x => x.Id).ValueGeneratedNever();
         m.Entity<ServiceTypeEntity>().Property(x => x.Id).ValueGeneratedNever();
         m.Entity<CommunicationLog>().Property(x => x.Id).ValueGeneratedNever();
+        m.Entity<StoreUserAssignment>().Property(x => x.Id).ValueGeneratedNever();
+        m.Entity<ActivityLog>().Property(x => x.Id).ValueGeneratedNever();
 
         // Table names must match API
         m.Entity<AppRole>().ToTable("Roles");
         m.Entity<AppUserRole>().ToTable("UserRoles");
         m.Entity<ServiceTypeEntity>().ToTable("ServiceTypes");
         m.Entity<CommunicationLog>().ToTable("CommunicationLogs");
+        m.Entity<StoreUserAssignment>().ToTable("StoreUserAssignments");
+        m.Entity<ActivityLog>().ToTable("ActivityLogs");
 
         // ServiceOffering → ServiceTypeEntity optional FK
         m.Entity<ServiceOffering>()
@@ -76,11 +82,31 @@ public class AdminDbContext : DbContext
         m.Entity<CommunicationLog>()
             .HasOne(x => x.Recipient).WithMany()
             .HasForeignKey(x => x.RecipientUserId)
-            .OnDelete(DeleteBehavior.SetNull).IsRequired(false);
+            .OnDelete(DeleteBehavior.NoAction).IsRequired(false);
         m.Entity<CommunicationLog>()
             .HasOne(x => x.SentByAdmin).WithMany()
             .HasForeignKey(x => x.SentByAdminId)
+            .OnDelete(DeleteBehavior.NoAction).IsRequired(false);
+
+        // StoreUserAssignment FKs
+        m.Entity<StoreUserAssignment>()
+            .HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+        m.Entity<StoreUserAssignment>()
+            .HasOne(x => x.Store).WithMany().HasForeignKey(x => x.StoreId)
+            .OnDelete(DeleteBehavior.Restrict);
+        m.Entity<StoreUserAssignment>()
+            .HasOne(x => x.AssignedBy).WithMany().HasForeignKey(x => x.AssignedByUserId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        // ActivityLog FK
+        m.Entity<ActivityLog>()
+            .HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.SetNull).IsRequired(false);
+
+        // Order DeliveryRider FK
+        m.Entity<Order>().HasOne(x => x.DeliveryRider).WithMany()
+            .HasForeignKey(x => x.DeliveryRiderId).OnDelete(DeleteBehavior.NoAction).IsRequired(false);
 
         // Decimal for CommunicationLog (none) — no changes needed
 

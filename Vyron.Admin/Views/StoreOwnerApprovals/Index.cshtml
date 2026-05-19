@@ -1,0 +1,60 @@
+@model List<User>
+@using Vyron.Shared.Enums
+@{ ViewData["Title"] = "StoreOwner Approvals"; }
+
+<div class="page-header">
+    <h1>StoreOwner Registration Approvals</h1>
+    <a href="/StoreOwnerApprovals/Pending" class="btn btn-primary btn-sm">Pending Only</a>
+</div>
+
+@if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+@if (TempData["Error"] != null)   { <div class="alert alert-danger">@TempData["Error"]</div> }
+
+<div class="table-wrap">
+    <table class="table-mobile-card">
+        <thead>
+            <tr><th>Name</th><th>Phone / Email</th><th>Applied</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var u in Model)
+            {
+                <tr>
+                    <td class="text-bold">@u.FullName</td>
+                    <td>@u.Phone<br /><small class="text-muted">@u.Email</small></td>
+                    <td><small>@u.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")</small></td>
+                    <td>
+                        @{
+                            var badge = u.RegistrationApprovalStatus switch {
+                                ApprovalStatus.Approved => "success",
+                                ApprovalStatus.Rejected => "danger",
+                                _ => "warning"
+                            };
+                        }
+                        <span class="badge badge-@badge">@(u.RegistrationApprovalStatus?.ToString() ?? "Pending")</span>
+                    </td>
+                    <td>
+                        @if (u.RegistrationApprovalStatus == ApprovalStatus.Pending)
+                        {
+                            <form asp-action="Approve" asp-route-id="@u.Id" method="post" style="display:inline">
+                                @Html.AntiForgeryToken()
+                                <button class="btn btn-success btn-sm" onclick="return confirm('Approve @u.FullName as StoreOwner?')">Approve</button>
+                            </form>
+                            <button class="btn btn-danger btn-sm" onclick="document.getElementById('so-reject-@u.Id').style.display='block'">Reject</button>
+                            <div id="so-reject-@u.Id" style="display:none;margin-top:8px;">
+                                <form asp-action="Reject" asp-route-id="@u.Id" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="text" name="reason" placeholder="Rejection reason (required)" class="form-control" style="width:250px;display:inline" required />
+                                    <button class="btn btn-danger btn-sm">Confirm Reject</button>
+                                </form>
+                            </div>
+                        }
+                        else
+                        {
+                            <span class="text-muted small">—</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

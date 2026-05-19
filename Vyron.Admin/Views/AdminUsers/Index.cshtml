@@ -1,0 +1,64 @@
+@model List<User>
+@using Vyron.Shared.Enums
+@{ ViewData["Title"] = "Admin Users"; }
+
+<div class="page-header">
+    <h1>Admin Users</h1>
+    <a href="/AdminUsers/Create" class="btn btn-primary btn-sm">+ Create Admin User</a>
+</div>
+
+@if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+@if (TempData["Error"] != null)   { <div class="alert alert-danger">@TempData["Error"]</div> }
+
+<div class="alert alert-info">
+    <strong>SuperAdmin only.</strong> Only SuperAdmins can create, deactivate, or reactivate Admin users.
+    Admin users created here have portal access. Their privilege level depends on their assigned role.
+</div>
+
+<div class="table-wrap">
+    <table class="table-mobile-card">
+        <thead>
+            <tr><th>Name</th><th>Phone / Email</th><th>Role</th><th>Status</th><th>Created</th><th>Last Login</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var u in Model)
+            {
+                <tr>
+                    <td class="text-bold">@u.FullName</td>
+                    <td>@u.Phone<br /><small class="text-muted">@u.Email</small></td>
+                    <td>
+                        <span class="badge badge-@(u.Role == UserRole.SuperAdmin ? "purple" : u.Role == UserRole.Admin ? "primary" : "info")">
+                            @u.Role
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge badge-@(u.IsActive ? "success" : "gray")">
+                            @(u.IsActive ? "Active" : "Inactive")
+                        </span>
+                    </td>
+                    <td><small>@u.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")</small></td>
+                    <td><small>@(u.LastLoginAt?.ToLocalTime().ToString("MMM d HH:mm") ?? "Never")</small></td>
+                    <td>
+                        @if (u.Role != UserRole.SuperAdmin)
+                        {
+                            @if (u.IsActive)
+                            {
+                                <form asp-action="Deactivate" asp-route-id="@u.Id" method="post" style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    <button class="btn btn-warning btn-sm" onclick="return confirm('Deactivate @u.FullName?')">Deactivate</button>
+                                </form>
+                            }
+                            else
+                            {
+                                <form asp-action="Reactivate" asp-route-id="@u.Id" method="post" style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    <button class="btn btn-success btn-sm">Reactivate</button>
+                                </form>
+                            }
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

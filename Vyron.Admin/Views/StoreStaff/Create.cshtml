@@ -1,0 +1,61 @@
+@model Vyron.Admin.Models.StoreStaffCreateVm
+@{ ViewData["Title"] = "Add Staff Member"; }
+@{
+    var stores = (List<LaundryStore>?)ViewBag.Stores ?? new();
+}
+
+<div class="page-header">
+    <h1>Add Staff Member</h1>
+    <a href="/StoreStaff" class="btn btn-ghost btn-sm">← Back</a>
+</div>
+
+<div class="card" style="max-width:540px">
+    <form asp-action="Create" method="post">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+        <div class="form-group">
+            <label asp-for="FullName">Full Name</label>
+            <input asp-for="FullName" class="form-control" placeholder="Jane Doe" />
+            <span asp-validation-for="FullName" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Phone">Phone</label>
+            <input asp-for="Phone" class="form-control" placeholder="+2348012345678" />
+            <span asp-validation-for="Phone" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Password">Password</label>
+            <input asp-for="Password" type="password" class="form-control" />
+            <span asp-validation-for="Password" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="StoreId">Assign to Store</label>
+            <select asp-for="StoreId" class="form-control">
+                <option value="">— Select a store —</option>
+                @foreach (var s in stores)
+                {
+                    <option value="@s.Id">@s.Name</option>
+                }
+            </select>
+            <span asp-validation-for="StoreId" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label>Role</label>
+            <div class="radio-group">
+                <label>
+                    <input asp-for="IsManager" type="radio" value="false" />
+                    <strong>StoreStaff</strong> — standard store employee
+                </label><br />
+                <label>
+                    <input asp-for="IsManager" type="radio" value="true" />
+                    <strong>StoreManager</strong> — can manage orders and staff
+                </label>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Add Staff Member</button>
+            <a href="/StoreStaff" class="btn btn-ghost">Cancel</a>
+        </div>
+    </form>
+</div>

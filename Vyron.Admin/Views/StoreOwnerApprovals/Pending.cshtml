@@ -1,0 +1,54 @@
+@model List<User>
+@using Vyron.Shared.Enums
+@{ ViewData["Title"] = "Pending StoreOwner Approvals"; }
+
+<div class="page-header">
+    <h1>Pending StoreOwner Applications</h1>
+    <a href="/StoreOwnerApprovals" class="btn btn-ghost btn-sm">← All</a>
+</div>
+
+@if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+@if (TempData["Error"] != null)   { <div class="alert alert-danger">@TempData["Error"]</div> }
+
+@if (!Model.Any())
+{
+    <div class="empty-state">
+        <div class="empty-icon">✓</div>
+        <div class="empty-title">No pending applications</div>
+        <div class="empty-sub">All StoreOwner applications have been reviewed.</div>
+    </div>
+}
+else
+{
+    <div class="table-wrap">
+        <table class="table-mobile-card">
+            <thead>
+                <tr><th>Name</th><th>Phone / Email</th><th>Applied</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var u in Model)
+                {
+                    <tr>
+                        <td class="text-bold">@u.FullName</td>
+                        <td>@u.Phone<br /><small class="text-muted">@u.Email</small></td>
+                        <td><small>@u.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")</small></td>
+                        <td>
+                            <form asp-action="Approve" asp-route-id="@u.Id" method="post" style="display:inline">
+                                @Html.AntiForgeryToken()
+                                <button class="btn btn-success btn-sm" onclick="return confirm('Approve @u.FullName?')">Approve</button>
+                            </form>
+                            <button class="btn btn-danger btn-sm" onclick="document.getElementById('sor-@u.Id').style.display='block'">Reject</button>
+                            <div id="sor-@u.Id" style="display:none;margin-top:8px;">
+                                <form asp-action="Reject" asp-route-id="@u.Id" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="text" name="reason" placeholder="Reason (required)" class="form-control" style="width:240px;display:inline" required />
+                                    <button class="btn btn-danger btn-sm">Reject</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

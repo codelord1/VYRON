@@ -52,11 +52,25 @@ public enum RiderAssignmentMode
 
 public enum UserRole
 {
-    Customer = 0,
-    Rider = 1,
-    StoreOwner = 2,
-    Admin = 3,
-    SuperAdmin = 4
+    Customer    = 0,
+    Rider       = 1,
+    StoreOwner  = 2,
+    Admin       = 3,
+    SuperAdmin  = 4,
+    /// <summary>Admin-level user created by SuperAdmin; cannot manage other admins.</summary>
+    AdminUser   = 5,
+    /// <summary>Store staff manager scoped to one or more stores; created by StoreOwner.</summary>
+    StoreManager = 6,
+    /// <summary>Store staff scoped to one or more stores; created by StoreOwner or StoreManager.</summary>
+    StoreStaff  = 7
+}
+
+/// <summary>Approval workflow status for Riders and StoreOwner registrations.</summary>
+public enum ApprovalStatus
+{
+    Pending  = 0,
+    Approved = 1,
+    Rejected = 2
 }
 
 public enum DisputeType

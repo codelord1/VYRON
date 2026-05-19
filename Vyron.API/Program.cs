@@ -95,6 +95,7 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
+builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
 
 // ─── CONTROLLERS + SWAGGER ────────────────────────────────────────
 // JsonStringEnumConverter: serialises UserRole (and all enums) as strings ("Customer")
@@ -181,6 +182,32 @@ using (var scope = app.Services.CreateScope())
         Log.Error(ex, "❌ Database migration failed.");
     }
 }
+
+// ─── GLOBAL EXCEPTION HANDLER ────────────────────────────────────
+// Must be first in pipeline so it catches exceptions from all downstream middleware/controllers.
+// Converts InvalidOperationException (known business errors) to 400/409.
+// Catches all others as 500 without leaking stack traces to the mobile client.
+app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
+{
+    var feature = ctx.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+    var ex = feature?.Error;
+    ctx.Response.ContentType = "application/json";
+
+    (int statusCode, string message) = ex switch
+    {
+        InvalidOperationException ioe => (StatusCodes.Status400BadRequest, ioe.Message),
+        UnauthorizedAccessException   => (StatusCodes.Status401Unauthorized, "Unauthorized."),
+        KeyNotFoundException knfe     => (StatusCodes.Status404NotFound, knfe.Message),
+        _                             => (StatusCodes.Status500InternalServerError,
+                                          "An unexpected error occurred. Please try again.")
+    };
+
+    ctx.Response.StatusCode = statusCode;
+    await ctx.Response.WriteAsJsonAsync(new { error = message });
+
+    if (statusCode == StatusCodes.Status500InternalServerError)
+        Log.Error(ex, "Unhandled exception on {Method} {Path}", ctx.Request.Method, ctx.Request.Path);
+}));
 
 // ─── PIPELINE ─────────────────────────────────────────────────────
 app.UseSwagger();

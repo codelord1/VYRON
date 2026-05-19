@@ -335,8 +335,11 @@ public class StoreRepo : IStoreRepo
 public interface IRiderRepo
 {
     Task<List<Rider>> GetAllAsync();
+    Task<List<Rider>> GetPendingApprovalAsync();
+    Task<List<Rider>> GetApprovedAsync();
     Task<Rider?> GetByIdAsync(Guid id);
-    Task<bool> CreateAsync(string fullName, string phone, string vehicleType, string? plate, string? profilePhoto = null);
+    Task<bool> CreateAsync(string fullName, string phone, string vehicleType, string? plate,
+        string? profilePhoto, Guid createdByUserId);
     Task<bool> ToggleOnlineAsync(Guid id);
 }
 
@@ -350,17 +353,28 @@ public class RiderRepo : IRiderRepo
             .OrderByDescending(r => r.User.IsActive).ThenByDescending(r => r.TotalDeliveries)
             .AsNoTracking().ToListAsync();
 
+    public Task<List<Rider>> GetPendingApprovalAsync() =>
+        _db.Riders.Include(r => r.User)
+            .Where(r => r.ApprovalStatus == ApprovalStatus.Pending)
+            .OrderByDescending(r => r.CreatedAt).AsNoTracking().ToListAsync();
+
+    public Task<List<Rider>> GetApprovedAsync() =>
+        _db.Riders.Include(r => r.User)
+            .Where(r => r.ApprovalStatus == ApprovalStatus.Approved && r.User.IsActive)
+            .OrderBy(r => r.User.FullName).AsNoTracking().ToListAsync();
+
     public Task<Rider?> GetByIdAsync(Guid id) =>
         _db.Riders.Include(r => r.User).Include(r => r.Orders).ThenInclude(o => o.Customer)
             .FirstOrDefaultAsync(r => r.Id == id);
 
-    public async Task<bool> CreateAsync(string fullName, string phone, string vehicleType, string? plate, string? profilePhoto = null)
+    public async Task<bool> CreateAsync(string fullName, string phone, string vehicleType,
+        string? plate, string? profilePhoto, Guid createdByUserId)
     {
         if (await _db.Users.AnyAsync(u => u.Phone == phone)) return false;
         var user = new User
         {
             Phone = phone, FullName = fullName,
-            Role = UserRole.Rider, IsActive = true,
+            Role = UserRole.Rider, IsActive = false,  // inactive until approved
             ProfilePhoto = profilePhoto
         };
         _db.Users.Add(user);
@@ -371,7 +385,9 @@ public class RiderRepo : IRiderRepo
             UserId = user.Id,
             VehicleType = vehicleType,
             VehiclePlate = plate,
-            Status = RiderStatus.Pending
+            Status = RiderStatus.Pending,
+            ApprovalStatus = ApprovalStatus.Pending,
+            CreatedByUserId = createdByUserId
         });
         await _db.SaveChangesAsync();
         return true;
@@ -713,12 +729,18 @@ public class StoreImageRepo : IStoreImageRepo
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Rider extended — approve, edit, status
+// Rider extended — approve, reject, edit, status
 // ═══════════════════════════════════════════════════════════════════
 public interface IRiderExtendedRepo
 {
     Task<bool> UpdateAsync(Rider rider, User user);
+    /// <summary>
+    /// Approves a rider. Enforces segregation of duties:
+    /// the admin who created/registered the rider CANNOT approve them.
+    /// </summary>
     Task<(bool Success, string? Error)> ApproveAsync(Guid id, Guid adminId);
+    /// <summary>Rejects a pending rider with a required reason.</summary>
+    Task<(bool Success, string? Error)> RejectAsync(Guid id, Guid adminId, string reason);
     Task<bool> UpdateStatusAsync(Guid id, RiderStatus status);
 }
 
@@ -751,13 +773,45 @@ public class RiderExtendedRepo : IRiderExtendedRepo
     {
         var rider = await _db.Riders.Include(r => r.User).FirstOrDefaultAsync(r => r.Id == id);
         if (rider == null) return (false, "Rider not found.");
+
+        // ── Segregation of duties: creator cannot approve ─────────
+        if (rider.CreatedByUserId.HasValue && rider.CreatedByUserId.Value == adminId)
+            return (false, "You cannot approve a rider you registered. This action must be taken by a different admin.");
+
+        if (rider.ApprovalStatus == ApprovalStatus.Approved)
+            return (false, "Rider is already approved.");
+
         if (string.IsNullOrEmpty(rider.User.ProfilePhoto))
             return (false, "Rider cannot be approved because profile picture is required.");
+
         rider.IsApproved = true;
+        rider.ApprovalStatus = ApprovalStatus.Approved;
         rider.ApprovedAt = DateTime.UtcNow;
         rider.ApprovedByAdminId = adminId;
         rider.Status = RiderStatus.Offline;
         rider.User.IsActive = true;
+        await _db.SaveChangesAsync();
+        return (true, null);
+    }
+
+    public async Task<(bool Success, string? Error)> RejectAsync(Guid id, Guid adminId, string reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason)) return (false, "Rejection reason is required.");
+        var rider = await _db.Riders.Include(r => r.User).FirstOrDefaultAsync(r => r.Id == id);
+        if (rider == null) return (false, "Rider not found.");
+        if (rider.ApprovalStatus == ApprovalStatus.Rejected) return (false, "Rider is already rejected.");
+
+        // Segregation also applies to rejection
+        if (rider.CreatedByUserId.HasValue && rider.CreatedByUserId.Value == adminId)
+            return (false, "You cannot reject a rider you registered. This action must be taken by a different admin.");
+
+        rider.ApprovalStatus = ApprovalStatus.Rejected;
+        rider.IsApproved = false;
+        rider.RejectedByUserId = adminId;
+        rider.RejectedAt = DateTime.UtcNow;
+        rider.RejectionReason = reason;
+        rider.Status = RiderStatus.Rejected;
+        rider.User.IsActive = false;
         await _db.SaveChangesAsync();
         return (true, null);
     }
@@ -881,6 +935,317 @@ public class PasswordResetRepo : IPasswordResetRepo
         user.PasswordHash = Helpers.FileUploadHelper.HashPassword(user, newPassword);
         user.PasswordChangedAt = DateTime.UtcNow;
         token.UsedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        return true;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Admin User Management (SuperAdmin only)
+// ═══════════════════════════════════════════════════════════════════
+public interface IAdminUserRepo
+{
+    Task<List<User>> GetAllAdminUsersAsync();
+    Task<User?> GetByIdAsync(Guid id);
+    /// <summary>Creates an Admin or AdminUser account. Returns (id, error).</summary>
+    Task<(Guid? Id, string? Error)> CreateAsync(string fullName, string phone, string email, string password, UserRole role);
+    Task<bool> DeactivateAsync(Guid id, Guid byUserId);
+    Task<bool> ReactivateAsync(Guid id);
+}
+
+public class AdminUserRepo : IAdminUserRepo
+{
+    private readonly AdminDbContext _db;
+    public AdminUserRepo(AdminDbContext db) => _db = db;
+
+    public Task<List<User>> GetAllAdminUsersAsync() =>
+        _db.Users.Where(u => u.Role == UserRole.Admin || u.Role == UserRole.AdminUser || u.Role == UserRole.SuperAdmin)
+            .OrderBy(u => u.Role).ThenBy(u => u.FullName).AsNoTracking().ToListAsync();
+
+    public Task<User?> GetByIdAsync(Guid id) => _db.Users.FindAsync(id).AsTask();
+
+    public async Task<(Guid? Id, string? Error)> CreateAsync(string fullName, string phone, string email, string password, UserRole role)
+    {
+        if (await _db.Users.AnyAsync(u => u.Phone == phone))
+            return (null, "A user with this phone number already exists.");
+        if (!string.IsNullOrEmpty(email) && await _db.Users.AnyAsync(u => u.Email == email))
+            return (null, "A user with this email already exists.");
+        if (role is not (UserRole.Admin or UserRole.AdminUser))
+            return (null, "Only Admin or AdminUser roles can be created here.");
+
+        var user = new User
+        {
+            Phone = phone, Email = email, FullName = fullName,
+            Role = role, IsActive = true,
+            PasswordHash = Helpers.FileUploadHelper.HashPassword(new User(), password)
+        };
+        _db.Users.Add(user);
+
+        // Assign role in UserRoles table
+        var roleEntity = await _db.Roles.FirstOrDefaultAsync(r => r.NormalizedName == role.ToString().ToUpperInvariant());
+        if (roleEntity != null)
+            _db.UserRoles.Add(new AppUserRole { UserId = user.Id, RoleId = roleEntity.Id });
+
+        await _db.SaveChangesAsync();
+        return (user.Id, null);
+    }
+
+    public async Task<bool> DeactivateAsync(Guid id, Guid byUserId)
+    {
+        var u = await _db.Users.FindAsync(id);
+        if (u == null) return false;
+        u.IsActive = false;
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> ReactivateAsync(Guid id)
+    {
+        var u = await _db.Users.FindAsync(id);
+        if (u == null) return false;
+        u.IsActive = true;
+        await _db.SaveChangesAsync();
+        return true;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// StoreOwner Approval (SuperAdmin/Admin workflow)
+// ═══════════════════════════════════════════════════════════════════
+public interface IStoreOwnerApprovalRepo
+{
+    Task<List<User>> GetPendingAsync();
+    Task<List<User>> GetAllApplicantsAsync();
+    Task<User?> GetByIdAsync(Guid id);
+    Task<(bool Success, string? Error)> ApproveAsync(Guid userId, Guid byAdminId);
+    Task<(bool Success, string? Error)> RejectAsync(Guid userId, Guid byAdminId, string reason);
+}
+
+public class StoreOwnerApprovalRepo : IStoreOwnerApprovalRepo
+{
+    private readonly AdminDbContext _db;
+    public StoreOwnerApprovalRepo(AdminDbContext db) => _db = db;
+
+    public Task<List<User>> GetPendingAsync() =>
+        _db.Users.Where(u => u.Role == UserRole.StoreOwner && u.RegistrationApprovalStatus == ApprovalStatus.Pending)
+            .OrderByDescending(u => u.CreatedAt).AsNoTracking().ToListAsync();
+
+    public Task<List<User>> GetAllApplicantsAsync() =>
+        _db.Users.Where(u => u.Role == UserRole.StoreOwner && u.RegistrationApprovalStatus != null)
+            .OrderByDescending(u => u.CreatedAt).AsNoTracking().ToListAsync();
+
+    public Task<User?> GetByIdAsync(Guid id) => _db.Users.FindAsync(id).AsTask();
+
+    public async Task<(bool Success, string? Error)> ApproveAsync(Guid userId, Guid byAdminId)
+    {
+        var u = await _db.Users.FindAsync(userId);
+        if (u == null) return (false, "User not found.");
+        if (u.Role != UserRole.StoreOwner) return (false, "User is not a StoreOwner applicant.");
+        if (u.RegistrationApprovalStatus == ApprovalStatus.Approved) return (false, "Already approved.");
+        u.RegistrationApprovalStatus = ApprovalStatus.Approved;
+        u.ApprovedByUserId = byAdminId;
+        u.RegistrationApprovedAt = DateTime.UtcNow;
+        u.IsActive = true;
+        await _db.SaveChangesAsync();
+        return (true, null);
+    }
+
+    public async Task<(bool Success, string? Error)> RejectAsync(Guid userId, Guid byAdminId, string reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason)) return (false, "Rejection reason is required.");
+        var u = await _db.Users.FindAsync(userId);
+        if (u == null) return (false, "User not found.");
+        if (u.RegistrationApprovalStatus == ApprovalStatus.Rejected) return (false, "Already rejected.");
+        u.RegistrationApprovalStatus = ApprovalStatus.Rejected;
+        u.RejectedByUserId = byAdminId;
+        u.RegistrationRejectedAt = DateTime.UtcNow;
+        u.RegistrationRejectionReason = reason;
+        u.IsActive = false;
+        await _db.SaveChangesAsync();
+        return (true, null);
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Audit Log, Activity Log, Communication Log (read-only portal repos)
+// ═══════════════════════════════════════════════════════════════════
+public interface IAuditLogRepo
+{
+    Task<List<AuditLog>> GetAllAsync(string? search, int page = 1, int size = 50);
+    Task<int> CountAsync(string? search);
+}
+
+public class AuditLogRepo : IAuditLogRepo
+{
+    private readonly AdminDbContext _db;
+    public AuditLogRepo(AdminDbContext db) => _db = db;
+
+    public Task<List<AuditLog>> GetAllAsync(string? search, int page = 1, int size = 50)
+    {
+        var q = _db.AuditLogs.Include(a => a.User).AsQueryable();
+        if (!string.IsNullOrEmpty(search))
+            q = q.Where(a => a.Action.Contains(search) || a.Entity.Contains(search)
+                || (a.User != null && a.User.FullName.Contains(search)));
+        return q.OrderByDescending(a => a.CreatedAt)
+            .Skip((page - 1) * size).Take(size).AsNoTracking().ToListAsync();
+    }
+
+    public Task<int> CountAsync(string? search)
+    {
+        var q = _db.AuditLogs.AsQueryable();
+        if (!string.IsNullOrEmpty(search))
+            q = q.Where(a => a.Action.Contains(search) || a.Entity.Contains(search));
+        return q.CountAsync();
+    }
+}
+
+public interface IActivityLogRepo
+{
+    Task<List<ActivityLog>> GetAllAsync(string? search, int page = 1, int size = 50);
+    Task<int> CountAsync(string? search);
+}
+
+public class ActivityLogRepo : IActivityLogRepo
+{
+    private readonly AdminDbContext _db;
+    public ActivityLogRepo(AdminDbContext db) => _db = db;
+
+    public Task<List<ActivityLog>> GetAllAsync(string? search, int page = 1, int size = 50)
+    {
+        var q = _db.ActivityLogs.Include(a => a.User).AsQueryable();
+        if (!string.IsNullOrEmpty(search))
+            q = q.Where(a => a.ActivityType.Contains(search)
+                || (a.Description != null && a.Description.Contains(search))
+                || (a.User != null && a.User.FullName.Contains(search)));
+        return q.OrderByDescending(a => a.CreatedAt)
+            .Skip((page - 1) * size).Take(size).AsNoTracking().ToListAsync();
+    }
+
+    public Task<int> CountAsync(string? search)
+    {
+        var q = _db.ActivityLogs.AsQueryable();
+        if (!string.IsNullOrEmpty(search))
+            q = q.Where(a => a.ActivityType.Contains(search)
+                || (a.Description != null && a.Description.Contains(search)));
+        return q.CountAsync();
+    }
+}
+
+public interface ICommunicationLogRepo
+{
+    Task<List<CommunicationLog>> GetAllAsync(string? channel, string? status, int page = 1, int size = 50);
+    Task<int> CountAsync(string? channel, string? status);
+}
+
+public class CommunicationLogRepo : ICommunicationLogRepo
+{
+    private readonly AdminDbContext _db;
+    public CommunicationLogRepo(AdminDbContext db) => _db = db;
+
+    public Task<List<CommunicationLog>> GetAllAsync(string? channel, string? status, int page = 1, int size = 50)
+    {
+        var q = _db.CommunicationLogs.Include(c => c.Recipient).AsQueryable();
+        if (!string.IsNullOrEmpty(channel)) q = q.Where(c => c.Channel == channel);
+        if (!string.IsNullOrEmpty(status)) q = q.Where(c => c.Status == status);
+        return q.OrderByDescending(c => c.CreatedAt)
+            .Skip((page - 1) * size).Take(size).AsNoTracking().ToListAsync();
+    }
+
+    public Task<int> CountAsync(string? channel, string? status)
+    {
+        var q = _db.CommunicationLogs.AsQueryable();
+        if (!string.IsNullOrEmpty(channel)) q = q.Where(c => c.Channel == channel);
+        if (!string.IsNullOrEmpty(status)) q = q.Where(c => c.Status == status);
+        return q.CountAsync();
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Store Staff Management (StoreOwner assigns staff to stores)
+// ═══════════════════════════════════════════════════════════════════
+public interface IStoreStaffRepo
+{
+    Task<List<StoreUserAssignment>> GetByStoreAsync(Guid storeId);
+    Task<List<StoreUserAssignment>> GetByOwnerAsync(Guid ownerId);
+    Task<List<User>> GetStaffUsersAsync();
+    /// <summary>Creates a new staff user and assigns them to a store.</summary>
+    Task<(Guid? UserId, string? Error)> CreateStaffAsync(
+        string fullName, string phone, string password, UserRole staffRole,
+        Guid storeId, Guid assignedByUserId);
+    Task<(bool Success, string? Error)> AssignExistingAsync(
+        Guid staffUserId, Guid storeId, string staffRole, Guid assignedByUserId);
+    Task<bool> RevokeAsync(Guid assignmentId, Guid revokedByUserId);
+}
+
+public class StoreStaffRepo : IStoreStaffRepo
+{
+    private readonly AdminDbContext _db;
+    public StoreStaffRepo(AdminDbContext db) => _db = db;
+
+    public Task<List<StoreUserAssignment>> GetByStoreAsync(Guid storeId) =>
+        _db.StoreUserAssignments.Include(a => a.User).Where(a => a.StoreId == storeId && a.IsActive)
+            .OrderBy(a => a.StaffRole).ThenBy(a => a.User.FullName).AsNoTracking().ToListAsync();
+
+    public Task<List<StoreUserAssignment>> GetByOwnerAsync(Guid ownerId)
+    {
+        var storeIds = _db.Stores.Where(s => s.OwnerId == ownerId).Select(s => s.Id);
+        return _db.StoreUserAssignments.Include(a => a.User).Include(a => a.Store)
+            .Where(a => storeIds.Contains(a.StoreId) && a.IsActive)
+            .OrderBy(a => a.Store.Name).ThenBy(a => a.StaffRole).AsNoTracking().ToListAsync();
+    }
+
+    public Task<List<User>> GetStaffUsersAsync() =>
+        _db.Users.Where(u => u.Role == UserRole.StoreManager || u.Role == UserRole.StoreStaff)
+            .OrderBy(u => u.FullName).AsNoTracking().ToListAsync();
+
+    public async Task<(Guid? UserId, string? Error)> CreateStaffAsync(
+        string fullName, string phone, string password, UserRole staffRole,
+        Guid storeId, Guid assignedByUserId)
+    {
+        if (staffRole is not (UserRole.StoreManager or UserRole.StoreStaff))
+            return (null, "Staff role must be StoreManager or StoreStaff.");
+        if (await _db.Users.AnyAsync(u => u.Phone == phone))
+            return (null, "A user with this phone already exists.");
+
+        var user = new User
+        {
+            Phone = phone, FullName = fullName, Role = staffRole, IsActive = true,
+            PasswordHash = Helpers.FileUploadHelper.HashPassword(new User(), password)
+        };
+        _db.Users.Add(user);
+        var roleEntity = await _db.Roles.FirstOrDefaultAsync(r => r.NormalizedName == staffRole.ToString().ToUpperInvariant());
+        if (roleEntity != null)
+            _db.UserRoles.Add(new AppUserRole { UserId = user.Id, RoleId = roleEntity.Id });
+
+        _db.StoreUserAssignments.Add(new StoreUserAssignment
+        {
+            UserId = user.Id, StoreId = storeId,
+            StaffRole = staffRole.ToString(), AssignedByUserId = assignedByUserId
+        });
+        await _db.SaveChangesAsync();
+        return (user.Id, null);
+    }
+
+    public async Task<(bool Success, string? Error)> AssignExistingAsync(
+        Guid staffUserId, Guid storeId, string staffRole, Guid assignedByUserId)
+    {
+        var alreadyAssigned = await _db.StoreUserAssignments.AnyAsync(
+            a => a.UserId == staffUserId && a.StoreId == storeId && a.IsActive);
+        if (alreadyAssigned) return (false, "This staff member is already assigned to this store.");
+        _db.StoreUserAssignments.Add(new StoreUserAssignment
+        {
+            UserId = staffUserId, StoreId = storeId,
+            StaffRole = staffRole, AssignedByUserId = assignedByUserId
+        });
+        await _db.SaveChangesAsync();
+        return (true, null);
+    }
+
+    public async Task<bool> RevokeAsync(Guid assignmentId, Guid revokedByUserId)
+    {
+        var a = await _db.StoreUserAssignments.FindAsync(assignmentId);
+        if (a == null) return false;
+        a.IsActive = false; a.RevokedAt = DateTime.UtcNow; a.RevokedByUserId = revokedByUserId;
         await _db.SaveChangesAsync();
         return true;
     }

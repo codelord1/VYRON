@@ -37,6 +37,7 @@ public class StoreService : IStoreService
         string? filter, double? lat, double? lng)
     {
         var query = _db.Stores.Include(s => s.Services)
+            .AsNoTracking()
             .Where(s => s.Status == StoreStatus.Active).AsQueryable();
 
         if (!string.IsNullOrEmpty(search))
@@ -46,18 +47,22 @@ public class StoreService : IStoreService
         else if (filter == "fast") query = query.Where(s => s.FastPickup);
         else if (filter == "toprated") query = query.Where(s => s.IsTopRated);
 
-        var stores = await query.ToListAsync();
-
-        IEnumerable<LaundryStore> sorted = sort switch
+        // Push DB-safe sorts into the query before materialising; distance needs Haversine in memory
+        IQueryable<LaundryStore> orderedQuery = sort switch
         {
-            "rating" => stores.OrderByDescending(s => s.AverageRating),
-            "price" => stores.OrderBy(s => s.PickupFee),
-            "fast" => stores.OrderBy(s => s.EstimatedPickupMinutes),
-            "distance" when lat.HasValue && lng.HasValue =>
-                stores.OrderBy(s => Haversine(lat.Value, lng.Value, s.Latitude, s.Longitude)),
-            _ => stores.OrderByDescending(s => s.IsVerified)
-                       .ThenByDescending(s => s.AverageRating)
+            "rating"   => query.OrderByDescending(s => s.AverageRating),
+            "price"    => query.OrderBy(s => s.PickupFee),
+            "fast"     => query.OrderBy(s => s.EstimatedPickupMinutes),
+            _          => query.OrderByDescending(s => s.IsVerified).ThenByDescending(s => s.AverageRating)
         };
+
+        // Safety cap: never pull more than 200 active stores in one call
+        var stores = await orderedQuery.Take(200).ToListAsync();
+
+        // Distance sort happens in memory (Haversine can't translate to SQL)
+        IEnumerable<LaundryStore> sorted = (sort == "distance" && lat.HasValue && lng.HasValue)
+            ? stores.OrderBy(s => Haversine(lat.Value, lng.Value, s.Latitude, s.Longitude))
+            : stores;
 
         return sorted.Select(MapToListItem).ToList();
     }
@@ -65,6 +70,7 @@ public class StoreService : IStoreService
     public async Task<StoreDetailDto?> GetStoreAsync(Guid id)
     {
         var store = await _db.Stores
+            .AsNoTracking()
             .Include(s => s.Services)
             .Include(s => s.Reviews.Where(r => r.IsVisible).OrderByDescending(r => r.CreatedAt).Take(10))
                 .ThenInclude(r => r.Customer)
@@ -325,11 +331,15 @@ public class OrderService : IOrderService
         // Persist order items (multi-service support)
         if (req.Items is { Count: > 0 })
         {
+            // Pre-load all referenced service offerings in ONE query — avoids N+1
+            var itemSvcIds = req.Items.Select(i => i.ServiceOfferingId).Distinct().ToList();
+            var itemSvcMap = await _db.ServiceOfferings
+                .Where(s => itemSvcIds.Contains(s.Id) && s.IsActive)
+                .ToDictionaryAsync(s => s.Id);
+
             foreach (var item in req.Items)
             {
-                var itemSvc = await _db.ServiceOfferings
-                    .FirstOrDefaultAsync(s => s.Id == item.ServiceOfferingId && s.IsActive);
-                if (itemSvc == null) continue;
+                if (!itemSvcMap.TryGetValue(item.ServiceOfferingId, out var itemSvc)) continue;
                 var lineTotal = itemSvc.PricingMode == PricingMode.PerKg
                     ? Math.Max(item.Weight * itemSvc.BasePrice, itemSvc.MinimumCharge)
                     : Math.Max(item.Pieces * itemSvc.BasePrice, itemSvc.MinimumCharge);
@@ -381,8 +391,14 @@ public class OrderService : IOrderService
             await _notifications.SendInAppAsync(customerId,
                 "Order Placed",
                 $"Your order #{orderNumber} has been placed. Pay ₦{estimate.PickupFeePayNow:N0} pickup fee to get started.",
-                "order");
+                "order", "Order", order.Id);
         }
+
+        // Notify store owner + staff about the new order
+        await NotifyStoreUsersAsync(order.StoreId,
+            "New Order Received",
+            $"Order #{orderNumber} has been placed by a customer. Please review and confirm.",
+            "order", order.Id);
 
         await _audit.LogAsync(customerId, "ORDER_CREATE", "Order", order.Id);
         return (await GetOrderDtoAsync(order.Id))!;
@@ -392,13 +408,15 @@ public class OrderService : IOrderService
 
     public async Task<OrderDto?> GetOrderByNumberAsync(string number)
     {
-        var o = await _db.Orders.FirstOrDefaultAsync(x => x.OrderNumber == number);
-        return o == null ? null : await GetOrderDtoAsync(o.Id);
+        // Single query — no double round-trip
+        var o = await OrdersWithIncludes().FirstOrDefaultAsync(x => x.OrderNumber == number);
+        return o == null ? null : MapOrderToDto(o);
     }
 
     public async Task<List<OrderDto>> GetCustomerOrdersAsync(Guid customerId, int page = 1)
     {
-        var ids = await _db.Orders.Where(o => o.CustomerId == customerId)
+        var ids = await _db.Orders.AsNoTracking()
+            .Where(o => o.CustomerId == customerId)
             .OrderByDescending(o => o.CreatedAt).Skip((page - 1) * 20).Take(20)
             .Select(o => o.Id).ToListAsync();
         return await LoadOrderDtosAsync(ids);
@@ -406,7 +424,8 @@ public class OrderService : IOrderService
 
     public async Task<List<OrderDto>> GetAllOrdersAsync(OrderStatus? status, string? search, int page = 1)
     {
-        var q = _db.Orders.Include(o => o.Customer).Include(o => o.Store).AsQueryable();
+        var q = _db.Orders.AsNoTracking()
+            .Include(o => o.Customer).Include(o => o.Store).AsQueryable();
         if (status.HasValue) q = q.Where(o => o.Status == status.Value);
         if (!string.IsNullOrEmpty(search))
             q = q.Where(o => o.OrderNumber.Contains(search) || o.Customer.FullName.Contains(search)
@@ -418,7 +437,8 @@ public class OrderService : IOrderService
 
     public async Task<List<OrderDto>> GetStoreOrdersAsync(Guid storeId, int page = 1)
     {
-        var ids = await _db.Orders.Where(o => o.StoreId == storeId)
+        var ids = await _db.Orders.AsNoTracking()
+            .Where(o => o.StoreId == storeId)
             .OrderByDescending(o => o.CreatedAt).Skip((page - 1) * 25).Take(25)
             .Select(o => o.Id).ToListAsync();
         return await LoadOrderDtosAsync(ids);
@@ -426,7 +446,8 @@ public class OrderService : IOrderService
 
     public async Task<List<OrderDto>> GetRiderOrdersAsync(Guid riderId)
     {
-        var ids = await _db.Orders.Where(o => o.RiderId == riderId
+        var ids = await _db.Orders.AsNoTracking()
+            .Where(o => o.RiderId == riderId
                 && o.Status != OrderStatus.Completed && o.Status != OrderStatus.Cancelled)
             .OrderByDescending(o => o.CreatedAt).Select(o => o.Id).ToListAsync();
         return await LoadOrderDtosAsync(ids);
@@ -468,7 +489,13 @@ public class OrderService : IOrderService
         var inApp = GetStatusInAppMessage(order.OrderNumber, newStatus);
         if (inApp != null)
             await _notifications.SendInAppAsync(order.CustomerId,
-                GetStatusInAppTitle(newStatus), inApp, "order");
+                GetStatusInAppTitle(newStatus), inApp, "order", "Order", orderId);
+
+        // Notify store users on events they need to act on
+        var storeMsg = GetStoreStatusMessage(order.OrderNumber, newStatus);
+        if (storeMsg != null)
+            await NotifyStoreUsersAsync(order.StoreId,
+                GetStatusInAppTitle(newStatus), storeMsg, "order", orderId);
 
         await _audit.LogAsync(changedBy, "ORDER_STATUS_UPDATE", "Order", orderId,
             oldStatus.ToString(), newStatus.ToString());
@@ -604,6 +631,17 @@ public class OrderService : IOrderService
         _                          => "Order Update"
     };
 
+    /// <summary>Messages sent to store staff when order status changes. Returns null if store doesn't need notifying.</summary>
+    private static string? GetStoreStatusMessage(string orderNumber, OrderStatus s) => s switch
+    {
+        OrderStatus.PickupFeePaid  => $"Order #{orderNumber}: pickup fee has been paid. Please assign a rider for pickup.",
+        OrderStatus.PickedUp       => $"Order #{orderNumber} has been picked up by the rider and is on its way.",
+        OrderStatus.Delivered      => $"Order #{orderNumber} has been delivered. Balance payment is pending.",
+        OrderStatus.Completed      => $"Order #{orderNumber} is complete. Payment received.",
+        OrderStatus.Cancelled      => $"Order #{orderNumber} has been cancelled.",
+        _ => null
+    };
+
     private static string? GetStatusInAppMessage(string orderNumber, OrderStatus s) => s switch
     {
         OrderStatus.Confirmed      => $"Your order #{orderNumber} has been confirmed by the store.",
@@ -616,67 +654,111 @@ public class OrderService : IOrderService
         _ => null
     };
 
-    private async Task<List<OrderDto>> LoadOrderDtosAsync(List<Guid> ids)
+    /// <summary>
+    /// Sends an in-app notification to the store owner plus all active StoreManagers and StoreStaff
+    /// assigned to the given store.
+    /// </summary>
+    private async Task NotifyStoreUsersAsync(Guid storeId, string title, string message,
+        string entityType = "order", Guid? entityId = null)
     {
-        var list = new List<OrderDto>();
-        foreach (var id in ids)
+        try
         {
-            var dto = await GetOrderDtoAsync(id);
-            if (dto != null) list.Add(dto);
+            // StoreOwner (owns the store)
+            var store = await _db.Stores.AsNoTracking()
+                .FirstOrDefaultAsync(s => s.Id == storeId);
+            if (store != null)
+                await _notifications.SendInAppAsync(store.OwnerId, title, message,
+                    entityType, entityType, entityId);
+
+            // Active StoreManagers and StoreStaff assigned to this store
+            var staffUserIds = await _db.StoreUserAssignments
+                .Where(a => a.StoreId == storeId && a.IsActive)
+                .Select(a => a.UserId)
+                .ToListAsync();
+
+            foreach (var uid in staffUserIds)
+                await _notifications.SendInAppAsync(uid, title, message,
+                    entityType, entityType, entityId);
         }
-        return list;
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "NotifyStoreUsersAsync failed for store {StoreId}", storeId);
+        }
     }
 
-    private async Task<OrderDto?> GetOrderDtoAsync(Guid id)
-    {
-        var o = await _db.Orders
+    // ── Shared include chain — used by all read paths ─────────────
+    private IQueryable<Order> OrdersWithIncludes() =>
+        _db.Orders
+            .AsNoTracking()
             .Include(x => x.Customer).Include(x => x.Store).Include(x => x.Service)
             .Include(x => x.Rider).ThenInclude(r => r!.User)
             .Include(x => x.DeliveryRider).ThenInclude(r => r!.User)
             .Include(x => x.StatusHistory)
             .Include(x => x.Items)
             .Include(x => x.Review).ThenInclude(r => r!.Customer)
-            .Include(x => x.Dispute)
-            .FirstOrDefaultAsync(x => x.Id == id);
-        if (o == null) return null;
+            .Include(x => x.Dispute);
 
-        return new OrderDto(
-            o.Id, o.OrderNumber,
-            new CustomerSummaryDto(o.Customer.Id, o.Customer.FullName, o.Customer.Phone),
-            new StoreSummaryDto(o.Store.Id, o.Store.Name, o.Store.Address, o.Store.AverageRating, o.Store.LogoUrl, o.Store.Phone),
-            new ServiceSummaryDto(o.Service.Id, o.Service.ServiceType, o.Service.Name, o.Service.Description,
-                o.Service.PricingMode, o.Service.BasePrice, o.Service.MinimumCharge,
-                o.Service.IsActive, o.Service.EstimatedHours),
-            o.Rider == null ? null : new RiderSummaryDto(o.Rider.Id, o.Rider.User.FullName,
-                o.Rider.User.Phone, o.Rider.VehicleType, o.Rider.VehiclePlate),
-            o.Status, o.Status.ToString(),
-            o.PaymentState, o.PaymentState.ToString(),
-            o.PaymentMethod,
-            o.EstimatedWeight, o.EstimatedPieces,
-            o.EstimatedLaundryCost, o.ActualLaundryCost,
-            o.PickupFee, o.DeliveryFee, o.TotalEstimate, o.ActualTotal,
-            o.PickupFeeAmount, o.BalanceAmount,
-            o.AdminPriceOverride, o.AdminOverrideReason,
-            o.PickupAddress, o.DeliveryAddress,
-            o.RequestedPickupDate, o.RequestedPickupSlot, o.SpecialInstructions,
-            o.PickedUpAt, o.ProcessingStartedAt, o.ReadyAt,
-            o.OutForDeliveryAt, o.DeliveredAt, o.CompletedAt, o.CreatedAt,
-            o.StatusHistory.OrderByDescending(h => h.ChangedAt)
-                .Select(h => new StatusHistoryDto(h.Status, h.Status.ToString(), h.Note, h.ChangedAt))
-                .ToList(),
-            o.Review == null ? null : new ReviewDto(o.Review.Id, o.Review.OrderId, o.OrderNumber,
-                o.Review.Customer.FullName, o.Review.Rating, o.Review.Comment,
-                o.Review.PhotoUrl, o.Review.IsVisible, o.Review.CreatedAt),
-            o.Dispute == null ? null : new DisputeSummaryDto(o.Dispute.Id, o.Dispute.Type,
-                o.Dispute.Status, o.Dispute.CreatedAt),
-            o.DeliveryRider == null ? null : new RiderSummaryDto(o.DeliveryRider.Id,
-                o.DeliveryRider.User.FullName, o.DeliveryRider.User.Phone,
-                o.DeliveryRider.VehicleType, o.DeliveryRider.VehiclePlate),
-            o.Items.Select(i => new OrderItemDto(
-                i.Id, i.ServiceOfferingId, i.ServiceName,
-                i.PricingMode, i.Weight, i.Pieces,
-                i.UnitPrice, i.LineTotal)).ToList());
+    /// <summary>
+    /// Loads a page of order IDs in ONE batched query instead of N separate round-trips.
+    /// Preserves the original ordering provided by the caller's ID list.
+    /// </summary>
+    private async Task<List<OrderDto>> LoadOrderDtosAsync(List<Guid> ids)
+    {
+        if (ids.Count == 0) return new();
+        var orders = await OrdersWithIncludes()
+            .Where(x => ids.Contains(x.Id))
+            .ToListAsync();
+        // Restore caller-specified order (DB may return rows in arbitrary order)
+        return ids
+            .Select(id => orders.FirstOrDefault(o => o.Id == id))
+            .Where(o => o != null)
+            .Select(o => MapOrderToDto(o!))
+            .ToList();
     }
+
+    private async Task<OrderDto?> GetOrderDtoAsync(Guid id)
+    {
+        var o = await OrdersWithIncludes().FirstOrDefaultAsync(x => x.Id == id);
+        return o == null ? null : MapOrderToDto(o);
+    }
+
+    /// <summary>Maps a fully-loaded Order entity to its DTO. Synchronous — call after EF hydration.</summary>
+    private static OrderDto MapOrderToDto(Order o) => new(
+        o.Id, o.OrderNumber,
+        new CustomerSummaryDto(o.Customer.Id, o.Customer.FullName, o.Customer.Phone),
+        new StoreSummaryDto(o.Store.Id, o.Store.Name, o.Store.Address, o.Store.AverageRating, o.Store.LogoUrl, o.Store.Phone),
+        new ServiceSummaryDto(o.Service.Id, o.Service.ServiceType, o.Service.Name, o.Service.Description,
+            o.Service.PricingMode, o.Service.BasePrice, o.Service.MinimumCharge,
+            o.Service.IsActive, o.Service.EstimatedHours),
+        o.Rider == null ? null : new RiderSummaryDto(o.Rider.Id, o.Rider.User.FullName,
+            o.Rider.User.Phone, o.Rider.VehicleType, o.Rider.VehiclePlate),
+        o.Status, o.Status.ToString(),
+        o.PaymentState, o.PaymentState.ToString(),
+        o.PaymentMethod,
+        o.EstimatedWeight, o.EstimatedPieces,
+        o.EstimatedLaundryCost, o.ActualLaundryCost,
+        o.PickupFee, o.DeliveryFee, o.TotalEstimate, o.ActualTotal,
+        o.PickupFeeAmount, o.BalanceAmount,
+        o.AdminPriceOverride, o.AdminOverrideReason,
+        o.PickupAddress, o.DeliveryAddress,
+        o.RequestedPickupDate, o.RequestedPickupSlot, o.SpecialInstructions,
+        o.PickedUpAt, o.ProcessingStartedAt, o.ReadyAt,
+        o.OutForDeliveryAt, o.DeliveredAt, o.CompletedAt, o.CreatedAt,
+        o.StatusHistory.OrderByDescending(h => h.ChangedAt)
+            .Select(h => new StatusHistoryDto(h.Status, h.Status.ToString(), h.Note, h.ChangedAt))
+            .ToList(),
+        o.Review == null ? null : new ReviewDto(o.Review.Id, o.Review.OrderId, o.OrderNumber,
+            o.Review.Customer.FullName, o.Review.Rating, o.Review.Comment,
+            o.Review.PhotoUrl, o.Review.IsVisible, o.Review.CreatedAt),
+        o.Dispute == null ? null : new DisputeSummaryDto(o.Dispute.Id, o.Dispute.Type,
+            o.Dispute.Status, o.Dispute.CreatedAt),
+        o.DeliveryRider == null ? null : new RiderSummaryDto(o.DeliveryRider.Id,
+            o.DeliveryRider.User.FullName, o.DeliveryRider.User.Phone,
+            o.DeliveryRider.VehicleType, o.DeliveryRider.VehiclePlate),
+        o.Items.Select(i => new OrderItemDto(
+            i.Id, i.ServiceOfferingId, i.ServiceName,
+            i.PricingMode, i.Weight, i.Pieces,
+            i.UnitPrice, i.LineTotal)).ToList());
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -979,38 +1061,60 @@ public class AnalyticsService : IAnalyticsService
         var weekStart = today.AddDays(-(int)today.DayOfWeek);
         var monthStart = new DateTime(now.Year, now.Month, 1);
 
-        var all = await _db.Orders.ToListAsync();
-        var todayOrders = all.Where(o => o.CreatedAt.Date == today).ToList();
-        var weekOrders = all.Where(o => o.CreatedAt >= weekStart).ToList();
-        var monthOrders = all.Where(o => o.CreatedAt >= monthStart).ToList();
+        // ── Server-side scalar aggregations (no full table scan) ─────
+        var ordersToday    = await _db.Orders.CountAsync(o => o.CreatedAt >= today);
+        var pendingPickups = await _db.Orders.CountAsync(o => o.Status == OrderStatus.RiderAssigned);
+        var inProcessing   = await _db.Orders.CountAsync(o => o.Status == OrderStatus.Processing);
+        var outForDelivery = await _db.Orders.CountAsync(o => o.Status == OrderStatus.OutForDelivery);
+        var completedOrders = await _db.Orders.CountAsync(o => o.Status == OrderStatus.Completed);
+        var activeDisputes = await _db.Disputes.CountAsync(d =>
+            d.Status == DisputeStatus.Open || d.Status == DisputeStatus.UnderReview);
+        var totalStores    = await _db.Stores.CountAsync(s => s.Status == StoreStatus.Active);
+        var activeRiders   = await _db.Riders.CountAsync(r => r.Status == RiderStatus.OnlineAvailable);
+        var totalCustomers = await _db.Users.CountAsync(u => u.Role == UserRole.Customer);
 
-        decimal Total(Order o) => o.ActualTotal > 0 ? o.ActualTotal : o.TotalEstimate;
+        // Revenue: EF translates ternary to CASE WHEN SQL expression
+        var revenueToday = await _db.Orders
+            .Where(o => o.CreatedAt >= today && o.PaymentState == PaymentState.FullyPaid)
+            .SumAsync(o => (decimal?)(o.ActualTotal > 0 ? o.ActualTotal : o.TotalEstimate)) ?? 0m;
+        var revenueWeek = await _db.Orders
+            .Where(o => o.CreatedAt >= weekStart && o.PaymentState == PaymentState.FullyPaid)
+            .SumAsync(o => (decimal?)(o.ActualTotal > 0 ? o.ActualTotal : o.TotalEstimate)) ?? 0m;
+        var revenueMonth = await _db.Orders
+            .Where(o => o.CreatedAt >= monthStart && o.PaymentState == PaymentState.FullyPaid)
+            .SumAsync(o => (decimal?)(o.ActualTotal > 0 ? o.ActualTotal : o.TotalEstimate)) ?? 0m;
 
-        var revenueToday = todayOrders.Where(o => o.PaymentState == PaymentState.FullyPaid).Sum(Total);
-        var revenueWeek = weekOrders.Where(o => o.PaymentState == PaymentState.FullyPaid).Sum(Total);
-        var revenueMonth = monthOrders.Where(o => o.PaymentState == PaymentState.FullyPaid).Sum(Total);
+        // Daily metrics: one query for the whole week, then fill gaps in memory
+        var weekEnd = weekStart.AddDays(7);
+        var weekRaw = await _db.Orders
+            .AsNoTracking()
+            .Where(o => o.CreatedAt >= weekStart && o.CreatedAt < weekEnd)
+            .Select(o => new {
+                Day  = o.CreatedAt.Date,
+                Paid = o.PaymentState == PaymentState.FullyPaid,
+                Rev  = o.ActualTotal > 0 ? o.ActualTotal : o.TotalEstimate
+            })
+            .ToListAsync();
 
-        var daily = new List<DailyMetric>();
-        for (int i = 0; i < 7; i++)
+        var daily = Enumerable.Range(0, 7).Select(i =>
         {
-            var d = weekStart.AddDays(i);
-            var dayOrders = all.Where(o => o.CreatedAt.Date == d.Date).ToList();
-            daily.Add(new DailyMetric(d.ToString("ddd"), dayOrders.Count,
-                dayOrders.Where(o => o.PaymentState == PaymentState.FullyPaid).Sum(o => o.TotalEstimate)));
-        }
+            var d       = weekStart.AddDays(i);
+            var dayRows = weekRaw.Where(r => r.Day == d).ToList();
+            return new DailyMetric(d.ToString("ddd"), dayRows.Count,
+                dayRows.Where(r => r.Paid).Sum(r => r.Rev));
+        }).ToList();
+
+        // Status breakdown: server-side GROUP BY
+        var ordersByStatus = await _db.Orders
+            .AsNoTracking()
+            .GroupBy(o => o.Status)
+            .Select(g => new StatusCount(g.Key.ToString(), g.Count()))
+            .ToListAsync();
 
         return new DashboardSummaryDto(
-            todayOrders.Count,
-            all.Count(o => o.Status == OrderStatus.RiderAssigned),
-            all.Count(o => o.Status == OrderStatus.Processing),
-            all.Count(o => o.Status == OrderStatus.OutForDelivery),
-            await _db.Disputes.CountAsync(d => d.Status == DisputeStatus.Open || d.Status == DisputeStatus.UnderReview),
+            ordersToday, pendingPickups, inProcessing, outForDelivery, activeDisputes,
             revenueToday, revenueWeek, revenueMonth,
-            await _db.Stores.CountAsync(s => s.Status == StoreStatus.Active),
-            await _db.Riders.CountAsync(r => r.Status == RiderStatus.OnlineAvailable),
-            await _db.Users.CountAsync(u => u.Role == UserRole.Customer),
-            all.Count(o => o.Status == OrderStatus.Completed),
-            daily,
-            all.GroupBy(o => o.Status).Select(g => new StatusCount(g.Key.ToString(), g.Count())).ToList());
+            totalStores, activeRiders, totalCustomers, completedOrders,
+            daily, ordersByStatus);
     }
 }

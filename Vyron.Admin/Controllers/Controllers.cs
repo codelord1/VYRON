@@ -44,7 +44,8 @@ public class AccountController : Controller
         // Try DB-backed auth first (by email or phone)
         var user = await _db.Users.FirstOrDefaultAsync(u =>
             (u.Email == identifier || u.Phone == identifier) &&
-            (u.Role == UserRole.Admin || u.Role == UserRole.SuperAdmin || u.Role == UserRole.StoreOwner) &&
+            (u.Role == UserRole.Admin || u.Role == UserRole.SuperAdmin ||
+             u.Role == UserRole.AdminUser || u.Role == UserRole.StoreOwner) &&
             u.IsActive);
 
         if (user != null)
@@ -61,9 +62,10 @@ public class AccountController : Controller
             {
                 user.LastLoginAt = DateTime.UtcNow;
                 await _db.SaveChangesAsync();
-                bool isAdmin = user.Role == UserRole.Admin || user.Role == UserRole.SuperAdmin;
-                await SignInAsync(user, isAdmin, rememberMe);
-                return isAdmin
+                bool isPortalAdmin = user.Role == UserRole.Admin || user.Role == UserRole.SuperAdmin
+                                  || user.Role == UserRole.AdminUser;
+                await SignInAsync(user, rememberMe);
+                return isPortalAdmin
                     ? RedirectToAction("Index", "Home")
                     : RedirectToAction("Dashboard", "StoreOwner");
             }
@@ -76,7 +78,7 @@ public class AccountController : Controller
             {
                 admin.LastLoginAt = DateTime.UtcNow;
                 await _db.SaveChangesAsync();
-                await SignInAsync(admin, true, rememberMe);
+                await SignInAsync(admin, rememberMe);
                 return RedirectToAction("Index", "Home");
             }
         }
@@ -86,14 +88,22 @@ public class AccountController : Controller
         return View();
     }
 
-    private async Task SignInAsync(User user, bool isAdmin, bool rememberMe = false)
+    private async Task SignInAsync(User user, bool rememberMe = false)
     {
+        // Emit the exact role name so [Authorize(Roles="SuperAdmin")] etc. work correctly
+        var roleClaim = user.Role switch {
+            UserRole.SuperAdmin  => "SuperAdmin",
+            UserRole.Admin       => "Admin",
+            UserRole.AdminUser   => "AdminUser",
+            UserRole.StoreOwner  => "StoreOwner",
+            _                    => user.Role.ToString()
+        };
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Name, user.FullName),
             new(ClaimTypes.MobilePhone, user.Phone),
-            new(ClaimTypes.Role, isAdmin ? "Admin" : "StoreOwner")
+            new(ClaimTypes.Role, roleClaim)
         };
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         // Remember Me: persist cookie for 30 days. Otherwise session cookie (browser-lifetime).
@@ -199,7 +209,8 @@ public class AccountController : Controller
         // Always show same message to avoid user enumeration
         ViewData["EmailSent"] = true;
 
-        if (user != null && (user.Role == UserRole.Admin || user.Role == UserRole.SuperAdmin || user.Role == UserRole.StoreOwner))
+        if (user != null && (user.Role == UserRole.Admin || user.Role == UserRole.SuperAdmin ||
+                              user.Role == UserRole.AdminUser || user.Role == UserRole.StoreOwner))
         {
             var (raw, _) = await _resetRepo.CreateTokenAsync(user.Id);
             var link = Url.Action("ResetPassword", "Account", new { token = raw }, Request.Scheme);
@@ -240,7 +251,7 @@ public abstract class VyronAdminController : Controller
 {
     protected Guid CurrentUserId =>
         Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : Guid.Empty;
-    protected bool IsAdmin => User.IsInRole("Admin") || User.IsInRole("SuperAdmin");
+    protected bool IsAdmin => User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("AdminUser");
     protected bool IsStoreOwner => User.IsInRole("StoreOwner");
 }
 
@@ -279,7 +290,7 @@ public class OrdersController : VyronAdminController
     {
         var order = await _orders.GetByIdAsync(id);
         if (order == null) return NotFound();
-        ViewBag.Riders = await _riders.GetAllAsync();
+        ViewBag.Riders = await _riders.GetApprovedAsync();
         return View(order);
     }
 
@@ -518,8 +529,8 @@ public class RidersController : VyronAdminController
             { ModelState.AddModelError("ProfileImageFile", imgErr!); return View(vm); }
             profilePath = await FileUploadHelper.SaveProfileImageAsync(vm.ProfileImageFile, _env);
         }
-        var ok = await _riders.CreateAsync(vm.FullName, phone, vm.VehicleType, vm.VehiclePlate, profilePath);
-        if (ok) { TempData["Success"] = "Rider created."; return RedirectToAction("Index"); }
+        var ok = await _riders.CreateAsync(vm.FullName, phone, vm.VehicleType, vm.VehiclePlate, profilePath, CurrentUserId);
+        if (ok) { TempData["Success"] = "Rider registered and pending approval."; return RedirectToAction("Index"); }
         ModelState.AddModelError("", "A user with this phone already exists.");
         return View(vm);
     }
@@ -561,10 +572,22 @@ public class RidersController : VyronAdminController
     public async Task<IActionResult> Approve(Guid id)
     {
         var (ok, err) = await _riderExt.ApproveAsync(id, CurrentUserId);
-        if (ok) TempData["Success"] = "Rider approved.";
+        if (ok) TempData["Success"] = "Rider approved successfully.";
         else TempData["Error"] = err;
         return RedirectToAction("Details", new { id });
     }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Reject(Guid id, string reason)
+    {
+        var (ok, err) = await _riderExt.RejectAsync(id, CurrentUserId, reason);
+        if (ok) TempData["Success"] = "Rider rejected.";
+        else TempData["Error"] = err;
+        return RedirectToAction("Details", new { id });
+    }
+
+    public async Task<IActionResult> Pending()
+        => View(await _riders.GetPendingApprovalAsync());
 
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> ToggleOnline(Guid id)
@@ -1315,5 +1338,163 @@ public class MessagesController : Controller
 
         TempData["Success"] = $"Message logged as '{channel}' to {recipientName ?? recipientPhone ?? "user"}.";
         return RedirectToAction("Index", "CommunicationLogs");
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ADMIN USERS — SuperAdmin-only user management
+// ═══════════════════════════════════════════════════════════════════
+[Authorize(Roles = "SuperAdmin")]
+public class AdminUsersController : VyronAdminController
+{
+    private readonly IAdminUserRepo _repo;
+    public AdminUsersController(IAdminUserRepo repo) => _repo = repo;
+
+    public async Task<IActionResult> Index() => View(await _repo.GetAllAdminUsersAsync());
+
+    public IActionResult Create() => View(new AdminUserCreateVm());
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(AdminUserCreateVm vm)
+    {
+        if (!ModelState.IsValid) return View(vm);
+        var role = vm.IsAdminUser ? UserRole.AdminUser : UserRole.Admin;
+        var (id, err) = await _repo.CreateAsync(vm.FullName, vm.Phone, vm.Email ?? "", vm.Password, role);
+        if (id.HasValue) { TempData["Success"] = $"Admin user {vm.FullName} created."; return RedirectToAction("Index"); }
+        ModelState.AddModelError("", err!);
+        return View(vm);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Deactivate(Guid id)
+    {
+        await _repo.DeactivateAsync(id, CurrentUserId);
+        TempData["Success"] = "Admin user deactivated.";
+        return RedirectToAction("Index");
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Reactivate(Guid id)
+    {
+        await _repo.ReactivateAsync(id);
+        TempData["Success"] = "Admin user reactivated.";
+        return RedirectToAction("Index");
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// STOREOWNER APPROVALS — SuperAdmin/Admin approves StoreOwner registrations
+// ═══════════════════════════════════════════════════════════════════
+[Authorize(Roles = "Admin,SuperAdmin")]
+public class StoreOwnerApprovalsController : VyronAdminController
+{
+    private readonly IStoreOwnerApprovalRepo _repo;
+    public StoreOwnerApprovalsController(IStoreOwnerApprovalRepo repo) => _repo = repo;
+
+    public async Task<IActionResult> Index() => View(await _repo.GetAllApplicantsAsync());
+    public async Task<IActionResult> Pending() => View(await _repo.GetPendingAsync());
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Approve(Guid id)
+    {
+        var (ok, err) = await _repo.ApproveAsync(id, CurrentUserId);
+        if (ok) TempData["Success"] = "StoreOwner approved.";
+        else TempData["Error"] = err;
+        return RedirectToAction("Index");
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Reject(Guid id, string reason)
+    {
+        var (ok, err) = await _repo.RejectAsync(id, CurrentUserId, reason);
+        if (ok) TempData["Success"] = "StoreOwner application rejected.";
+        else TempData["Error"] = err;
+        return RedirectToAction("Index");
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// AUDIT LOGS — read-only compliance view
+// ═══════════════════════════════════════════════════════════════════
+[Authorize(Roles = "Admin,SuperAdmin")]
+public class AuditLogsController : VyronAdminController
+{
+    private readonly IAuditLogRepo _repo;
+    public AuditLogsController(IAuditLogRepo repo) => _repo = repo;
+
+    public async Task<IActionResult> Index(string? search, int page = 1)
+    {
+        ViewBag.Search = search; ViewBag.Page = page;
+        ViewBag.Total = await _repo.CountAsync(search);
+        return View(await _repo.GetAllAsync(search, page));
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ACTIVITY LOGS — read-only activity trail
+// ═══════════════════════════════════════════════════════════════════
+[Authorize(Roles = "Admin,SuperAdmin")]
+public class ActivityLogsController : VyronAdminController
+{
+    private readonly IActivityLogRepo _repo;
+    public ActivityLogsController(IActivityLogRepo repo) => _repo = repo;
+
+    public async Task<IActionResult> Index(string? search, int page = 1)
+    {
+        ViewBag.Search = search; ViewBag.Page = page;
+        ViewBag.Total = await _repo.CountAsync(search);
+        return View(await _repo.GetAllAsync(search, page));
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// STORE STAFF — StoreOwner manages staff assignments
+// ═══════════════════════════════════════════════════════════════════
+[Authorize(Roles = "StoreOwner,Admin,SuperAdmin")]
+public class StoreStaffController : VyronAdminController
+{
+    private readonly IStoreStaffRepo _staff;
+    private readonly IStoreRepo _stores;
+
+    public StoreStaffController(IStoreStaffRepo staff, IStoreRepo stores)
+    { _staff = staff; _stores = stores; }
+
+    public async Task<IActionResult> Index()
+    {
+        var assignments = IsAdmin
+            ? await _staff.GetByStoreAsync(Guid.Empty)   // TODO: admin view all — for now StoreOwner-scoped
+            : await _staff.GetByOwnerAsync(CurrentUserId);
+        return View(assignments);
+    }
+
+    public async Task<IActionResult> Create()
+    {
+        ViewBag.Stores = await _stores.GetByOwnerAsync(CurrentUserId);
+        return View(new StoreStaffCreateVm());
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(StoreStaffCreateVm vm)
+    {
+        if (!ModelState.IsValid)
+        {
+            ViewBag.Stores = await _stores.GetByOwnerAsync(CurrentUserId);
+            return View(vm);
+        }
+        var role = vm.IsManager ? UserRole.StoreManager : UserRole.StoreStaff;
+        var (userId, err) = await _staff.CreateStaffAsync(
+            vm.FullName, vm.Phone, vm.Password, role, vm.StoreId, CurrentUserId);
+        if (userId.HasValue) { TempData["Success"] = $"Staff member {vm.FullName} created and assigned."; return RedirectToAction("Index"); }
+        ModelState.AddModelError("", err!);
+        ViewBag.Stores = await _stores.GetByOwnerAsync(CurrentUserId);
+        return View(vm);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Revoke(Guid id)
+    {
+        await _staff.RevokeAsync(id, CurrentUserId);
+        TempData["Success"] = "Staff assignment revoked.";
+        return RedirectToAction("Index");
     }
 }

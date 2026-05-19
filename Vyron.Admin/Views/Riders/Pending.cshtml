@@ -1,0 +1,75 @@
+@model List<Rider>
+@using Vyron.Shared.Enums
+@{ ViewData["Title"] = "Pending Rider Approvals"; }
+
+<div class="page-header">
+    <h1>Pending Rider Approvals</h1>
+    <a href="/Riders" class="btn btn-ghost btn-sm">← All Riders</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+@if (!Model.Any())
+{
+    <div class="empty-state">
+        <div class="empty-icon">✓</div>
+        <div class="empty-title">No pending approvals</div>
+        <div class="empty-sub">All rider applications have been reviewed.</div>
+    </div>
+}
+else
+{
+    <div class="alert alert-info" style="margin-bottom:16px;">
+        <strong>Segregation of Duties:</strong> You cannot approve or reject a rider that <em>you</em> registered. Another admin must handle those approvals.
+    </div>
+
+    <div class="table-wrap">
+        <table class="table-mobile-card">
+            <thead>
+                <tr><th>Name</th><th>Phone</th><th>Vehicle</th><th>Registered</th><th>Profile Photo</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model)
+                {
+                    <tr>
+                        <td class="text-bold"><a href="/Riders/Details/@r.Id">@r.User.FullName</a></td>
+                        <td>@r.User.Phone</td>
+                        <td>@r.VehicleType — @(r.VehiclePlate ?? "—")</td>
+                        <td><small class="text-muted">@r.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")</small></td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(r.User.ProfilePhoto))
+                            {
+                                <span class="badge badge-success">Photo ✓</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-danger">No photo</span>
+                            }
+                        </td>
+                        <td>
+                            <form asp-action="Approve" asp-route-id="@r.Id" method="post" style="display:inline">
+                                @Html.AntiForgeryToken()
+                                <button class="btn btn-success btn-sm" onclick="return confirm('Approve @r.User.FullName?')">Approve</button>
+                            </form>
+                            <button class="btn btn-danger btn-sm" onclick="document.getElementById('reject-@r.Id').style.display='block'">Reject</button>
+                            <div id="reject-@r.Id" style="display:none;margin-top:8px;">
+                                <form asp-action="Reject" asp-route-id="@r.Id" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="text" name="reason" placeholder="Rejection reason (required)" class="form-control" style="width:250px;display:inline" required />
+                                    <button class="btn btn-danger btn-sm">Confirm Reject</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

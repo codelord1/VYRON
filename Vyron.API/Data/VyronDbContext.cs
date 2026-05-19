@@ -31,6 +31,8 @@ public class VyronDbContext : DbContext
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<ServiceTypeEntity> ServiceTypes => Set<ServiceTypeEntity>();
     public DbSet<CommunicationLog> CommunicationLogs => Set<CommunicationLog>();
+    public DbSet<StoreUserAssignment> StoreUserAssignments => Set<StoreUserAssignment>();
+    public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
 
     // ─── Stable seed GUIDs (same across both providers) ─────────────
     private static readonly Guid AdminUserId   = new("11111111-1111-1111-1111-111111111111");
@@ -44,11 +46,14 @@ public class VyronDbContext : DbContext
     private static readonly Guid Store3Id      = new("bbbbbbbb-0000-0000-0000-000000000003");
 
     // ─── Stable Role GUIDs ────────────────────────────────────────
-    public static readonly Guid CustomerRoleId  = new("eeeeeeee-0000-0000-0000-000000000001");
-    public static readonly Guid RiderRoleId     = new("eeeeeeee-0000-0000-0000-000000000002");
-    public static readonly Guid StoreOwnerRoleId = new("eeeeeeee-0000-0000-0000-000000000003");
-    public static readonly Guid AdminRoleId     = new("eeeeeeee-0000-0000-0000-000000000004");
-    public static readonly Guid SuperAdminRoleId = new("eeeeeeee-0000-0000-0000-000000000005");
+    public static readonly Guid CustomerRoleId    = new("eeeeeeee-0000-0000-0000-000000000001");
+    public static readonly Guid RiderRoleId       = new("eeeeeeee-0000-0000-0000-000000000002");
+    public static readonly Guid StoreOwnerRoleId  = new("eeeeeeee-0000-0000-0000-000000000003");
+    public static readonly Guid AdminRoleId       = new("eeeeeeee-0000-0000-0000-000000000004");
+    public static readonly Guid SuperAdminRoleId  = new("eeeeeeee-0000-0000-0000-000000000005");
+    public static readonly Guid AdminUserRoleId   = new("eeeeeeee-0000-0000-0000-000000000006");
+    public static readonly Guid StoreManagerRoleId = new("eeeeeeee-0000-0000-0000-000000000007");
+    public static readonly Guid StoreStaffRoleId  = new("eeeeeeee-0000-0000-0000-000000000008");
 
     protected override void OnModelCreating(ModelBuilder m)
     {
@@ -181,10 +186,12 @@ public class VyronDbContext : DbContext
             e.HasKey(x => x.Id);
             e.HasIndex(x => x.UserId).IsUnique();
             e.HasIndex(x => x.Status);
+            e.HasIndex(x => x.ApprovalStatus);
             e.Property(x => x.VehicleType).HasMaxLength(50);
             e.Property(x => x.VehiclePlate).HasMaxLength(20);
             e.Property(x => x.TotalEarnings).HasColumnType("decimal(18,2)");
             e.Property(x => x.IsApproved).HasDefaultValue(false);
+            e.Property(x => x.RejectionReason).HasMaxLength(500);
             e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId)
              .OnDelete(DeleteBehavior.Restrict);
         });
@@ -338,9 +345,11 @@ public class VyronDbContext : DbContext
             e.HasKey(x => x.Id);
             e.HasIndex(x => x.UserId);
             e.HasIndex(x => x.IsRead);
+            e.HasIndex(x => x.CreatedAt);
             e.Property(x => x.Title).HasMaxLength(200).IsRequired();
             e.Property(x => x.Message).HasMaxLength(2000).IsRequired();
             e.Property(x => x.Type).HasMaxLength(20).IsRequired();
+            e.Property(x => x.RelatedEntityType).HasMaxLength(50);
             e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId)
              .OnDelete(DeleteBehavior.SetNull);
         });
@@ -364,6 +373,40 @@ public class VyronDbContext : DbContext
              .IsRequired(false);
         });
 
+        // ─── STORE USER ASSIGNMENT ─────────────────────────────────
+        m.Entity<StoreUserAssignment>(e =>
+        {
+            e.ToTable("StoreUserAssignments");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.UserId);
+            e.HasIndex(x => x.StoreId);
+            e.HasIndex(x => new { x.UserId, x.StoreId, x.IsActive });
+            e.Property(x => x.StaffRole).HasMaxLength(30).IsRequired();
+            e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId)
+             .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Store).WithMany().HasForeignKey(x => x.StoreId)
+             .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.AssignedBy).WithMany().HasForeignKey(x => x.AssignedByUserId)
+             .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        // ─── ACTIVITY LOG ──────────────────────────────────────────
+        m.Entity<ActivityLog>(e =>
+        {
+            e.ToTable("ActivityLogs");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.UserId);
+            e.HasIndex(x => x.CreatedAt);
+            e.HasIndex(x => new { x.EntityType, x.EntityId });
+            e.Property(x => x.ActivityType).HasMaxLength(100).IsRequired();
+            e.Property(x => x.Description).HasMaxLength(1000);
+            e.Property(x => x.EntityType).HasMaxLength(50);
+            e.Property(x => x.IpAddress).HasMaxLength(50);
+            e.Property(x => x.UserAgent).HasMaxLength(300);
+            e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId)
+             .OnDelete(DeleteBehavior.SetNull);
+        });
+
         // ─── COMMUNICATION LOG ─────────────────────────────────────
         m.Entity<CommunicationLog>(e =>
         {
@@ -382,6 +425,8 @@ public class VyronDbContext : DbContext
             e.Property(x => x.RecipientName).HasMaxLength(120);
             e.Property(x => x.RelatedEntityType).HasMaxLength(50);
             e.Property(x => x.ErrorMessage).HasMaxLength(500);
+            e.Property(x => x.Provider).HasMaxLength(50);
+            e.Property(x => x.ProviderReference).HasMaxLength(200);
             e.HasOne(x => x.Recipient).WithMany()
              .HasForeignKey(x => x.RecipientUserId)
              .OnDelete(DeleteBehavior.NoAction)   // NoAction avoids SQL Server multi-cascade-path error
@@ -463,11 +508,14 @@ public class VyronDbContext : DbContext
 
         // ─── SEED ROLES ────────────────────────────────────────────
         m.Entity<AppRole>().HasData(
-            new AppRole { Id = CustomerRoleId,   Name = "Customer",   NormalizedName = "CUSTOMER",   Description = "Customer user",          IsActive = true, CreatedAt = seedDate },
-            new AppRole { Id = RiderRoleId,      Name = "Rider",      NormalizedName = "RIDER",      Description = "Delivery rider",         IsActive = true, CreatedAt = seedDate },
-            new AppRole { Id = StoreOwnerRoleId, Name = "StoreOwner", NormalizedName = "STOREOWNER", Description = "Laundry store owner",    IsActive = true, CreatedAt = seedDate },
-            new AppRole { Id = AdminRoleId,      Name = "Admin",      NormalizedName = "ADMIN",      Description = "Platform administrator", IsActive = true, CreatedAt = seedDate },
-            new AppRole { Id = SuperAdminRoleId, Name = "SuperAdmin", NormalizedName = "SUPERADMIN", Description = "Super administrator",    IsActive = true, CreatedAt = seedDate }
+            new AppRole { Id = CustomerRoleId,    Name = "Customer",     NormalizedName = "CUSTOMER",     Description = "Customer user",                               IsActive = true, CreatedAt = seedDate },
+            new AppRole { Id = RiderRoleId,       Name = "Rider",        NormalizedName = "RIDER",        Description = "Delivery rider",                              IsActive = true, CreatedAt = seedDate },
+            new AppRole { Id = StoreOwnerRoleId,  Name = "StoreOwner",   NormalizedName = "STOREOWNER",   Description = "Laundry store owner",                         IsActive = true, CreatedAt = seedDate },
+            new AppRole { Id = AdminRoleId,       Name = "Admin",        NormalizedName = "ADMIN",        Description = "Platform administrator",                      IsActive = true, CreatedAt = seedDate },
+            new AppRole { Id = SuperAdminRoleId,  Name = "SuperAdmin",   NormalizedName = "SUPERADMIN",   Description = "Super administrator — highest privilege",      IsActive = true, CreatedAt = seedDate },
+            new AppRole { Id = AdminUserRoleId,   Name = "AdminUser",    NormalizedName = "ADMINUSER",    Description = "Admin-level user created by SuperAdmin; cannot manage other admins", IsActive = true, CreatedAt = seedDate },
+            new AppRole { Id = StoreManagerRoleId, Name = "StoreManager", NormalizedName = "STOREMANAGER", Description = "Store manager scoped to assigned stores",    IsActive = true, CreatedAt = seedDate },
+            new AppRole { Id = StoreStaffRoleId,  Name = "StoreStaff",   NormalizedName = "STORESTAFF",   Description = "Store staff scoped to assigned stores",       IsActive = true, CreatedAt = seedDate }
         );
 
         // ─── SEED USER-ROLE MAPPINGS (seeded users only) ───────────

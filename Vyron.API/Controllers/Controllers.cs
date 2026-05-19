@@ -405,11 +405,81 @@ public class AdminController : VyronController
     [HttpGet("riders")]
     public async Task<IActionResult> GetRiders()
     {
-        var riders = await _db.Riders.Include(r => r.User).Include(r => r.Orders).ToListAsync();
-        return Ok(riders.Select(r => new RiderDto(r.Id, r.UserId, r.User.FullName,
-            r.User.Phone, r.VehicleType, r.VehiclePlate, r.Status,
-            r.CurrentLatitude, r.CurrentLongitude, r.TotalDeliveries, r.TotalEarnings,
-            r.Orders.Count(o => o.Status != OrderStatus.Completed && o.Status != OrderStatus.Cancelled))));
+        // Use EF projection with correlated subquery count — avoids loading all Orders into memory
+        var riders = await _db.Riders
+            .AsNoTracking()
+            .Include(r => r.User)
+            .Select(r => new RiderDto(
+                r.Id, r.UserId, r.User.FullName, r.User.Phone,
+                r.VehicleType, r.VehiclePlate, r.Status,
+                r.CurrentLatitude, r.CurrentLongitude,
+                r.TotalDeliveries, r.TotalEarnings,
+                r.Orders.Count(o => o.Status != OrderStatus.Completed
+                                 && o.Status != OrderStatus.Cancelled)))
+            .ToListAsync();
+        return Ok(riders);
+    }
+
+    [HttpGet("riders/pending")]
+    public async Task<IActionResult> GetPendingRiders()
+    {
+        var riders = await _db.Riders
+            .Include(r => r.User)
+            .Where(r => r.ApprovalStatus == ApprovalStatus.Pending)
+            .OrderBy(r => r.CreatedAt)
+            .ToListAsync();
+        return Ok(riders.Select(r => new {
+            r.Id, r.UserId, r.User.FullName, r.User.Phone,
+            r.VehicleType, r.VehiclePlate, r.CreatedAt, r.CreatedByUserId
+        }));
+    }
+
+    [HttpPost("riders/{id}/approve")]
+    public async Task<IActionResult> ApproveRider(Guid id)
+    {
+        var rider = await _db.Riders.Include(r => r.User).FirstOrDefaultAsync(r => r.Id == id);
+        if (rider == null) return NotFound(new { error = "Rider not found." });
+        if (rider.ApprovalStatus == ApprovalStatus.Approved)
+            return BadRequest(new { error = "Rider is already approved." });
+
+        // Segregation of duties — approver must not be the registrant
+        if (rider.CreatedByUserId.HasValue && rider.CreatedByUserId.Value == CurrentUserId)
+            return BadRequest(new { error = "You cannot approve a rider you registered. This action must be taken by a different admin." });
+
+        rider.ApprovalStatus    = ApprovalStatus.Approved;
+        rider.IsApproved        = true;
+        rider.ApprovedAt        = DateTime.UtcNow;
+        rider.ApprovedByAdminId = CurrentUserId;
+        rider.Status            = RiderStatus.Offline;
+        rider.User.IsActive  = true;
+        await _db.SaveChangesAsync();
+        return Ok(new { message = $"Rider {rider.User.FullName} approved successfully." });
+    }
+
+    [HttpPost("riders/{id}/reject")]
+    public async Task<IActionResult> RejectRider(Guid id, [FromBody] RejectRiderRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.Reason))
+            return BadRequest(new { error = "Rejection reason is required." });
+
+        var rider = await _db.Riders.Include(r => r.User).FirstOrDefaultAsync(r => r.Id == id);
+        if (rider == null) return NotFound(new { error = "Rider not found." });
+        if (rider.ApprovalStatus == ApprovalStatus.Rejected)
+            return BadRequest(new { error = "Rider is already rejected." });
+
+        // Segregation of duties
+        if (rider.CreatedByUserId.HasValue && rider.CreatedByUserId.Value == CurrentUserId)
+            return BadRequest(new { error = "You cannot reject a rider you registered. This action must be taken by a different admin." });
+
+        rider.ApprovalStatus  = ApprovalStatus.Rejected;
+        rider.IsApproved      = false;
+        rider.RejectedByUserId = CurrentUserId;
+        rider.RejectedAt      = DateTime.UtcNow;
+        rider.RejectionReason = req.Reason;
+        rider.Status          = RiderStatus.Rejected;
+        rider.User.IsActive   = false;
+        await _db.SaveChangesAsync();
+        return Ok(new { message = $"Rider {rider.User.FullName} rejected." });
     }
 
     [HttpGet("config")]
@@ -432,18 +502,24 @@ public class AdminController : VyronController
     [HttpGet("customers")]
     public async Task<IActionResult> GetCustomers([FromQuery] string? search, [FromQuery] int page = 1)
     {
-        var q = _db.Users.Include(u => u.Orders).Where(u => u.Role == UserRole.Customer).AsQueryable();
+        // EF projection with correlated subqueries — no Include(Orders) memory load
+        var q = _db.Users.AsNoTracking()
+            .Where(u => u.Role == UserRole.Customer).AsQueryable();
         if (!string.IsNullOrEmpty(search))
             q = q.Where(u => u.FullName.Contains(search) || u.Phone.Contains(search));
         var users = await q.OrderByDescending(u => u.CreatedAt)
-            .Skip((page - 1) * 25).Take(25).ToListAsync();
-        return Ok(users.Select(u => new
-        {
-            u.Id, u.FullName, u.Phone, u.Email,
-            TotalOrders = u.Orders.Count,
-            TotalSpend = u.Orders.Where(o => o.PaymentState == PaymentState.FullyPaid).Sum(o => o.TotalEstimate),
-            u.IsActive, u.CreatedAt
-        }));
+            .Skip((page - 1) * 25).Take(25)
+            .Select(u => new
+            {
+                u.Id, u.FullName, u.Phone, u.Email,
+                TotalOrders = u.Orders.Count(),
+                TotalSpend  = u.Orders
+                    .Where(o => o.PaymentState == PaymentState.FullyPaid)
+                    .Sum(o => (decimal?)o.TotalEstimate) ?? 0m,
+                u.IsActive, u.CreatedAt
+            })
+            .ToListAsync();
+        return Ok(users);
     }
 }
 
@@ -488,6 +564,7 @@ public class NotificationsController : VyronController
     public async Task<IActionResult> GetMyNotifications()
     {
         var notifications = await _db.Notifications
+            .AsNoTracking()
             .Where(n => n.UserId == CurrentUserId)
             .OrderByDescending(n => n.CreatedAt)
             .Take(50)

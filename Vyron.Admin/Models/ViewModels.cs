@@ -271,3 +271,41 @@ public class UsersFilterVm
     public int     TotalCount { get; set; }
     public List<UserListItemVm> Users { get; set; } = new();
 }
+
+// ─── ADMIN USER MANAGEMENT ────────────────────────────────────────
+public class AdminUserCreateVm
+{
+    [Required, MaxLength(120)]
+    public string FullName { get; set; } = string.Empty;
+
+    [Required, MaxLength(20)]
+    public string Phone { get; set; } = string.Empty;
+
+    [EmailAddress, MaxLength(200)]
+    public string? Email { get; set; }
+
+    [Required, MinLength(8)]
+    public string Password { get; set; } = string.Empty;
+
+    /// <summary>True = AdminUser (limited), False = Admin (full admin access).</summary>
+    public bool IsAdminUser { get; set; } = true;
+}
+
+// ─── STORE STAFF ──────────────────────────────────────────────────
+public class StoreStaffCreateVm
+{
+    [Required, MaxLength(120)]
+    public string FullName { get; set; } = string.Empty;
+
+    [Required, MaxLength(20)]
+    public string Phone { get; set; } = string.Empty;
+
+    [Required, MinLength(6)]
+    public string Password { get; set; } = string.Empty;
+
+    [Required]
+    public Guid StoreId { get; set; }
+
+    /// <summary>True = StoreManager, False = StoreStaff.</summary>
+    public bool IsManager { get; set; } = false;
+}

@@ -108,6 +108,7 @@ public record PriceEstimateResponse(
 public record UpdateOrderStatusRequest(OrderStatus Status, string? Note);
 public record AssignRiderRequest(Guid RiderId);
 public record AssignDeliveryRiderRequest(Guid RiderId);
+public record RejectRiderRequest(string Reason);
 public record OverridePriceRequest(decimal ActualLaundryCost, string Reason);
 
 public record OrderDto(

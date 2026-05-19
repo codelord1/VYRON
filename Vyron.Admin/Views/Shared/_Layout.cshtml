@@ -50,9 +50,20 @@
                 <a href="/Payments" class="@ActiveIf("Payments")"><span class="nav-icon">▰</span><span>Payments</span></a>
                 <a href="/Disputes" class="@ActiveIf("Disputes")"><span class="nav-icon">△</span><span>Disputes</span></a>
                 <a href="/Reviews" class="@ActiveIf("Reviews")"><span class="nav-icon">★</span><span>Reviews</span></a>
+                <div class="nav-section">Approvals</div>
+                <a href="/Riders/Pending" class="@ActiveIf("Riders", "Pending")"><span class="nav-icon">✓</span><span>Rider Approvals</span></a>
+                <a href="/StoreOwnerApprovals" class="@ActiveIf("StoreOwnerApprovals")"><span class="nav-icon">◫</span><span>Owner Approvals</span></a>
+                @if (User.IsInRole("SuperAdmin"))
+                {
+                    <a href="/AdminUsers" class="@ActiveIf("AdminUsers")"><span class="nav-icon">◆</span><span>Admin Users</span></a>
+                }
                 <div class="nav-section">People</div>
                 <a href="/Users" class="@ActiveIf("Users")"><span class="nav-icon">◉</span><span>Users</span></a>
+                <a href="/StoreStaff" class="@ActiveIf("StoreStaff")"><span class="nav-icon">◑</span><span>Store Staff</span></a>
                 <a href="/CommunicationLogs" class="@ActiveIf("CommunicationLogs")"><span class="nav-icon">✉</span><span>Messages</span></a>
+                <div class="nav-section">Compliance</div>
+                <a href="/AuditLogs" class="@ActiveIf("AuditLogs")"><span class="nav-icon">◕</span><span>Audit Logs</span></a>
+                <a href="/ActivityLogs" class="@ActiveIf("ActivityLogs")"><span class="nav-icon">◔</span><span>Activity Logs</span></a>
                 <div class="nav-section">System</div>
                 <a href="/Settings" class="@ActiveIf("Settings")"><span class="nav-icon">⚙</span><span>Settings</span></a>
             }
@@ -63,6 +74,7 @@
                 <a href="/StoreOwner/Orders" class="@ActiveIf("StoreOwner", "Orders", "OrderDetail")"><span class="nav-icon">◧</span><span>My Orders</span></a>
                 <a href="/StoreOwner/Stores" class="@ActiveIf("StoreOwner", "Stores", "StoreCreate", "StoreEdit")"><span class="nav-icon">▣</span><span>My Stores</span></a>
                 <a href="/StoreOwner/ServiceOfferings" class="@ActiveIf("StoreOwner", "ServiceOfferings", "ServiceCreate", "ServiceEdit")"><span class="nav-icon">◇</span><span>Services</span></a>
+                <a href="/StoreStaff" class="@ActiveIf("StoreStaff")"><span class="nav-icon">◑</span><span>My Staff</span></a>
                 <div class="nav-section">Finance &amp; Trust</div>
                 <a href="/StoreOwner/Disputes" class="@ActiveIf("StoreOwner", "Disputes", "DisputeDetail")"><span class="nav-icon">△</span><span>Disputes</span></a>
                 <a href="/StoreOwner/Reviews" class="@ActiveIf("StoreOwner", "Reviews")"><span class="nav-icon">★</span><span>Reviews</span></a>
