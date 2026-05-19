@@ -1,11 +1,11 @@
-namespace Vyron.CustomerApp.DTOs;
+﻿namespace Vyron.CustomerApp.DTOs;
 
-// ─── AUTH ─────────────────────────────────────────────────────────
+// â”€â”€â”€ AUTH â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 public record SendOtpRequest(string Phone);
 public record VerifyOtpRequest(string Phone, string Code, string? FullName);
 public record RefreshTokenRequest(string RefreshToken);
 
-// ─── CUSTOMER AUTH (password-based + OTP signup/reset) ───────────
+// â”€â”€â”€ CUSTOMER AUTH (password-based + OTP signup/reset) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 public record CustomerLoginRequest(string Phone, string Password);
 public record SignupOtpRequest(string Phone);
 public record CompleteProfileRequest(string Phone, string Code, string FullName, string? Email, string Password);
@@ -14,7 +14,7 @@ public record ResetPasswordRequest(string Phone, string Code, string NewPassword
 
 /// <summary>
 /// Response for POST /api/customer-auth/login and /api/customer-auth/complete-profile.
-/// Identical shape to AuthResponse — kept separate so the API can evolve independently.
+/// Identical shape to AuthResponse â€” kept separate so the API can evolve independently.
 /// </summary>
 public class CustomerLoginResponse
 {
@@ -40,13 +40,13 @@ public class SendOtpResponse
 {
     public bool    Success { get; set; }
     public string  Message { get; set; } = "";
-    public string? DevOtp  { get; set; }   // null in Production — NEVER display in prod builds
+    public string? DevOtp  { get; set; }   // null in Production â€” NEVER display in prod builds
 }
 
 /// <summary>
 /// Response from POST /api/auth/verify-otp.
 /// IsNewUser: phone's very first verification.
-/// RequiresProfileCompletion: user has no FullName — route to CompleteProfile screen.
+/// RequiresProfileCompletion: user has no FullName â€” route to CompleteProfile screen.
 /// </summary>
 public class VerifyOtpResponse
 {
@@ -58,7 +58,7 @@ public class VerifyOtpResponse
     public bool     RequiresProfileCompletion{ get; set; }
 }
 
-// ─── COUNTRY CODE ─────────────────────────────────────────────────
+// â”€â”€â”€ COUNTRY CODE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 /// <summary>Country code option shown in the phone-number country picker.</summary>
 public class CountryCodeOption
 {
@@ -67,10 +67,10 @@ public class CountryCodeOption
     public string DialCode    { get; init; } = "";   // e.g. "+234"
     public string CountryIso  { get; init; } = "";   // e.g. "NG"
 
-    /// Full display string shown in the picker: "🇳🇬 Nigeria +234"
+    /// Full display string shown in the picker: "ðŸ‡³ðŸ‡¬ Nigeria +234"
     public string DisplayText => $"{FlagEmoji} {CountryName} {DialCode}";
 
-    /// Short label shown after selection: "🇳🇬 +234"
+    /// Short label shown after selection: "ðŸ‡³ðŸ‡¬ +234"
     public string ShortLabel  => $"{FlagEmoji} {DialCode}";
 
     public override string ToString() => DisplayText;
@@ -94,7 +94,7 @@ public class UserDto
     public DateTime  CreatedAt { get; set; }
 }
 
-// ─── PROFILE ──────────────────────────────────────────────────────
+// â”€â”€â”€ PROFILE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 public class ProfileDto
 {
     public Guid      Id           { get; set; }
@@ -108,7 +108,7 @@ public class ProfileDto
 
 public record UpdateProfileRequest(string? FullName, string? Email);
 
-// ─── STORE ────────────────────────────────────────────────────────
+// â”€â”€â”€ STORE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 public class StoreListItemDto
 {
     public Guid   Id                      { get; set; }
@@ -132,16 +132,16 @@ public class StoreListItemDto
     public List<ServiceSummaryDto> Services { get; set; } = new();
     public bool   IsCurrentlyOpen { get; set; } = true;
 
-    // ── Display helpers ───────────────────────────────────────────
+    // â”€â”€ Display helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public string BadgeText =>
-        IsVerified && IsTopRated ? "✓ Verified · ⭐ Top Rated"
-        : IsVerified             ? "✓ Verified"
-        : IsTopRated             ? "⭐ Top Rated"
-        : FastPickup             ? "⚡ Fast Pickup"
+        IsVerified && IsTopRated ? "Verified · Top Rated"
+        : IsVerified             ? "Verified"
+        : IsTopRated             ? "Top Rated"
+        : FastPickup             ? "Fast Pickup"
         : "";
 
     public string RatingDisplay        => TotalReviews > 0
-        ? $"⭐ {AverageRating:F1} ({TotalReviews})"
+        ? $"Rating {AverageRating:F1} ({TotalReviews})"
         : "No reviews yet";
     public string EstimatedTimeDisplay => $"~{EstimatedPickupMinutes} min";
     public string PickupFeeDisplay     => $"₦{PickupFee:N0} pickup";
@@ -158,10 +158,10 @@ public class StoreListItemDto
     };
 
     public string? StartingFromText => Services.Any(s => s.IsActive)
-        ? $"  ·  from ₦{Services.Where(s => s.IsActive).Min(s => s.BasePrice):N0}"
+        ? $" · from ₦{Services.Where(s => s.IsActive).Min(s => s.BasePrice):N0}"
         : null;
 
-    // ── Image helpers ─────────────────────────────────────────────
+    // â”€â”€ Image helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     /// Fully-qualified URL, resolving relative paths against the API base.
     public string? FullLogoUrl  => ResolveImageUrl(LogoUrl);
     public bool    HasLogo      => !string.IsNullOrEmpty(LogoUrl);
@@ -177,7 +177,7 @@ public class StoreListItemDto
         if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
             url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
         {
-            // Android emulator: the API may return localhost URLs — rewrite to API host
+            // Android emulator: the API may return localhost URLs â€” rewrite to API host
             var apiHost = new Uri(AppConstants.ApiBaseUrl).Host;
             url = System.Text.RegularExpressions.Regex.Replace(
                 url, @"://localhost(:\d+)?", $"://{apiHost}$1",
@@ -218,16 +218,16 @@ public class StoreDetailDto
     public List<ReviewDto>         RecentReviews{ get; set; } = new();
     public bool   IsCurrentlyOpen { get; set; } = true;
 
-    // ── Display helpers ───────────────────────────────────────────
+    // â”€â”€ Display helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public string BadgeText =>
-        IsVerified && IsTopRated ? "✓ Verified · ⭐ Top Rated"
-        : IsVerified             ? "✓ Verified"
-        : IsTopRated             ? "⭐ Top Rated"
-        : FastPickup             ? "⚡ Fast Pickup"
+        IsVerified && IsTopRated ? "Verified · Top Rated"
+        : IsVerified             ? "Verified"
+        : IsTopRated             ? "Top Rated"
+        : FastPickup             ? "Fast Pickup"
         : "";
 
     public string RatingDisplay        => TotalReviews > 0
-        ? $"⭐ {AverageRating:F1}  ({TotalReviews} review{(TotalReviews == 1 ? "" : "s")})"
+        ? $"Rating {AverageRating:F1} ({TotalReviews} review{(TotalReviews == 1 ? "" : "s")})"
         : "No reviews yet";
     public string PickupFeeDisplay     => $"₦{PickupFee:N0}";
     public string DeliveryFeeDisplay   => $"₦{DeliveryFee:N0}";
@@ -236,7 +236,7 @@ public class StoreDetailDto
     public bool   IsOpen         => Status == "Active" && IsCurrentlyOpen;
     public string OpenStatusText => IsOpen ? "Open" : "Closed";
 
-    // ── Image helpers ─────────────────────────────────────────────
+    // â”€â”€ Image helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     public string? FullLogoUrl   => ResolveImageUrl(LogoUrl);
     public string? FullBannerUrl => ResolveImageUrl(BannerUrl);
 
@@ -254,7 +254,7 @@ public class StoreDetailDto
         if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
             url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
         {
-            // Android emulator: the API may return localhost URLs — rewrite to API host
+            // Android emulator: the API may return localhost URLs â€” rewrite to API host
             var apiHost = new Uri(AppConstants.ApiBaseUrl).Host;
             url = System.Text.RegularExpressions.Regex.Replace(
                 url, @"://localhost(:\d+)?", $"://{apiHost}$1",
@@ -289,7 +289,7 @@ public class ServiceSummaryDto
     public string TimeDisplay      => EstimatedHours > 0 ? $"~{EstimatedHours}h" : "";
 }
 
-// ─── ORDER ────────────────────────────────────────────────────────
+// â”€â”€â”€ ORDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 public record PriceEstimateRequest(Guid ServiceOfferingId, decimal Weight, int Pieces);
 
 /// <summary>One line item when placing a multi-service order.</summary>
@@ -372,42 +372,26 @@ public class OrderDto
 
     public bool CanPayPickupFee => PaymentState == "Unpaid"         && Status == "Pending";
     public bool CanPayBalance   => Status == "Delivered"            && PaymentState == "PickupFeePaid";
-    // Allow review after any delivery completion — Delivered, BalancePaid, or Completed
+    // Allow review after any delivery completion â€” Delivered, BalancePaid, or Completed
     public bool CanReview       => (Status == "Completed" || Status == "BalancePaid" || Status == "Delivered")
                                    && Review == null;
     public bool CanDispute      => Dispute == null
         && Status is not ("Cancelled" or "Pending");
 
-    public string StatusEmoji => Status switch
-    {
-        "Pending"        => "🕐",
-        "Confirmed"      => "✅",
-        "PickupFeePaid"  => "💳",
-        "RiderAssigned"  => "🏍",
-        "PickedUp"       => "📦",
-        "Processing"     => "🧺",
-        "Ready"          => "✨",
-        "OutForDelivery" => "🚚",
-        "Delivered"      => "🏠",
-        "BalancePaid"    => "💰",
-        "Completed"      => "🎉",
-        "Disputed"       => "⚠️",
-        "Cancelled"      => "❌",
-        _                => "📋"
-    };
+    public string StatusEmoji => "•";
 
     /// Friendly one-line description of the current status shown on the Track screen.
     public string StatusDescription => Status switch
     {
         "Pending"        => "Awaiting pickup fee payment",
         "Confirmed"      => "Order confirmed",
-        "PickupFeePaid"  => "Pickup fee paid — rider being assigned",
+        "PickupFeePaid"  => "Pickup fee paid - rider being assigned",
         "RiderAssigned"  => "Rider assigned",
         "PickedUp"       => "Laundry picked up",
         "Processing"     => "Being cleaned & processed",
         "Ready"          => "Ready for delivery",
         "OutForDelivery" => "On the way to you",
-        "Delivered"      => "Delivered — please pay balance",
+        "Delivered"      => "Delivered - please pay balance",
         "BalancePaid"    => "Balance paid",
         "Completed"      => "Order complete!",
         "Disputed"       => "Dispute raised",
@@ -424,7 +408,7 @@ public class OrderDto
         "PickedUp"       => "Your items are at the laundry store",
         "Processing"     => $"Est. {Service.TimeDisplay} turnaround",
         "Ready"          => "Rider will be dispatched shortly",
-        "OutForDelivery" => "Expected soon — stay close!",
+        "OutForDelivery" => "Expected soon - stay close!",
         "Delivered"      => $"Balance due: ₦{BalanceAmount:N0}",
         "Completed"      => "Thank you for using VYRON!",
         _                => ""
@@ -475,7 +459,6 @@ public class OrderItemDto
     public int     Pieces             { get; set; }
     public decimal UnitPrice          { get; set; }
     public decimal LineTotal          { get; set; }
-
     public string LineTotalDisplay => $"₦{LineTotal:N0}";
     public string QtyDisplay => PricingMode switch
     {
@@ -486,7 +469,7 @@ public class OrderItemDto
     };
 }
 
-// ─── REVIEW ───────────────────────────────────────────────────────
+// â”€â”€â”€ REVIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 public record CreateReviewRequest(Guid OrderId, int Rating, string? Comment);
 
 public class ReviewDto
@@ -504,7 +487,7 @@ public class ReviewDto
     public string StarsDisplay => new string('★', Rating) + new string('☆', 5 - Rating);
 }
 
-// ─── DISPUTE ──────────────────────────────────────────────────────
+// â”€â”€â”€ DISPUTE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 public record CreateDisputeRequest(Guid OrderId, string Type, string Description, string? EvidenceUrl);
 
 public class DisputeSummaryDto
@@ -544,7 +527,7 @@ public class DisputeMessageDto
     public DateTime SentAt       { get; set; }
 }
 
-// ─── PAYMENT ──────────────────────────────────────────────────────
+// â”€â”€â”€ PAYMENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 public class RecordPaymentRequest
 {
     public Guid   OrderId    { get; set; }
@@ -567,7 +550,7 @@ public class PaymentDto
     public DateTime CreatedAt { get; set; }
 }
 
-// ─── PAGED RESULT ─────────────────────────────────────────────────
+// â”€â”€â”€ PAGED RESULT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 public class PagedResult<T>
 {
     public List<T> Items      { get; set; } = new();
@@ -577,7 +560,7 @@ public class PagedResult<T>
     public bool    HasMore    => Items.Count == PageSize;
 }
 
-// ─── NOTIFICATION ─────────────────────────────────────────────────
+// â”€â”€â”€ NOTIFICATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 public class NotificationDto
 {
     public Guid     Id        { get; set; }
@@ -595,5 +578,5 @@ public class NotificationDto
     };
 }
 
-// ─── RIDER MESSAGE ────────────────────────────────────────────────
+// â”€â”€â”€ RIDER MESSAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 public record SendRiderMessageRequest(string Message);

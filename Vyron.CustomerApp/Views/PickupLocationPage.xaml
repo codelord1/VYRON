@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:behaviors="clr-namespace:Vyron.CustomerApp.Behaviors"
              x:Class="Vyron.CustomerApp.Views.PickupLocationPage"
              Shell.NavBarIsVisible="False"
              Shell.TabBarIsVisible="False"
@@ -10,7 +11,10 @@
         <Border BackgroundColor="{StaticResource Bg}" Stroke="{StaticResource CardStroke}" StrokeThickness="0,0,0,1" Padding="18,16">
             <Grid ColumnDefinitions="40,*" ColumnSpacing="12">
                 <Border BackgroundColor="{StaticResource Mint}" Stroke="Transparent" StrokeShape="RoundRectangle 20" WidthRequest="40" HeightRequest="40">
-                    <Label Text="←" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center" TextColor="{StaticResource Gray5}" />
+                    <Border.Behaviors>
+                        <behaviors:TapFeedbackBehavior />
+                    </Border.Behaviors>
+                    <Label Text="‹" FontSize="26" HorizontalOptions="Center" VerticalOptions="Center" TextColor="{StaticResource Gray5}" />
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnBackTapped" />
                     </Border.GestureRecognizers>
@@ -88,13 +92,20 @@
                 </Border>
 
                 <Border BackgroundColor="Transparent" Stroke="{StaticResource CardStroke}" StrokeDashArray="6,5" StrokeShape="RoundRectangle 24" Padding="18">
+                    <Border.Behaviors>
+                        <behaviors:TapFeedbackBehavior />
+                    </Border.Behaviors>
                     <Label Text="+  Add a new address" TextColor="{StaticResource TealDark}" FontFamily="OpenSansSemibold" FontSize="15" HorizontalOptions="Center" />
                 </Border>
             </VerticalStackLayout>
         </ScrollView>
 
         <Border Grid.Row="2" BackgroundColor="{StaticResource Bg}" Stroke="Transparent" Padding="18,10">
-            <Button Text="Continue" Clicked="OnContinueClicked" />
+            <Button Text="Continue" Clicked="OnContinueClicked">
+                <Button.Behaviors>
+                    <behaviors:TapFeedbackBehavior />
+                </Button.Behaviors>
+            </Button>
         </Border>
     </Grid>
 </ContentPage>

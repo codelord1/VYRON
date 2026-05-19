@@ -2,7 +2,6 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:behaviors="clr-namespace:Vyron.CustomerApp.Behaviors"
-             xmlns:dto="clr-namespace:Vyron.CustomerApp.DTOs"
              xmlns:vm="clr-namespace:Vyron.CustomerApp.ViewModels"
              x:Class="Vyron.CustomerApp.Views.Auth.LoginPage"
              x:DataType="vm:LoginViewModel"
@@ -59,40 +58,27 @@
                    FontSize="13"
                    TextColor="{StaticResource Gray5}"
                    Margin="0,0,0,8" />
-            <Grid ColumnDefinitions="150,*" ColumnSpacing="8" Margin="0,0,0,18">
-                <Border BackgroundColor="White"
-                        Stroke="{StaticResource CardStroke}"
-                        StrokeShape="RoundRectangle 24"
-                        HeightRequest="52">
-                    <Picker ItemsSource="{Binding CountryOptions}"
-                            SelectedItem="{Binding SelectedCountry}"
-                            ItemDisplayBinding="{Binding DisplayText, x:DataType=dto:CountryCodeOption}"
-                            BackgroundColor="Transparent"
-                            Margin="12,0" />
-                </Border>
-                <Border Grid.Column="1"
-                        BackgroundColor="White"
-                        Stroke="{StaticResource CardStroke}"
-                        StrokeShape="RoundRectangle 24"
-                        HeightRequest="52">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" Padding="16,0">
-                        <Path Stroke="{StaticResource Gray3}"
-                              StrokeThickness="2"
-                              StrokeLineCap="Round"
-                              StrokeLineJoin="Round"
-                              WidthRequest="18"
-                              HeightRequest="18"
-                              VerticalOptions="Center"
-                              Data="M7,3 C6.2,3 5.5,3.6 5.4,4.4 C5.1,6.4 5.7,8.8 7.4,11.6 C9.1,14.4 11.1,16.1 13.1,16.8 C13.9,17.1 14.8,16.8 15.2,16.1 L16,14.7 C16.3,14.1 16.1,13.3 15.5,13 L13.7,12.1 C13.2,11.8 12.6,11.9 12.2,12.3 L11.5,13 C10.4,12.4 9.5,11.5 8.8,10.4 C8.1,9.3 7.7,8.2 7.7,7 L8.6,6.7 C9.2,6.5 9.6,6 9.5,5.4 L9.2,3.9 C9.1,3.4 8.6,3 8,3 Z" />
-                        <Entry Grid.Column="1"
-                               Placeholder="8091679000"
-                               Text="{Binding LocalPhone}"
-                               Keyboard="Telephone"
-                               ReturnType="Next" />
-                    </Grid>
-                </Border>
-            </Grid>
-
+            <Border BackgroundColor="White"
+                    Stroke="{StaticResource CardStroke}"
+                    StrokeShape="RoundRectangle 24"
+                    HeightRequest="52"
+                    Margin="0,0,0,18">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" Padding="16,0">
+                    <Path Stroke="{StaticResource Gray3}"
+                          StrokeThickness="2"
+                          StrokeLineCap="Round"
+                          StrokeLineJoin="Round"
+                          WidthRequest="18"
+                          HeightRequest="18"
+                          VerticalOptions="Center"
+                          Data="M7,3 C6.2,3 5.5,3.6 5.4,4.4 C5.1,6.4 5.7,8.8 7.4,11.6 C9.1,14.4 11.1,16.1 13.1,16.8 C13.9,17.1 14.8,16.8 15.2,16.1 L16,14.7 C16.3,14.1 16.1,13.3 15.5,13 L13.7,12.1 C13.2,11.8 12.6,11.9 12.2,12.3 L11.5,13 C10.4,12.4 9.5,11.5 8.8,10.4 C8.1,9.3 7.7,8.2 7.7,7 L8.6,6.7 C9.2,6.5 9.6,6 9.5,5.4 L9.2,3.9 C9.1,3.4 8.6,3 8,3 Z" />
+                    <Entry Grid.Column="1"
+                           Placeholder="8091679000"
+                           Text="{Binding LocalPhone}"
+                           Keyboard="Telephone"
+                           ReturnType="Next" />
+                </Grid>
+            </Border>
             <Label Text="Password"
                    FontSize="13"
                    TextColor="{StaticResource Gray5}"
@@ -155,6 +141,9 @@
                        TextColor="{StaticResource TealDark}"
                        FontSize="13"
                        VerticalOptions="Center">
+                    <Label.Behaviors>
+                        <behaviors:TapFeedbackBehavior />
+                    </Label.Behaviors>
                     <Label.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding GoToForgotPasswordCommand}" />
                     </Label.GestureRecognizers>
@@ -169,42 +158,6 @@
                 </Button.Behaviors>
             </Button>
 
-            <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="10" Margin="0,30,0,28">
-                <BoxView HeightRequest="1" Color="{StaticResource CardStroke}" VerticalOptions="Center" />
-                <Label Grid.Column="1" Text="or continue with" FontSize="12" TextColor="{StaticResource Gray3}" />
-                <BoxView Grid.Column="2" HeightRequest="1" Color="{StaticResource CardStroke}" VerticalOptions="Center" />
-            </Grid>
-
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                <Border BackgroundColor="White"
-                        Stroke="{StaticResource CardStroke}"
-                        StrokeShape="RoundRectangle 24"
-                        HeightRequest="50">
-                    <Border.Behaviors>
-                        <behaviors:TapFeedbackBehavior />
-                    </Border.Behaviors>
-                    <Label Text="Google"
-                           HorizontalOptions="Center"
-                           VerticalOptions="Center"
-                           FontFamily="OpenSansSemibold"
-                           FontSize="14" />
-                </Border>
-                <Border Grid.Column="1"
-                        BackgroundColor="White"
-                        Stroke="{StaticResource CardStroke}"
-                        StrokeShape="RoundRectangle 24"
-                        HeightRequest="50">
-                    <Border.Behaviors>
-                        <behaviors:TapFeedbackBehavior />
-                    </Border.Behaviors>
-                    <Label Text="Apple"
-                           HorizontalOptions="Center"
-                           VerticalOptions="Center"
-                           FontFamily="OpenSansSemibold"
-                           FontSize="14" />
-                </Border>
-            </Grid>
-
             <HorizontalStackLayout HorizontalOptions="Center" Margin="0,42,0,0" Spacing="4">
                 <Label Text="New to VYRON?"
                        FontSize="14"
@@ -213,6 +166,9 @@
                        FontSize="14"
                        TextColor="{StaticResource TealDark}"
                        FontFamily="OpenSansSemibold">
+                    <Label.Behaviors>
+                        <behaviors:TapFeedbackBehavior />
+                    </Label.Behaviors>
                     <Label.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding GoToSignupCommand}" />
                     </Label.GestureRecognizers>

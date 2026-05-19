@@ -176,9 +176,9 @@ public partial class StoresViewModel : BaseViewModel
         get
         {
             var name = AppSession.Current.User?.FullName;
-            if (string.IsNullOrWhiteSpace(name)) return "Hi there 👋";
+            if (string.IsNullOrWhiteSpace(name)) return "Hi there";
             var first = name.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0];
-            return $"Hi, {first} 👋";
+            return $"Hi, {first}";
         }
     }
 

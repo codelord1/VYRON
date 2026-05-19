@@ -10,6 +10,8 @@ public partial class App : Application
     public App(IAuthService auth, AppShell shell)
     {
         InitializeComponent();
+        AppThemeService.ApplySavedTheme();
+        RequestedThemeChanged += (_, _) => AppThemeService.ApplySystemThemeIfNeeded();
         _auth = auth;
         _shell = shell;
     }

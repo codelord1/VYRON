@@ -10,6 +10,7 @@
              Shell.NavBarIsVisible="False"
              BackgroundColor="{StaticResource Bg}">
 
+    <RefreshView Command="{Binding LoadCommand}" IsRefreshing="{Binding IsBusy}">
     <ScrollView>
         <VerticalStackLayout Spacing="0">
             <Grid BackgroundColor="{StaticResource TealDark}" Padding="18,38,18,28">
@@ -50,8 +51,8 @@
                                     <Label Text="Schedule today" FontSize="12" TextColor="{StaticResource TealDark}" FontFamily="OpenSansSemibold" />
                                 </Border>
                                 <Label Text="Schedule a laundry pickup today" FontFamily="OpenSansSemibold" FontSize="20" />
-                                <Label Text="Free pickup over N5,000 · Pay on delivery" FontSize="13" TextColor="{StaticResource Gray3}" />
-                                <Button Text="Book Pickup  >" Command="{Binding StartPickupCommand}" HeightRequest="38" WidthRequest="132" FontSize="12" Padding="0" HorizontalOptions="Start">
+                                <Label Text="Free pickup over ₦5,000 · Pay on delivery" FontSize="13" TextColor="{StaticResource Gray3}" />
+                                <Button Text="Book Pickup ›" Command="{Binding StartPickupCommand}" HeightRequest="38" WidthRequest="132" FontSize="12" Padding="0" HorizontalOptions="Start">
                                     <Button.Behaviors>
                                         <behaviors:TapFeedbackBehavior />
                                     </Button.Behaviors>
@@ -71,9 +72,22 @@
                         StrokeShape="RoundRectangle 16"
                         Padding="14,12"
                         IsVisible="{Binding ErrorMessage, Converter={StaticResource NotNullToBool}}">
-                    <Label Text="{Binding ErrorMessage}"
-                           TextColor="#C73535"
-                           FontSize="13" />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <Label Text="{Binding ErrorMessage}"
+                               TextColor="#C73535"
+                               FontSize="13"
+                               VerticalOptions="Center" />
+                        <Button Grid.Column="1"
+                                Text="Try Again"
+                                Command="{Binding LoadCommand}"
+                                HeightRequest="34"
+                                Padding="12,0"
+                                FontSize="12">
+                            <Button.Behaviors>
+                                <behaviors:TapFeedbackBehavior />
+                            </Button.Behaviors>
+                        </Button>
+                    </Grid>
                 </Border>
 
                 <Grid ColumnDefinitions="*,Auto">
@@ -181,6 +195,9 @@
                 <Grid ColumnDefinitions="*,Auto">
                     <Label Text="Nearby trusted stores" FontFamily="OpenSansSemibold" FontSize="18" />
                     <Label Grid.Column="1" Text="View all" TextColor="{StaticResource TealDark}" FontSize="13" VerticalOptions="Center">
+                        <Label.Behaviors>
+                            <behaviors:TapFeedbackBehavior />
+                        </Label.Behaviors>
                         <Label.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding GoToStoresCommand}" />
                         </Label.GestureRecognizers>
@@ -220,6 +237,9 @@
                 </CollectionView>
 
                 <Border BackgroundColor="{StaticResource TealDark}" Stroke="Transparent" StrokeShape="RoundRectangle 26" Padding="20,18">
+                    <Border.Behaviors>
+                        <behaviors:TapFeedbackBehavior />
+                    </Border.Behaviors>
                     <Grid ColumnDefinitions="54,*,Auto" ColumnSpacing="12">
                         <Border BackgroundColor="#2B9278" WidthRequest="48" HeightRequest="48" Stroke="Transparent" StrokeShape="RoundRectangle 24">
                             <Path Stroke="White" StrokeThickness="2" StrokeLineCap="Round" StrokeLineJoin="Round" Data="M17,24 L30,15 L35,20 L22,32 Z M28,17 L33,22" />
@@ -239,7 +259,7 @@
                         </Border>
                         <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                             <Label Text="Reorder from FreshFold" FontFamily="OpenSansSemibold" FontSize="14" />
-                            <Label Text="Wash Only · 5 kg · N3,000" FontSize="12" TextColor="{StaticResource Gray3}" />
+                            <Label Text="Wash Only · 5 kg · ₦3,000" FontSize="12" TextColor="{StaticResource Gray3}" />
                         </VerticalStackLayout>
                         <Border Grid.Column="2" BackgroundColor="{StaticResource Mint}" Stroke="Transparent" StrokeShape="RoundRectangle 18" Padding="14,8" VerticalOptions="Center">
                             <Label Text="Reorder" TextColor="{StaticResource TealDark}" FontSize="12" FontFamily="OpenSansSemibold" />
@@ -249,4 +269,5 @@
             </VerticalStackLayout>
         </VerticalStackLayout>
     </ScrollView>
+    </RefreshView>
 </ContentPage>

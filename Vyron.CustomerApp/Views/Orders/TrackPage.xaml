@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:behaviors="clr-namespace:Vyron.CustomerApp.Behaviors"
              xmlns:vm="clr-namespace:Vyron.CustomerApp.ViewModels"
              x:Class="Vyron.CustomerApp.Views.Orders.TrackPage"
              x:DataType="vm:TrackViewModel"
@@ -20,11 +21,17 @@
                         HeightRequest="40"
                         Stroke="Transparent"
                         StrokeShape="RoundRectangle 20">
-                    <Label Text="Back"
-                           FontSize="11"
+                    <Border.Behaviors>
+                        <behaviors:TapFeedbackBehavior />
+                    </Border.Behaviors>
+                    <Label Text="‹"
+                           FontSize="28"
                            TextColor="{StaticResource TealDark}"
                            HorizontalOptions="Center"
                            VerticalOptions="Center" />
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding GoBackCommand}" />
+                    </Border.GestureRecognizers>
                 </Border>
                 <Label Grid.Column="1"
                        Text="{Binding ActiveOrder.OrderNumber, StringFormat='Order {0}'}"
@@ -45,13 +52,37 @@
             </Grid>
         </Border>
 
-        <ScrollView Grid.Row="1">
+        <RefreshView Grid.Row="1" Command="{Binding LoadCommand}" IsRefreshing="{Binding IsBusy}">
+        <ScrollView>
             <VerticalStackLayout Padding="20,16,20,24" Spacing="16">
                 <ActivityIndicator IsRunning="{Binding IsBusy}"
                                    Color="{StaticResource Teal}"
                                    IsVisible="{Binding IsBusy}"
                                    HorizontalOptions="Center"
                                    Margin="0,40" />
+
+                <Border BackgroundColor="#FFF4F3"
+                        Stroke="#FFD4D1"
+                        StrokeShape="RoundRectangle 16"
+                        Padding="14,12"
+                        IsVisible="{Binding ErrorMessage, Converter={StaticResource NotNullToBool}}">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <Label Text="{Binding ErrorMessage}"
+                               TextColor="#C73535"
+                               FontSize="13"
+                               VerticalOptions="Center" />
+                        <Button Grid.Column="1"
+                                Text="Try Again"
+                                Command="{Binding LoadCommand}"
+                                HeightRequest="34"
+                                Padding="12,0"
+                                FontSize="12">
+                            <Button.Behaviors>
+                                <behaviors:TapFeedbackBehavior />
+                            </Button.Behaviors>
+                        </Button>
+                    </Grid>
+                </Border>
 
                 <VerticalStackLayout IsVisible="{Binding HasActiveOrder}" Spacing="16">
                     <Border BackgroundColor="{StaticResource TealDark}"
@@ -332,6 +363,7 @@
                 </VerticalStackLayout>
             </VerticalStackLayout>
         </ScrollView>
+        </RefreshView>
 
         <Grid Grid.Row="2"
               ColumnDefinitions="*,*"

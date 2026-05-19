@@ -138,7 +138,7 @@
 
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                     <VerticalStackLayout Spacing="2">
-                                        <Label Text="{Binding TotalEstimate, StringFormat='N{0:N0}'}"
+                                        <Label Text="{Binding TotalEstimate, StringFormat='₦{0:N0}'}"
                                                FontFamily="OpenSansSemibold"
                                                FontSize="16" />
                                         <Label Text="Tap card to view details"

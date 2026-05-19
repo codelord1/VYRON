@@ -19,6 +19,29 @@
                         <Label Text="Verified laundry stores near you" FontSize="13" TextColor="{StaticResource Gray3}" />
                     </VerticalStackLayout>
 
+                    <Border BackgroundColor="#FFF4F3"
+                            Stroke="#FFD4D1"
+                            StrokeShape="RoundRectangle 16"
+                            Padding="14,12"
+                            IsVisible="{Binding ErrorMessage, Converter={StaticResource NotNullToBool}}">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <Label Text="{Binding ErrorMessage}"
+                                   TextColor="#C73535"
+                                   FontSize="13"
+                                   VerticalOptions="Center" />
+                            <Button Grid.Column="1"
+                                    Text="Try Again"
+                                    Command="{Binding LoadCommand}"
+                                    HeightRequest="34"
+                                    Padding="12,0"
+                                    FontSize="12">
+                                <Button.Behaviors>
+                                    <behaviors:TapFeedbackBehavior />
+                                </Button.Behaviors>
+                            </Button>
+                        </Grid>
+                    </Border>
+
                     <Border BackgroundColor="White" Stroke="{StaticResource CardStroke}" StrokeShape="RoundRectangle 24" HeightRequest="60">
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Padding="16,0">
                             <Label Text="SEARCH" FontSize="10" TextColor="{StaticResource Gray3}" VerticalOptions="Center" />

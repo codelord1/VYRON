@@ -46,6 +46,7 @@ public partial class TrackViewModel : BaseViewModel
     private List<OrderProgressStep> _progressSteps = new();
 
     [ObservableProperty] private string _orderId = "";
+    [ObservableProperty] private bool _isNavigating;
 
     public bool IsEmpty => !HasActiveOrder && !IsBusy;
 
@@ -69,22 +70,62 @@ public partial class TrackViewModel : BaseViewModel
     [RelayCommand]
     private async Task LoadAsync()
     {
+        if (IsBusy)
+            return;
+
         IsBusy = true;
-        OrderDto? active = null;
-        if (Guid.TryParse(OrderId, out var id))
+        try
         {
-            var (order, _) = await SafeCallAsync(() => _orders.GetOrderAsync(id), "orders");
-            active = order;
+            ClearMessages();
+            OrderDto? active = null;
+            if (Guid.TryParse(OrderId, out var id))
+            {
+                var (order, error) = await _orders.GetOrderAsync(id);
+                if (error == "SESSION_EXPIRED")
+                {
+                    await HandleUnauthorized();
+                    return;
+                }
+                if (error != null)
+                {
+                    SetError(ApiErrorHelper.FriendlyContextMessage(error, "orders"));
+                    active = ActiveOrder;
+                }
+                else
+                {
+                    active = order;
+                }
+            }
+            else
+            {
+                var (orders, error) = await _orders.GetMyOrdersAsync();
+                if (error == "SESSION_EXPIRED")
+                {
+                    await HandleUnauthorized();
+                    return;
+                }
+                if (error != null)
+                {
+                    SetError(ApiErrorHelper.FriendlyContextMessage(error, "orders"));
+                    active = ActiveOrder;
+                }
+                else
+                {
+                    active = orders?.FirstOrDefault(o => ActiveStatuses.Contains(o.Status));
+                }
+            }
+            ActiveOrder = active;
+            HasActiveOrder = active != null;
+            ProgressSteps = active != null ? BuildProgressSteps(active) : new();
         }
-        else
+        catch (Exception ex)
         {
-            var (orders, _) = await SafeCallAsync(() => _orders.GetMyOrdersAsync(), "orders");
-            active = orders?.FirstOrDefault(o => ActiveStatuses.Contains(o.Status));
+            SetError(ApiErrorHelper.ForException(ex));
         }
-        ActiveOrder = active;
-        HasActiveOrder = active != null;
-        ProgressSteps = active != null ? BuildProgressSteps(active) : new();
-        IsBusy = false;
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     private static readonly (string Status, string Icon, string Label)[] StepDefs =
@@ -140,8 +181,33 @@ public partial class TrackViewModel : BaseViewModel
     [RelayCommand]
     private async Task ViewOrderAsync()
     {
-        if (ActiveOrder == null) return;
-        await Shell.Current.GoToAsync($"{AppRoutes.OrderDetails}?orderId={ActiveOrder.Id}");
+        if (IsNavigating || ActiveOrder == null) return;
+        IsNavigating = true;
+        try
+        {
+            TapFeedback.HapticClick();
+            await Shell.Current.GoToAsync($"{AppRoutes.OrderDetails}?orderId={ActiveOrder.Id}");
+        }
+        finally
+        {
+            IsNavigating = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task GoBackAsync()
+    {
+        if (IsNavigating) return;
+        IsNavigating = true;
+        try
+        {
+            TapFeedback.HapticClick();
+            await Shell.Current.GoToAsync("..");
+        }
+        finally
+        {
+            IsNavigating = false;
+        }
     }
 
     [RelayCommand]
@@ -185,13 +251,21 @@ public partial class MoreViewModel : BaseViewModel
     [ObservableProperty] private string _userName    = "VYRON User";
     [ObservableProperty] private string _userInitials = "V";
     [ObservableProperty] private string _userPhone   = "";
+    [ObservableProperty] private string _selectedTheme = AppThemeService.CurrentTheme;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsNotNavigating))]
     private bool _isNavigating;
 
+    public IReadOnlyList<string> ThemeOptions => AppThemeService.ThemeOptions;
     public bool IsNotNavigating => !IsNavigating;
 
     public MoreViewModel(IAuthService auth) => _auth = auth;
+
+    partial void OnSelectedThemeChanged(string value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+            AppThemeService.CurrentTheme = value;
+    }
 
     public void RefreshUserInfo()
     {

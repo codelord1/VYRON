@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:behaviors="clr-namespace:Vyron.CustomerApp.Behaviors"
              x:Class="Vyron.CustomerApp.Views.MainPage"
              Shell.NavBarIsVisible="False"
              Shell.TabBarIsVisible="False"
@@ -19,6 +20,9 @@
                    TextColor="{StaticResource Gray5}"
                    FontSize="14"
                    VerticalOptions="Center">
+                <Label.Behaviors>
+                    <behaviors:TapFeedbackBehavior />
+                </Label.Behaviors>
                 <Label.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnSkipTapped" />
                 </Label.GestureRecognizers>
@@ -76,16 +80,25 @@
 
         <Grid Grid.Row="2" ColumnDefinitions="Auto,*" ColumnSpacing="18">
             <Button x:Name="BackButton"
-                    Text="Back"
+                    Text="‹"
                     Clicked="OnBackClicked"
                     BackgroundColor="Transparent"
                     TextColor="{StaticResource Gray5}"
+                    FontSize="28"
                     WidthRequest="62"
-                    IsVisible="False" />
+                    IsVisible="False">
+                <Button.Behaviors>
+                    <behaviors:TapFeedbackBehavior />
+                </Button.Behaviors>
+            </Button>
             <Button x:Name="NextButton"
                     Grid.Column="1"
                     Text="Next"
-                    Clicked="OnNextClicked" />
+                    Clicked="OnNextClicked">
+                <Button.Behaviors>
+                    <behaviors:TapFeedbackBehavior />
+                </Button.Behaviors>
+            </Button>
         </Grid>
     </Grid>
 </ContentPage>

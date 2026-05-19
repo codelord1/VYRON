@@ -3,19 +3,36 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:Vyron.CustomerApp.ViewModels"
              xmlns:dto="clr-namespace:Vyron.CustomerApp.DTOs"
+             xmlns:behaviors="clr-namespace:Vyron.CustomerApp.Behaviors"
              x:Class="Vyron.CustomerApp.Views.Orders.OrderDetailsPage"
              x:DataType="vm:OrderDetailsViewModel"
              Title="{Binding Order.OrderNumber, FallbackValue='Order Details'}"
              BackgroundColor="{StaticResource Bg}">
 
     <Grid RowDefinitions="*,Auto">
-        <ScrollView Grid.Row="0">
+        <RefreshView Grid.Row="0" Command="{Binding LoadCommand}" IsRefreshing="{Binding IsBusy}">
+        <ScrollView>
             <VerticalStackLayout Padding="16" Spacing="14">
 
                 <ActivityIndicator IsRunning="{Binding IsBusy}"
                                    Color="{StaticResource Teal}"
                                    IsVisible="{Binding IsBusy}"
                                    HorizontalOptions="Center" Margin="0,40" />
+
+                <Border BackgroundColor="#FFF4F3"
+                        Stroke="#FFD4D1"
+                        StrokeShape="RoundRectangle 16"
+                        Padding="14,12"
+                        IsVisible="{Binding ErrorMessage, Converter={StaticResource NotNullToBool}}">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <Label Text="{Binding ErrorMessage}" TextColor="#C73535" FontSize="13" VerticalOptions="Center" />
+                        <Button Grid.Column="1" Text="Try Again" Command="{Binding LoadCommand}" HeightRequest="34" Padding="12,0" FontSize="12">
+                            <Button.Behaviors>
+                                <behaviors:TapFeedbackBehavior />
+                            </Button.Behaviors>
+                        </Button>
+                    </Grid>
+                </Border>
 
                 <VerticalStackLayout IsVisible="{Binding IsNotBusy}" Spacing="14">
 
@@ -90,7 +107,7 @@
                             StrokeShape="RoundRectangle 14" Padding="16"
                             IsVisible="{Binding Order.Rider, Converter={StaticResource NotNullToBool}}">
                         <VerticalStackLayout Spacing="8">
-                            <Label Text="🏍  Rider Assigned"
+                            <Label Text="Rider Assigned"
                                    FontFamily="OpenSansSemibold" FontSize="14" />
                             <Grid ColumnDefinitions="*,Auto">
                                 <Label Text="Name" FontSize="13" TextColor="{StaticResource Gray3}" />
@@ -117,9 +134,9 @@
                             StrokeShape="RoundRectangle 14" Padding="16">
                         <VerticalStackLayout Spacing="8">
                             <Label Text="Addresses" FontFamily="OpenSansSemibold" FontSize="14" />
-                            <Label Text="📍 Pickup" FontSize="12" TextColor="{StaticResource Gray3}" />
+                            <Label Text="Pickup" FontSize="12" TextColor="{StaticResource Gray3}" />
                             <Label Text="{Binding Order.PickupAddress}" FontSize="13" />
-                            <Label Text="🚚 Delivery" FontSize="12" TextColor="{StaticResource Gray3}" />
+                            <Label Text="Delivery" FontSize="12" TextColor="{StaticResource Gray3}" />
                             <Label Text="{Binding Order.DeliveryAddress}" FontSize="13" />
                         </VerticalStackLayout>
                     </Border>
@@ -152,25 +169,42 @@
                 </VerticalStackLayout>
             </VerticalStackLayout>
         </ScrollView>
+        </RefreshView>
 
         <!-- Action buttons row -->
         <Border Grid.Row="1" BackgroundColor="White" Stroke="#EDEDEA" Padding="16,12">
             <VerticalStackLayout Spacing="8">
-                <Button Text="💳 Pay Pickup Fee"
+                <Button Text="Pay Pickup Fee"
                         Command="{Binding PayPickupFeeCommand}"
-                        IsVisible="{Binding Order.CanPayPickupFee}" />
-                <Button Text="💰 Pay Balance"
+                        IsVisible="{Binding Order.CanPayPickupFee}">
+                    <Button.Behaviors>
+                        <behaviors:TapFeedbackBehavior />
+                    </Button.Behaviors>
+                </Button>
+                <Button Text="Pay Balance"
                         Command="{Binding PayBalanceCommand}"
-                        IsVisible="{Binding Order.CanPayBalance}" />
-                <Button Text="⭐ Leave Review"
+                        IsVisible="{Binding Order.CanPayBalance}">
+                    <Button.Behaviors>
+                        <behaviors:TapFeedbackBehavior />
+                    </Button.Behaviors>
+                </Button>
+                <Button Text="Leave Review"
                         Command="{Binding AddReviewCommand}"
                         IsVisible="{Binding Order.CanReview}"
-                        BackgroundColor="{StaticResource Teal}" />
-                <Button Text="⚠️ Raise Dispute"
+                        BackgroundColor="{StaticResource Teal}">
+                    <Button.Behaviors>
+                        <behaviors:TapFeedbackBehavior />
+                    </Button.Behaviors>
+                </Button>
+                <Button Text="Raise Dispute"
                         Command="{Binding RaiseDisputeCommand}"
                         IsVisible="{Binding Order.CanDispute}"
                         BackgroundColor="#C0392B"
-                        FontSize="13" HeightRequest="40" />
+                        FontSize="13" HeightRequest="40">
+                    <Button.Behaviors>
+                        <behaviors:TapFeedbackBehavior />
+                    </Button.Behaviors>
+                </Button>
             </VerticalStackLayout>
         </Border>
 

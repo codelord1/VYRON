@@ -1,5 +1,8 @@
-<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
-  <rect width="128" height="128" fill="#00C9A7"/>
-  <text x="64" y="80" font-family="Arial, sans-serif" font-size="56" font-weight="700"
-        text-anchor="middle" fill="#0A0A0A">V</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Vyron app icon">
+  <rect width="1024" height="1024" rx="225" fill="#0F1115"/>
+  <g transform="translate(180 232) scale(6.64)">
+    <polygon points="5,5 24,5 54,75 35,75" fill="#FFFFFF"/>
+    <polygon points="80,5 99,5 62,75 43,75" fill="#00A99D"/>
+    <polygon points="43,5 62,5 52.5,25" fill="#00A99D"/>
+  </g>
 </svg>
