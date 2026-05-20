@@ -84,21 +84,24 @@
             }
         </nav>
 
-        <div class="sidebar-actions">
-            <form asp-controller="Account" asp-action="Logout" method="post">
-                @Html.AntiForgeryToken()
-                <button type="submit" class="btn btn-ghost btn-block">Log out</button>
-            </form>
-        </div>
-
-        <a class="sidebar-user" href="/Account/Profile">
-            <span class="avatar">@initials</span>
-            <span>
-                <strong>@displayName</strong>
-                <small>@(isAdmin ? "Administrator" : "Store Owner")</small>
-            </span>
-            <span class="sidebar-user-caret">⌄</span>
-        </a>
+        <details class="sidebar-user-menu">
+            <summary class="sidebar-user">
+                <span class="avatar">@initials</span>
+                <span>
+                    <strong>@displayName</strong>
+                    <small>@(isAdmin ? "Administrator" : "Store Owner")</small>
+                </span>
+                <span class="sidebar-user-caret">⌄</span>
+            </summary>
+            <div class="sidebar-user-dropdown">
+                <a href="/Account/Profile">Profile</a>
+                <a href="/Account/ChangePassword">Change Password</a>
+                <form asp-controller="Account" asp-action="Logout" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit">Log Out</button>
+                </form>
+            </div>
+        </details>
     </aside>
 
     <div class="sidebar-backdrop" aria-hidden="true"></div>

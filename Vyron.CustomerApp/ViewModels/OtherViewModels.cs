@@ -219,24 +219,44 @@ public partial class TrackViewModel : BaseViewModel
     private async Task GoToStoresAsync()
         => await Shell.Current.GoToAsync(AppRoutes.Stores);
 
-    /// <summary>Open native phone dialer to call the store.</summary>
     [RelayCommand]
-    private async Task CallStoreAsync()
+    private async Task ReportIssueAsync()
     {
-        var phone = ActiveOrder?.Store?.Phone;
-        if (string.IsNullOrWhiteSpace(phone)) return;
-        try { await Launcher.Default.OpenAsync(new Uri($"tel:{phone}")); }
-        catch { await Shell.Current.DisplayAlert("Error", "Could not open phone dialer.", "OK"); }
+        if (IsNavigating || ActiveOrder == null) return;
+        IsNavigating = true;
+        try
+        {
+            TapFeedback.HapticClick();
+            await Shell.Current.GoToAsync($"{AppRoutes.RaiseDispute}?orderId={ActiveOrder.Id}");
+        }
+        finally
+        {
+            IsNavigating = false;
+        }
     }
 
-    /// <summary>Open native phone dialer to call the assigned rider.</summary>
     [RelayCommand]
-    private async Task CallRiderAsync()
+    private async Task ContactSupportAsync()
     {
-        var phone = ActiveOrder?.Rider?.Phone;
+        // TODO: consume support phone/chat settings from the backend when Claude exposes them.
+        await Shell.Current.DisplayAlert(
+            "Vyron Support",
+            "Support contact will be available shortly. You can report this order issue now and the team will review it.",
+            "OK");
+    }
+
+    /// <summary>Open native phone dialer to call the assigned pickup rider.</summary>
+    [RelayCommand]
+    private async Task CallRiderAsync() => await CallPhoneAsync(ActiveOrder?.Rider?.Phone);
+
+    [RelayCommand]
+    private async Task CallDeliveryRiderAsync() => await CallPhoneAsync(ActiveOrder?.DeliveryRider?.Phone);
+
+    private static async Task CallPhoneAsync(string? phone)
+    {
         if (string.IsNullOrWhiteSpace(phone)) return;
         try { await Launcher.Default.OpenAsync(new Uri($"tel:{phone}")); }
-        catch { await Shell.Current.DisplayAlert("Error", "Could not open phone dialer.", "OK"); }
+        catch { await Shell.Current.DisplayAlert("Call unavailable", "Could not open phone dialer.", "OK"); }
     }
 
     /// <summary>Navigate to the Message Rider page.</summary>

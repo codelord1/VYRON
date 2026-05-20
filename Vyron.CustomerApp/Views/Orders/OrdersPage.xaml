@@ -15,7 +15,7 @@
     <RefreshView Command="{Binding LoadCommand}"
                  IsRefreshing="{Binding IsRefreshing}"
                  IsEnabled="{Binding IsNotOpeningOrder}">
-        <CollectionView ItemsSource="{Binding Orders_}"
+        <CollectionView ItemsSource="{Binding FilteredOrders}"
                         SelectionMode="None">
 
             <CollectionView.Header>
@@ -45,10 +45,32 @@
                             Padding="4">
                         <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
                             <Border BackgroundColor="White" Stroke="Transparent" StrokeShape="RoundRectangle 18" Padding="14,10">
+                                <Border.Behaviors>
+                                    <behaviors:TapFeedbackBehavior />
+                                </Border.Behaviors>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding SetStatusTabCommand}" CommandParameter="Active" />
+                                </Border.GestureRecognizers>
                                 <Label Text="Active" HorizontalTextAlignment="Center" FontSize="13" FontFamily="OpenSansSemibold" TextColor="{StaticResource TealDark}" />
                             </Border>
-                            <Label Grid.Column="1" Text="Completed" HorizontalTextAlignment="Center" FontSize="13" TextColor="{StaticResource Gray5}" VerticalOptions="Center" />
-                            <Label Grid.Column="2" Text="Cancelled" HorizontalTextAlignment="Center" FontSize="13" TextColor="{StaticResource Gray5}" VerticalOptions="Center" />
+                            <Border Grid.Column="1" BackgroundColor="Transparent" Stroke="Transparent" StrokeShape="RoundRectangle 18" Padding="14,10">
+                                <Border.Behaviors>
+                                    <behaviors:TapFeedbackBehavior />
+                                </Border.Behaviors>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding SetStatusTabCommand}" CommandParameter="Completed" />
+                                </Border.GestureRecognizers>
+                                <Label Text="Completed" HorizontalTextAlignment="Center" FontSize="13" TextColor="{StaticResource Gray5}" />
+                            </Border>
+                            <Border Grid.Column="2" BackgroundColor="Transparent" Stroke="Transparent" StrokeShape="RoundRectangle 18" Padding="14,10">
+                                <Border.Behaviors>
+                                    <behaviors:TapFeedbackBehavior />
+                                </Border.Behaviors>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding SetStatusTabCommand}" CommandParameter="Cancelled" />
+                                </Border.GestureRecognizers>
+                                <Label Text="Cancelled" HorizontalTextAlignment="Center" FontSize="13" TextColor="{StaticResource Gray5}" />
+                            </Border>
                         </Grid>
                     </Border>
                 </VerticalStackLayout>
@@ -103,12 +125,16 @@
                                             HeightRequest="48"
                                             Stroke="Transparent"
                                             StrokeShape="RoundRectangle 18">
+                                        <Image Source="{Binding Store.LogoUrl}"
+                                               Aspect="AspectFill"
+                                               IsVisible="{Binding Store.HasLogo}" />
                                         <Label Text="{Binding Store.Name, Converter={StaticResource InitialsConverter}}"
                                                FontSize="12"
                                                FontFamily="OpenSansSemibold"
                                                TextColor="{StaticResource TealDark}"
                                                HorizontalOptions="Center"
-                                               VerticalOptions="Center" />
+                                               VerticalOptions="Center"
+                                               IsVisible="{Binding Store.HasLogo, Converter={StaticResource InvertBool}}" />
                                     </Border>
                                     <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
                                         <Label Text="{Binding Store.Name}"

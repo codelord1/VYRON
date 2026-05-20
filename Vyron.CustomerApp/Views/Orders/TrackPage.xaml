@@ -248,7 +248,7 @@
                             </VerticalStackLayout>
                             <Button Grid.Column="2"
                                     Text="Call"
-                                    Command="{Binding CallRiderCommand}"
+                                    Command="{Binding CallDeliveryRiderCommand}"
                                     BackgroundColor="{StaticResource Mint}"
                                     TextColor="{StaticResource TealDark}"
                                     WidthRequest="54"
@@ -273,11 +273,36 @@
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                                 <Label Text="{Binding ActiveOrder.Store.Name}" FontFamily="OpenSansSemibold" FontSize="15" />
-                                <Label Text="{Binding ActiveOrder.StatusSubtitle}" FontSize="12" TextColor="{StaticResource Gray3}" />
+                                <Label Text="Store updates appear in the order timeline." FontSize="12" TextColor="{StaticResource Gray3}" />
+                            </VerticalStackLayout>
+                            <Label Grid.Column="2"
+                                   Text="No direct call"
+                                   TextColor="{StaticResource Gray3}"
+                                   FontSize="11"
+                                   VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+
+                    <Border Style="{StaticResource CardBorderStyle}">
+                        <Grid ColumnDefinitions="54,*,Auto" ColumnSpacing="12">
+                            <Border BackgroundColor="{StaticResource Mint}"
+                                    WidthRequest="48"
+                                    HeightRequest="48"
+                                    Stroke="Transparent"
+                                    StrokeShape="RoundRectangle 24">
+                                <Image Source="vyron_icon_only.png"
+                                       HeightRequest="26"
+                                       WidthRequest="26"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center" />
+                            </Border>
+                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                <Label Text="Vyron Support" FontFamily="OpenSansSemibold" FontSize="15" />
+                                <Label Text="Need help with this order? Contact support or report an issue." FontSize="12" TextColor="{StaticResource Gray3}" />
                             </VerticalStackLayout>
                             <Button Grid.Column="2"
-                                    Text="Call"
-                                    Command="{Binding CallStoreCommand}"
+                                    Text="Help"
+                                    Command="{Binding ContactSupportCommand}"
                                     BackgroundColor="{StaticResource Mint}"
                                     TextColor="{StaticResource TealDark}"
                                     WidthRequest="58"
@@ -372,7 +397,7 @@
               BackgroundColor="White"
               IsVisible="{Binding HasActiveOrder}">
             <Button Text="Report issue"
-                    IsEnabled="False"
+                    Command="{Binding ReportIssueCommand}"
                     BackgroundColor="White"
                     BorderColor="#FF9FA6"
                     BorderWidth="1"

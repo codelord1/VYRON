@@ -7,13 +7,7 @@ public static class PhoneHelper
     public static readonly IReadOnlyList<CountryCodeOption> CountryOptions =
         new List<CountryCodeOption>
         {
-            new() { FlagEmoji = "🇳🇬", CountryName = "Nigeria",        DialCode = "+234", CountryIso = "NG" },
-            new() { FlagEmoji = "🇬🇭", CountryName = "Ghana",          DialCode = "+233", CountryIso = "GH" },
-            new() { FlagEmoji = "🇰🇪", CountryName = "Kenya",          DialCode = "+254", CountryIso = "KE" },
-            new() { FlagEmoji = "🇿🇦", CountryName = "South Africa",   DialCode = "+27",  CountryIso = "ZA" },
-            new() { FlagEmoji = "🇬🇧", CountryName = "United Kingdom", DialCode = "+44",  CountryIso = "GB" },
-            new() { FlagEmoji = "🇺🇸", CountryName = "United States",  DialCode = "+1",   CountryIso = "US" },
-            new() { FlagEmoji = "🇨🇦", CountryName = "Canada",         DialCode = "+1",   CountryIso = "CA" },
+            new() { FlagEmoji = "NG", CountryName = "Nigeria", DialCode = "+234", CountryIso = "NG" },
         };
 
     public static CountryCodeOption DefaultCountry => CountryOptions[0];

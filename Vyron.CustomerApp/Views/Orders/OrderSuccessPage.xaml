@@ -12,16 +12,23 @@
     <ScrollView>
         <VerticalStackLayout Padding="28,60,28,40" Spacing="20" HorizontalOptions="Fill">
 
-            <Label Text="Done"
-                   FontSize="24"
-                   TextColor="{DynamicResource Teal}"
-                   FontFamily="OpenSansSemibold"
-                   HorizontalOptions="Center" />
-            <Label Text="Order Placed!"
+            <Border BackgroundColor="{DynamicResource Mint}"
+                    WidthRequest="96"
+                    HeightRequest="96"
+                    Stroke="Transparent"
+                    StrokeShape="RoundRectangle 48"
+                    HorizontalOptions="Center">
+                <Label Text="🎉"
+                       FontSize="44"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center" />
+            </Border>
+            <Label Text="Order placed successfully"
                    FontFamily="OpenSansSemibold"
                    FontSize="28"
-                   HorizontalOptions="Center" />
-            <Label Text="Your laundry order has been submitted."
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center" />
+            <Label Text="Your pickup request has been created."
                    FontSize="14"
                    TextColor="{DynamicResource Gray3}"
                    HorizontalOptions="Center"

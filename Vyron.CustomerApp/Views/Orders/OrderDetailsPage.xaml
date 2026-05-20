@@ -56,44 +56,90 @@
                         </VerticalStackLayout>
                     </Border>
 
-                    <!-- Store & service -->
+                    <!-- Store & services -->
                     <Border BackgroundColor="White" Stroke="#EDEDEA"
                             StrokeShape="RoundRectangle 14" Padding="16">
-                        <VerticalStackLayout Spacing="8">
-                            <Label Text="Store &amp; Service"
+                        <VerticalStackLayout Spacing="12">
+                            <Label Text="Store &amp; Services"
                                    FontFamily="OpenSansSemibold" FontSize="14" />
-                            <Grid ColumnDefinitions="*,Auto">
-                                <Label Text="Store" FontSize="13" TextColor="{StaticResource Gray3}" />
-                                <Label Grid.Column="1" Text="{Binding Order.Store.Name}"
-                                       FontFamily="OpenSansSemibold" FontSize="13" />
+                            <Grid ColumnDefinitions="56,*" ColumnSpacing="12">
+                                <Border BackgroundColor="{StaticResource Mint}"
+                                        WidthRequest="52"
+                                        HeightRequest="52"
+                                        Stroke="Transparent"
+                                        StrokeShape="RoundRectangle 18">
+                                    <Image Source="{Binding Order.Store.LogoUrl}"
+                                           Aspect="AspectFill"
+                                           IsVisible="{Binding Order.Store.HasLogo}" />
+                                    <Label Text="{Binding Order.Store.Name, Converter={StaticResource InitialsConverter}}"
+                                           TextColor="{StaticResource TealDark}"
+                                           FontFamily="OpenSansSemibold"
+                                           HorizontalOptions="Center"
+                                           VerticalOptions="Center"
+                                           IsVisible="{Binding Order.Store.HasLogo, Converter={StaticResource InvertBool}}" />
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                                    <Label Text="{Binding Order.Store.Name}"
+                                           FontFamily="OpenSansSemibold"
+                                           FontSize="15" />
+                                    <Label Text="{Binding Order.Service.Name}"
+                                           TextColor="{StaticResource Gray3}"
+                                           FontSize="12" />
+                                </VerticalStackLayout>
                             </Grid>
-                            <Grid ColumnDefinitions="*,Auto">
-                                <Label Text="Service" FontSize="13" TextColor="{StaticResource Gray3}" />
-                                <Label Grid.Column="1" Text="{Binding Order.Service.Name}"
-                                       FontFamily="OpenSansSemibold" FontSize="13" />
-                            </Grid>
+                            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Order.Items}" Spacing="8"
+                                                 IsVisible="{Binding Order.HasItems}">
+                                <BindableLayout.ItemTemplate>
+                                    <DataTemplate x:DataType="dto:OrderItemDto">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                            <VerticalStackLayout Spacing="2">
+                                                <Label Text="{Binding ServiceName}"
+                                                       FontFamily="OpenSansSemibold"
+                                                       FontSize="13" />
+                                                <Label Text="{Binding QtyDisplay}"
+                                                       TextColor="{StaticResource Gray3}"
+                                                       FontSize="12" />
+                                            </VerticalStackLayout>
+                                            <Label Grid.Column="1"
+                                                   Text="{Binding LineTotalDisplay}"
+                                                   TextColor="{StaticResource Teal}"
+                                                   FontFamily="OpenSansSemibold"
+                                                   FontSize="13" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </BindableLayout.ItemTemplate>
+                            </VerticalStackLayout>
                         </VerticalStackLayout>
                     </Border>
 
                     <!-- Pricing -->
-                    <Border BackgroundColor="White" Stroke="#EDEDEA"
+                    <Border BackgroundColor="{StaticResource Dark}" Stroke="#202C2C"
                             StrokeShape="RoundRectangle 14" Padding="16">
                         <VerticalStackLayout Spacing="8">
-                            <Label Text="Pricing" FontFamily="OpenSansSemibold" FontSize="14" />
+                            <Label Text="Order Summary" TextColor="White" FontFamily="OpenSansSemibold" FontSize="14" />
                             <Grid ColumnDefinitions="*,Auto">
-                                <Label Text="Estimated laundry" FontSize="13" TextColor="{StaticResource Gray3}" />
+                                <Label Text="Estimated laundry" FontSize="13" TextColor="#B8D7D2" />
                                 <Label Grid.Column="1"
                                        Text="{Binding Order.EstimatedLaundryCost, StringFormat='₦{0:N0}'}"
+                                       TextColor="White"
                                        FontFamily="OpenSansSemibold" FontSize="13" />
                             </Grid>
                             <Grid ColumnDefinitions="*,Auto">
-                                <Label Text="Pickup fee" FontSize="13" TextColor="{StaticResource Gray3}" />
+                                <Label Text="Pickup fee" FontSize="13" TextColor="#B8D7D2" />
                                 <Label Grid.Column="1"
                                        Text="{Binding Order.PickupFeeAmount, StringFormat='₦{0:N0}'}"
+                                       TextColor="White"
                                        FontFamily="OpenSansSemibold" FontSize="13" />
                             </Grid>
                             <Grid ColumnDefinitions="*,Auto">
-                                <Label Text="Balance due" FontSize="13" TextColor="{StaticResource Gray3}" />
+                                <Label Text="Pickup payment" FontSize="13" TextColor="#B8D7D2" />
+                                <Label Grid.Column="1"
+                                       Text="{Binding Order.PickupPaymentMethodDisplay}"
+                                       TextColor="{StaticResource Teal}"
+                                       FontFamily="OpenSansSemibold" FontSize="13" />
+                            </Grid>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Text="Balance due" FontSize="13" TextColor="#B8D7D2" />
                                 <Label Grid.Column="1"
                                        Text="{Binding Order.BalanceAmount, StringFormat='₦{0:N0}'}"
                                        FontFamily="OpenSansSemibold" FontSize="13"
@@ -102,30 +148,44 @@
                         </VerticalStackLayout>
                     </Border>
 
-                    <!-- Rider info (shown after assigned) -->
+                    <!-- Rider info -->
                     <Border BackgroundColor="White" Stroke="#EDEDEA"
-                            StrokeShape="RoundRectangle 14" Padding="16"
-                            IsVisible="{Binding Order.Rider, Converter={StaticResource NotNullToBool}}">
+                            StrokeShape="RoundRectangle 14" Padding="16">
                         <VerticalStackLayout Spacing="8">
-                            <Label Text="Rider Assigned"
+                            <Label Text="Pickup Rider"
                                    FontFamily="OpenSansSemibold" FontSize="14" />
-                            <Grid ColumnDefinitions="*,Auto">
+                            <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding Order.HasPickupRider}">
                                 <Label Text="Name" FontSize="13" TextColor="{StaticResource Gray3}" />
                                 <Label Grid.Column="1" Text="{Binding Order.Rider.FullName}"
                                        FontFamily="OpenSansSemibold" FontSize="13" />
                             </Grid>
-                            <Grid ColumnDefinitions="*,Auto">
+                            <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding Order.HasPickupRider}">
                                 <Label Text="Vehicle" FontSize="13" TextColor="{StaticResource Gray3}" />
                                 <Label Grid.Column="1"
-                                       Text="{Binding Order.Rider.VehicleType}"
+                                       Text="{Binding Order.Rider.VehicleDisplay}"
                                        FontFamily="OpenSansSemibold" FontSize="13" />
                             </Grid>
-                            <Grid ColumnDefinitions="*,Auto">
-                                <Label Text="Phone" FontSize="13" TextColor="{StaticResource Gray3}" />
-                                <Label Grid.Column="1" Text="{Binding Order.Rider.Phone}"
-                                       FontFamily="OpenSansSemibold" FontSize="13"
-                                       TextColor="{StaticResource Teal}" />
+                            <Label Text="Pickup rider not assigned yet"
+                                   TextColor="{StaticResource Gray3}"
+                                   FontSize="13"
+                                   IsVisible="{Binding Order.HasPickupRider, Converter={StaticResource InvertBool}}" />
+                            <BoxView HeightRequest="1" Color="#EDEDEA" Margin="0,4" />
+                            <Label Text="Delivery Rider" FontFamily="OpenSansSemibold" FontSize="14" />
+                            <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding Order.HasDeliveryRider}">
+                                <Label Text="Name" FontSize="13" TextColor="{StaticResource Gray3}" />
+                                <Label Grid.Column="1" Text="{Binding Order.DeliveryRider.FullName}"
+                                       FontFamily="OpenSansSemibold" FontSize="13" />
                             </Grid>
+                            <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding Order.HasDeliveryRider}">
+                                <Label Text="Vehicle" FontSize="13" TextColor="{StaticResource Gray3}" />
+                                <Label Grid.Column="1"
+                                       Text="{Binding Order.DeliveryRider.VehicleDisplay}"
+                                       FontFamily="OpenSansSemibold" FontSize="13" />
+                            </Grid>
+                            <Label Text="Delivery rider not assigned yet"
+                                   TextColor="{StaticResource Gray3}"
+                                   FontSize="13"
+                                   IsVisible="{Binding Order.HasDeliveryRider, Converter={StaticResource InvertBool}}" />
                         </VerticalStackLayout>
                     </Border>
 
@@ -222,4 +282,3 @@
 
     </Grid>
 </ContentPage>
-

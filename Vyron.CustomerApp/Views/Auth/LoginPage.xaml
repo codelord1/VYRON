@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:behaviors="clr-namespace:Vyron.CustomerApp.Behaviors"
              xmlns:vm="clr-namespace:Vyron.CustomerApp.ViewModels"
+             xmlns:dto="clr-namespace:Vyron.CustomerApp.DTOs"
              x:Class="Vyron.CustomerApp.Views.Auth.LoginPage"
              x:DataType="vm:LoginViewModel"
              Shell.NavBarIsVisible="False"
@@ -49,7 +50,12 @@
                     StrokeShape="RoundRectangle 24"
                     HeightRequest="52"
                     Margin="0,0,0,18">
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8" Padding="16,0">
+                <Grid ColumnDefinitions="116,*" ColumnSpacing="10" Padding="12,0">
+                    <Picker ItemsSource="{Binding CountryOptions}"
+                            SelectedItem="{Binding SelectedCountry}"
+                            BackgroundColor="Transparent"
+                            FontSize="13" />
+                    <Grid Grid.Column="1" ColumnDefinitions="Auto,*" ColumnSpacing="8">
                     <Path Stroke="{StaticResource Gray3}"
                           StrokeThickness="2"
                           StrokeLineCap="Round"
@@ -63,6 +69,7 @@
                            Text="{Binding LocalPhone}"
                            Keyboard="Telephone"
                            ReturnType="Next" />
+                    </Grid>
                 </Grid>
             </Border>
             <Label Text="Password"

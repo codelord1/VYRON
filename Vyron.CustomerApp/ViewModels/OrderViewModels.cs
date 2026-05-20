@@ -149,6 +149,7 @@ public partial class CreateOrderViewModel : BaseViewModel
     public decimal TotalEstimate    => _draft.TotalEstimate;
     public decimal AmountDueNow     => _draft.AmountDueNow;
     public decimal BalanceDueLater  => _draft.BalanceDueLater;
+    public string PickupPaymentDisplay => "CashOnPickup";
 
     [ObservableProperty] private string _pickupAddress = "";
     [ObservableProperty] private string _deliveryAddress = "";
@@ -264,7 +265,7 @@ public partial class PickupFeeViewModel : BaseViewModel
     [ObservableProperty] private string _selectedMethod = "CashOnDelivery";
     [ObservableProperty] private bool _paymentDone;
 
-    public List<string> PaymentMethods { get; } = new() { "CashOnDelivery", "BankTransfer" };
+    public List<string> PaymentMethods { get; } = new() { "CashOnPickup", "BankTransfer" };
 
     public PickupFeeViewModel(OrderService orders, PaymentService payments)
     { _orders = orders; _payments = payments; }
@@ -305,7 +306,8 @@ public partial class PickupFeeViewModel : BaseViewModel
         IsBusy = true;
         try
         {
-            var (payResult, payError) = await _payments.PayPickupFeeAsync(capturedOrderId, capturedFee, SelectedMethod);
+            var apiMethod = SelectedMethod == "CashOnPickup" ? "CashOnDelivery" : SelectedMethod;
+            var (payResult, payError) = await _payments.PayPickupFeeAsync(capturedOrderId, capturedFee, apiMethod);
 
             if (payResult != null)
             {
@@ -353,6 +355,8 @@ public partial class OrdersViewModel : BaseViewModel
     private Task? _loadTask;
 
     [ObservableProperty] private ObservableCollection<OrderDto> _orders_ = new();
+    [ObservableProperty] private ObservableCollection<OrderDto> _filteredOrders = new();
+    [ObservableProperty] private string _selectedStatusTab = "Active";
     [ObservableProperty] private bool _isEmpty;
     [ObservableProperty] private int _currentPage = 1;
     [ObservableProperty]
@@ -407,8 +411,9 @@ public partial class OrdersViewModel : BaseViewModel
                 Orders_.Clear();
                 foreach (var o in data)
                     Orders_.Add(o);
+                ApplyStatusFilter();
             }
-            IsEmpty = Orders_.Count == 0;
+            IsEmpty = FilteredOrders.Count == 0;
             _hasLoaded = true;
             _lastLoadedAt = DateTime.UtcNow;
         }
@@ -416,6 +421,48 @@ public partial class OrdersViewModel : BaseViewModel
         {
             IsRefreshing = false;
         }
+    }
+
+    [RelayCommand]
+    private void SetStatusTab(string tab)
+    {
+        if (string.IsNullOrWhiteSpace(tab) || SelectedStatusTab == tab)
+            return;
+
+        SelectedStatusTab = tab;
+        ApplyStatusFilter();
+    }
+
+    partial void OnSelectedStatusTabChanged(string value) => ApplyStatusFilter();
+
+    private void ApplyStatusFilter()
+    {
+        FilteredOrders.Clear();
+        foreach (var order in Orders_.Where(MatchesSelectedTab))
+            FilteredOrders.Add(order);
+
+        IsEmpty = FilteredOrders.Count == 0;
+        OnPropertyChanged(nameof(FilteredOrders));
+    }
+
+    private bool MatchesSelectedTab(OrderDto order)
+    {
+        var status = order.Status ?? "";
+        return SelectedStatusTab switch
+        {
+            "Completed" => status.Equals("Completed", StringComparison.OrdinalIgnoreCase)
+                || status.Equals("Delivered", StringComparison.OrdinalIgnoreCase)
+                || status.Equals("BalancePaid", StringComparison.OrdinalIgnoreCase),
+            "Cancelled" => status.Equals("Cancelled", StringComparison.OrdinalIgnoreCase)
+                || status.Equals("Rejected", StringComparison.OrdinalIgnoreCase)
+                || status.Equals("Failed", StringComparison.OrdinalIgnoreCase),
+            _ => !status.Equals("Completed", StringComparison.OrdinalIgnoreCase)
+                && !status.Equals("Delivered", StringComparison.OrdinalIgnoreCase)
+                && !status.Equals("BalancePaid", StringComparison.OrdinalIgnoreCase)
+                && !status.Equals("Cancelled", StringComparison.OrdinalIgnoreCase)
+                && !status.Equals("Rejected", StringComparison.OrdinalIgnoreCase)
+                && !status.Equals("Failed", StringComparison.OrdinalIgnoreCase),
+        };
     }
 
     [RelayCommand]

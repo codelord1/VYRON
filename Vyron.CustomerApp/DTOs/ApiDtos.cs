@@ -67,11 +67,10 @@ public class CountryCodeOption
     public string DialCode    { get; init; } = "";   // e.g. "+234"
     public string CountryIso  { get; init; } = "";   // e.g. "NG"
 
-    /// Full display string shown in the picker: "ðŸ‡³ðŸ‡¬ Nigeria +234"
-    public string DisplayText => $"{FlagEmoji} {CountryName} {DialCode}";
+    /// Full display string shown in the picker, e.g. "+234 Nigeria".
+    public string DisplayText => $"{DialCode} {CountryName}";
 
-    /// Short label shown after selection: "ðŸ‡³ðŸ‡¬ +234"
-    public string ShortLabel  => $"{FlagEmoji} {DialCode}";
+    public string ShortLabel  => DialCode;
 
     public override string ToString() => DisplayText;
 }
@@ -400,6 +399,14 @@ public class OrderDto
     public bool CanDispute      => Dispute == null
         && Status is not ("Cancelled" or "Pending");
 
+    public string PickupPaymentMethodDisplay => "CashOnPickup";
+    public string DeliveryPaymentMethodDisplay => string.IsNullOrWhiteSpace(PaymentMethod)
+        ? "CashOnDelivery"
+        : PaymentMethod;
+    public bool HasPickupRider => Rider != null;
+    public bool HasDeliveryRider => DeliveryRider != null;
+    public bool HasItems => Items.Count > 0;
+
     public string StatusEmoji => "•";
 
     /// Friendly one-line description of the current status shown on the Track screen.
@@ -452,6 +459,7 @@ public class StoreSummaryDto
     public decimal AverageRating { get; set; }
     public string? LogoUrl       { get; set; }
     public string  Phone         { get; set; } = "";
+    public bool HasLogo => !string.IsNullOrWhiteSpace(LogoUrl);
 }
 
 public class RiderSummaryDto
@@ -461,6 +469,9 @@ public class RiderSummaryDto
     public string Phone        { get; set; } = "";
     public string VehicleType  { get; set; } = "";
     public string? VehiclePlate{ get; set; }
+    public string VehicleDisplay => string.IsNullOrWhiteSpace(VehiclePlate)
+        ? VehicleType
+        : $"{VehicleType} - {VehiclePlate}";
 }
 
 public class StatusHistoryDto
