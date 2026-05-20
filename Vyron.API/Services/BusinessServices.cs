@@ -481,11 +481,68 @@ public class OrderService : IOrderService
 
     public async Task<List<OrderDto>> GetCustomerOrdersAsync(Guid customerId, int page = 1)
     {
-        var ids = await _db.Orders.AsNoTracking()
+        // Lean projection — single SQL query with scalar JOINs only.
+        // No collection navigations (StatusHistory, Items, Review, Dispute) loaded here;
+        // they are not needed for the orders list screen and caused the
+        // MultipleCollectionIncludeWarning + cartesian explosion via LoadOrderDtosAsync.
+        // Full data is available via GET /api/orders/{id}.
+        var rows = await _db.Orders
+            .AsNoTracking()
             .Where(o => o.CustomerId == customerId)
-            .OrderByDescending(o => o.CreatedAt).Skip((page - 1) * 20).Take(20)
-            .Select(o => o.Id).ToListAsync();
-        return await LoadOrderDtosAsync(ids);
+            .OrderByDescending(o => o.CreatedAt)
+            .Skip((page - 1) * 20).Take(20)
+            .Select(o => new {
+                o.Id, o.OrderNumber,
+                CustId    = o.CustomerId,
+                CustName  = o.Customer.FullName,
+                CustPhone = o.Customer.Phone,
+                StoreId   = o.StoreId,
+                StoreName = o.Store.Name, StoreAddr = o.Store.Address,
+                StoreRating = o.Store.AverageRating, StoreLogo = o.Store.LogoUrl,
+                StorePhone  = o.Store.Phone,
+                SvcId      = o.ServiceOfferingId, SvcType = o.Service.ServiceType,
+                SvcName    = o.Service.Name,      SvcDesc = o.Service.Description,
+                SvcPricing = o.Service.PricingMode,
+                SvcBase    = o.Service.BasePrice, SvcMin  = o.Service.MinimumCharge,
+                SvcActive  = o.Service.IsActive,  SvcHours = o.Service.EstimatedHours,
+                o.Status, o.PaymentState, o.PaymentMethod,
+                o.EstimatedWeight, o.EstimatedPieces,
+                o.EstimatedLaundryCost, o.ActualLaundryCost,
+                o.PickupFee, o.DeliveryFee, o.TotalEstimate, o.ActualTotal,
+                o.PickupFeeAmount, o.BalanceAmount,
+                o.AdminPriceOverride, o.AdminOverrideReason,
+                o.PickupAddress, o.DeliveryAddress,
+                o.RequestedPickupDate, o.RequestedPickupSlot, o.SpecialInstructions,
+                o.PickedUpAt, o.ProcessingStartedAt, o.ReadyAt,
+                o.OutForDeliveryAt, o.DeliveredAt, o.CompletedAt, o.CreatedAt
+            })
+            .ToListAsync();
+
+        // Map in memory — ToString() on enums cannot translate to SQL
+        return rows.Select(o => new OrderDto(
+            o.Id, o.OrderNumber,
+            new CustomerSummaryDto(o.CustId, o.CustName, o.CustPhone),
+            new StoreSummaryDto(o.StoreId, o.StoreName, o.StoreAddr,
+                o.StoreRating, o.StoreLogo, o.StorePhone),
+            new ServiceSummaryDto(o.SvcId, o.SvcType, o.SvcName, o.SvcDesc,
+                o.SvcPricing, o.SvcBase, o.SvcMin, o.SvcActive, o.SvcHours),
+            null,  // Rider — not needed on list screen
+            o.Status, o.Status.ToString(),
+            o.PaymentState, o.PaymentState.ToString(),
+            o.PaymentMethod,
+            o.EstimatedWeight, o.EstimatedPieces,
+            o.EstimatedLaundryCost, o.ActualLaundryCost,
+            o.PickupFee, o.DeliveryFee, o.TotalEstimate, o.ActualTotal,
+            o.PickupFeeAmount, o.BalanceAmount,
+            o.AdminPriceOverride, o.AdminOverrideReason,
+            o.PickupAddress, o.DeliveryAddress,
+            o.RequestedPickupDate, o.RequestedPickupSlot, o.SpecialInstructions,
+            o.PickedUpAt, o.ProcessingStartedAt, o.ReadyAt,
+            o.OutForDeliveryAt, o.DeliveredAt, o.CompletedAt, o.CreatedAt,
+            new List<StatusHistoryDto>(), // empty — history available on detail endpoint
+            null, null, null,
+            new List<OrderItemDto>()      // empty — items available on detail endpoint
+        )).ToList();
     }
 
     public async Task<List<OrderDto>> GetAllOrdersAsync(OrderStatus? status, string? search, int page = 1)
@@ -797,10 +854,15 @@ public class OrderService : IOrderService
         }
     }
 
-    // ── Shared include chain — used by all read paths ─────────────
+    // ── Shared include chain — used only by DETAIL read paths ──────
+    // AsSplitQuery: intentional — StatusHistory and Items are both collection
+    // navigations; loading them in a SingleQuery produces a cartesian explosion
+    // (MultipleCollectionIncludeWarning). Split queries issue separate SELECTs
+    // per collection and re-join in memory, which is faster and correct.
     private IQueryable<Order> OrdersWithIncludes() =>
         _db.Orders
             .AsNoTracking()
+            .AsSplitQuery()
             .Include(x => x.Customer).Include(x => x.Store).Include(x => x.Service)
             .Include(x => x.Rider).ThenInclude(r => r!.User)
             .Include(x => x.DeliveryRider).ThenInclude(r => r!.User)
