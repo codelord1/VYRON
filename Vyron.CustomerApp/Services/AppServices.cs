@@ -54,6 +54,9 @@ public class OrderService
 
     public Task<(List<OrderDto>? Data, string? Error)> GetMyOrdersAsync(int page = 1)
         => _api.GetAsync<List<OrderDto>>($"api/orders/my-orders?page={page}");
+
+    public Task<(ReorderDraftDto? Data, string? Error)> GetReorderDraftAsync(Guid orderId)
+        => _api.GetAsync<ReorderDraftDto>($"api/orders/{orderId}/reorder-draft");
 }
 
 // ═══════════════════════════════════════════════════════════════════

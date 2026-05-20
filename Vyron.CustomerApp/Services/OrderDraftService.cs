@@ -180,6 +180,9 @@ public class OrderDraftService
     public string  StoreName  { get; private set; } = "";
     public decimal PickupFee  { get; private set; }
     public decimal DeliveryFee{ get; private set; }
+    public string  PrefillPickupAddress { get; private set; } = "";
+    public string  PrefillDeliveryAddress { get; private set; } = "";
+    public string  PrefillPaymentMethod { get; private set; } = "CashOnDelivery";
 
     // ── Selected line items ──────────────────────────────────────────
     public ObservableCollection<OrderDraftItem> Items { get; } = new();
@@ -239,6 +242,36 @@ public class OrderDraftService
         }
     }
 
+    public void LoadReorderDraft(ReorderDraftDto draft, ServiceSummaryDto service)
+    {
+        StoreId = draft.StoreId;
+        StoreName = draft.StoreName;
+        PickupFee = draft.PickupFee;
+        DeliveryFee = draft.DeliveryFee;
+        PrefillPickupAddress = draft.PickupAddress;
+        PrefillDeliveryAddress = draft.DeliveryAddress;
+        PrefillPaymentMethod = string.IsNullOrWhiteSpace(draft.PaymentMethod)
+            ? "CashOnDelivery"
+            : draft.PaymentMethod;
+
+        Items.Clear();
+        var item = new OrderDraftItem
+        {
+            ServiceId = service.Id,
+            ServiceName = service.Name,
+            PricingMode = service.PricingMode,
+            BasePrice = service.BasePrice,
+            MinimumCharge = service.MinimumCharge,
+            Weight = service.PricingMode.Equals("PerKg", StringComparison.OrdinalIgnoreCase)
+                ? Math.Max(draft.EstimatedWeight, 0.5m)
+                : 1,
+            Pieces = service.PricingMode.Equals("PerItem", StringComparison.OrdinalIgnoreCase)
+                ? Math.Max(draft.EstimatedPieces, 1)
+                : 1
+        };
+        Items.Add(item);
+    }
+
     /// <summary>Remove an item from the cart.</summary>
     public void RemoveItem(OrderDraftItem item) => Items.Remove(item);
 
@@ -260,6 +293,9 @@ public class OrderDraftService
         StoreName   = "";
         PickupFee   = 0;
         DeliveryFee = 0;
+        PrefillPickupAddress = "";
+        PrefillDeliveryAddress = "";
+        PrefillPaymentMethod = "CashOnDelivery";
     }
 
     // ── Build the CreateOrderRequest ─────────────────────────────────

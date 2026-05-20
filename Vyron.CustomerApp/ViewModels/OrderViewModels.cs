@@ -162,7 +162,19 @@ public partial class CreateOrderViewModel : BaseViewModel
     public List<string> PaymentMethods { get; } = new() { "CashOnDelivery", "BankTransfer" };
 
     public CreateOrderViewModel(OrderService orders, OrderDraftService draft)
-    { _orders = orders; _draft = draft; }
+    {
+        _orders = orders;
+        _draft = draft;
+
+        PickupAddress = _draft.PrefillPickupAddress;
+        DeliveryAddress = string.IsNullOrWhiteSpace(_draft.PrefillDeliveryAddress)
+            ? _draft.PrefillPickupAddress
+            : _draft.PrefillDeliveryAddress;
+        SameAddress = string.Equals(PickupAddress, DeliveryAddress, StringComparison.OrdinalIgnoreCase);
+        PaymentMethod = string.IsNullOrWhiteSpace(_draft.PrefillPaymentMethod)
+            ? "CashOnDelivery"
+            : _draft.PrefillPaymentMethod;
+    }
 
     partial void OnSameAddressChanged(bool value)
     {
@@ -441,11 +453,23 @@ public partial class OrdersViewModel : BaseViewModel
 public partial class OrderDetailsViewModel : BaseViewModel
 {
     private readonly OrderService _orders;
+    private readonly StoreService _stores;
+    private readonly OrderDraftService _draft;
 
     [ObservableProperty] private string _orderId = "";
     [ObservableProperty] private OrderDto? _order;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNotReordering))]
+    private bool _isReordering;
 
-    public OrderDetailsViewModel(OrderService orders) => _orders = orders;
+    public bool IsNotReordering => !IsReordering;
+
+    public OrderDetailsViewModel(OrderService orders, StoreService stores, OrderDraftService draft)
+    {
+        _orders = orders;
+        _stores = stores;
+        _draft = draft;
+    }
 
     partial void OnOrderIdChanged(string value)
     {
@@ -460,6 +484,56 @@ public partial class OrderDetailsViewModel : BaseViewModel
         var (data, _) = await SafeRefreshCallAsync(() => _orders.GetOrderAsync(id), "orders");
         if (data != null)
             Order = data;
+    }
+
+    [RelayCommand]
+    private async Task ReorderAsync()
+    {
+        if (IsReordering)
+            return;
+
+        if (Order == null)
+        {
+            SetError("Order details are still loading. Please try again.");
+            return;
+        }
+
+        if (!ApiErrorHelper.HasInternetAccess)
+        {
+            SetError(ApiErrorHelper.OfflineMessage);
+            return;
+        }
+
+        IsReordering = true;
+        ClearMessages();
+        try
+        {
+            TapFeedback.HapticClick();
+            var (draft, _) = await SafeCallAsync(() => _orders.GetReorderDraftAsync(Order.Id), "orders");
+            if (draft == null)
+                return;
+
+            if (!draft.CanReorder || !draft.StoreActive || !draft.ServiceActive)
+            {
+                SetError("This order cannot be reordered because the store or service is no longer available.");
+                return;
+            }
+
+            var (store, _) = await SafeCallAsync(() => _stores.GetStoreAsync(draft.StoreId), "stores");
+            var service = store?.Services.FirstOrDefault(s => s.Id == draft.ServiceOfferingId && s.IsActive);
+            if (service == null)
+            {
+                SetError("This service is no longer available. Please choose another service.");
+                return;
+            }
+
+            _draft.LoadReorderDraft(draft, service);
+            await Shell.Current.GoToAsync($"{AppRoutes.CreateOrder}?storeId={draft.StoreId}");
+        }
+        finally
+        {
+            IsReordering = false;
+        }
     }
 
     [RelayCommand]

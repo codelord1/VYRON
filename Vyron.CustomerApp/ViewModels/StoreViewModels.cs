@@ -23,6 +23,7 @@ public partial class HomeViewModel : BaseViewModel
 {
     private readonly StoreService _stores;
     private readonly OrderService _orders;
+    private readonly OrderDraftService _draft;
     private DateTime _lastLoadedAt = DateTime.MinValue;
     private bool _hasLoaded;
 
@@ -36,9 +37,14 @@ public partial class HomeViewModel : BaseViewModel
     [ObservableProperty] private Guid? _lastCompletedOrderId;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsNotTrackingOrder))]
+    [NotifyPropertyChangedFor(nameof(IsNotReordering))]
     private bool _isTrackingOrder;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNotReordering))]
+    private bool _isReordering;
 
     public bool IsNotTrackingOrder => !IsTrackingOrder;
+    public bool IsNotReordering => !IsReordering;
     public bool HasUnreadNotifications => UnreadNotificationCount > 0;
     public bool HasReorder => LastCompletedOrderId.HasValue;
 
@@ -55,10 +61,11 @@ public partial class HomeViewModel : BaseViewModel
     public string PickupLocation =>
         Preferences.Default.Get("Vyron.Customer.PickupLocation", "Lekki Phase 1");
 
-    public HomeViewModel(StoreService stores, OrderService orders)
+    public HomeViewModel(StoreService stores, OrderService orders, OrderDraftService draft)
     {
         _stores = stores;
         _orders = orders;
+        _draft = draft;
     }
 
     partial void OnUnreadNotificationCountChanged(int value) =>
@@ -228,14 +235,51 @@ public partial class HomeViewModel : BaseViewModel
     [RelayCommand]
     private async Task ReorderAsync()
     {
+        if (IsReordering)
+            return;
+
         if (LastCompletedOrderId == null)
         {
             await Shell.Current.GoToAsync(AppRoutes.Orders);
             return;
         }
 
-        TapFeedback.HapticClick();
-        await Shell.Current.GoToAsync($"{AppRoutes.OrderDetails}?orderId={LastCompletedOrderId.Value}");
+        if (!ApiErrorHelper.HasInternetAccess)
+        {
+            SetError(ApiErrorHelper.OfflineMessage);
+            return;
+        }
+
+        IsReordering = true;
+        ClearMessages();
+        try
+        {
+            TapFeedback.HapticClick();
+            var (draft, _) = await SafeCallAsync(() => _orders.GetReorderDraftAsync(LastCompletedOrderId.Value), "orders");
+            if (draft == null)
+                return;
+
+            if (!draft.CanReorder || !draft.StoreActive || !draft.ServiceActive)
+            {
+                SetError("This order cannot be reordered because the store or service is no longer available.");
+                return;
+            }
+
+            var (store, _) = await SafeCallAsync(() => _stores.GetStoreAsync(draft.StoreId), "stores");
+            var service = store?.Services.FirstOrDefault(s => s.Id == draft.ServiceOfferingId && s.IsActive);
+            if (service == null)
+            {
+                SetError("This service is no longer available. Please choose another service.");
+                return;
+            }
+
+            _draft.LoadReorderDraft(draft, service);
+            await Shell.Current.GoToAsync($"{AppRoutes.CreateOrder}?storeId={draft.StoreId}");
+        }
+        finally
+        {
+            IsReordering = false;
+        }
     }
 }
 

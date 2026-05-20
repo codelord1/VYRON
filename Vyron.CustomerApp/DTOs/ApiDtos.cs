@@ -311,6 +311,28 @@ public class PriceEstimateResponse
     public string  Breakdown            { get; set; } = "";
 }
 
+public class ReorderDraftDto
+{
+    public Guid OriginalOrderId { get; set; }
+    public string OriginalOrderNumber { get; set; } = "";
+    public Guid StoreId { get; set; }
+    public string StoreName { get; set; } = "";
+    public bool StoreActive { get; set; }
+    public Guid ServiceOfferingId { get; set; }
+    public string ServiceName { get; set; } = "";
+    public bool ServiceActive { get; set; }
+    public decimal EstimatedWeight { get; set; }
+    public int EstimatedPieces { get; set; }
+    public string PickupAddress { get; set; } = "";
+    public string DeliveryAddress { get; set; } = "";
+    public decimal LaundryCost { get; set; }
+    public decimal PickupFee { get; set; }
+    public decimal DeliveryFee { get; set; }
+    public decimal TotalEstimate { get; set; }
+    public string PaymentMethod { get; set; } = "CashOnDelivery";
+    public bool CanReorder { get; set; }
+}
+
 public class CreateOrderRequest
 {
     public Guid     StoreId              { get; set; }

@@ -174,6 +174,18 @@
         <!-- Action buttons row -->
         <Border Grid.Row="1" BackgroundColor="White" Stroke="#EDEDEA" Padding="16,12">
             <VerticalStackLayout Spacing="8">
+                <Button Text="Reorder"
+                        Command="{Binding ReorderCommand}"
+                        IsEnabled="{Binding IsNotReordering}"
+                        IsVisible="{Binding Order, Converter={StaticResource NotNullToBool}}">
+                    <Button.Behaviors>
+                        <behaviors:TapFeedbackBehavior />
+                    </Button.Behaviors>
+                </Button>
+                <ActivityIndicator IsRunning="{Binding IsReordering}"
+                                   IsVisible="{Binding IsReordering}"
+                                   Color="{StaticResource Teal}"
+                                   HorizontalOptions="Center" />
                 <Button Text="Pay Pickup Fee"
                         Command="{Binding PayPickupFeeCommand}"
                         IsVisible="{Binding Order.CanPayPickupFee}">

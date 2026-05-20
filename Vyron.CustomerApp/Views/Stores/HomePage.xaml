@@ -307,7 +307,9 @@
                     </Grid>
                 </Border>
 
-                <Border Style="{StaticResource CardBorderStyle}" IsVisible="{Binding HasReorder}">
+                <Border Style="{StaticResource CardBorderStyle}"
+                        IsVisible="{Binding HasReorder}"
+                        InputTransparent="{Binding IsReordering}">
                     <Border.Behaviors>
                         <behaviors:TapFeedbackBehavior />
                     </Border.Behaviors>
@@ -323,7 +325,18 @@
                             <Label Text="{Binding ReorderSubtitle}" FontSize="12" TextColor="{StaticResource Gray3}" />
                         </VerticalStackLayout>
                         <Border Grid.Column="2" BackgroundColor="{StaticResource Mint}" Stroke="Transparent" StrokeShape="RoundRectangle 18" Padding="14,8" VerticalOptions="Center">
-                            <Label Text="Reorder" TextColor="{StaticResource TealDark}" FontSize="12" FontFamily="OpenSansSemibold" />
+                            <Grid>
+                                <Label Text="Reorder"
+                                       TextColor="{StaticResource TealDark}"
+                                       FontSize="12"
+                                       FontFamily="OpenSansSemibold"
+                                       IsVisible="{Binding IsNotReordering}" />
+                                <ActivityIndicator IsRunning="{Binding IsReordering}"
+                                                   IsVisible="{Binding IsReordering}"
+                                                   Color="{StaticResource TealDark}"
+                                                   WidthRequest="18"
+                                                   HeightRequest="18" />
+                            </Grid>
                         </Border>
                     </Grid>
                 </Border>
