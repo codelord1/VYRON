@@ -30,11 +30,17 @@ public partial class HomeViewModel : BaseViewModel
     [ObservableProperty] private OrderDto? _activeOrder;
     [ObservableProperty] private bool _hasActiveOrder;
     [ObservableProperty] private string _searchText = "";
+    [ObservableProperty] private int _unreadNotificationCount;
+    [ObservableProperty] private string? _reorderTitle;
+    [ObservableProperty] private string? _reorderSubtitle;
+    [ObservableProperty] private Guid? _lastCompletedOrderId;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsNotTrackingOrder))]
     private bool _isTrackingOrder;
 
     public bool IsNotTrackingOrder => !IsTrackingOrder;
+    public bool HasUnreadNotifications => UnreadNotificationCount > 0;
+    public bool HasReorder => LastCompletedOrderId.HasValue;
 
     public string CustomerName
     {
@@ -55,6 +61,12 @@ public partial class HomeViewModel : BaseViewModel
         _orders = orders;
     }
 
+    partial void OnUnreadNotificationCountChanged(int value) =>
+        OnPropertyChanged(nameof(HasUnreadNotifications));
+
+    partial void OnLastCompletedOrderIdChanged(Guid? value) =>
+        OnPropertyChanged(nameof(HasReorder));
+
     public async Task InitAsync()
     {
         if (_hasLoaded && DateTime.UtcNow - _lastLoadedAt < TimeSpan.FromMinutes(2))
@@ -67,26 +79,56 @@ public partial class HomeViewModel : BaseViewModel
     private async Task LoadAsync()
     {
         if (IsBusy)
+        {
+            IsRefreshing = false;
             return;
+        }
 
-        IsBusy = true;
+        try
+        {
+            var search = string.IsNullOrWhiteSpace(SearchText) ? null : SearchText.Trim();
+            var (stores, _) = await SafeRefreshCallAsync(() => _stores.GetStoresAsync(search: search, sort: "rating"), "stores");
+            if (stores != null)
+            {
+                StoreItems.Clear();
+                foreach (var store in stores.Take(6))
+                    StoreItems.Add(store);
+            }
 
-        var (stores, _) = await SafeCallAsync(() => _stores.GetStoresAsync(sort: "rating"), "stores");
-        StoreItems.Clear();
-        foreach (var store in stores?.Take(6) ?? Enumerable.Empty<StoreListItemDto>())
-            StoreItems.Add(store);
+            var (orders, _) = await SafeRefreshCallAsync(() => _orders.GetMyOrdersAsync(), "orders");
+            if (orders != null)
+            {
+                ActiveOrder = orders.FirstOrDefault(o => o.Status is not ("Completed" or "Cancelled" or "BalancePaid"));
+                HasActiveOrder = ActiveOrder != null;
 
-        var (orders, _) = await SafeCallAsync(() => _orders.GetMyOrdersAsync(), "orders");
-        ActiveOrder = orders?.FirstOrDefault(o => o.Status is not ("Completed" or "Cancelled" or "BalancePaid"));
-        HasActiveOrder = ActiveOrder != null;
+                var lastCompleted = orders.FirstOrDefault(o => o.Status is "Completed" or "BalancePaid" or "Delivered");
+                LastCompletedOrderId = lastCompleted?.Id;
+                ReorderTitle = lastCompleted != null ? $"Reorder from {lastCompleted.Store.Name}" : null;
+                ReorderSubtitle = lastCompleted != null
+                    ? $"{lastCompleted.Service.Name} · ₦{lastCompleted.TotalEstimate:N0}"
+                    : null;
+                OnPropertyChanged(nameof(HasReorder));
+            }
 
-        _hasLoaded = true;
-        _lastLoadedAt = DateTime.UtcNow;
-        IsBusy = false;
+            UnreadNotificationCount = orders?.Count(o => o.Status is "Ready" or "OutForDelivery" or "Delivered") ?? 0;
+            OnPropertyChanged(nameof(HasUnreadNotifications));
+            _hasLoaded = true;
+            _lastLoadedAt = DateTime.UtcNow;
+        }
+        finally
+        {
+            IsRefreshing = false;
+        }
     }
 
     [RelayCommand]
-    private async Task GoToStoresAsync() => await Shell.Current.GoToAsync(AppRoutes.Stores);
+    private async Task GoToStoresAsync()
+    {
+        if (string.IsNullOrWhiteSpace(SearchText))
+            await Shell.Current.GoToAsync(AppRoutes.Stores);
+        else
+            await Shell.Current.GoToAsync($"{AppRoutes.Stores}?search={Uri.EscapeDataString(SearchText.Trim())}");
+    }
 
     [RelayCommand]
     private async Task GoToOrdersAsync() => await Shell.Current.GoToAsync(AppRoutes.Orders);
@@ -150,9 +192,55 @@ public partial class HomeViewModel : BaseViewModel
         TapFeedback.HapticClick();
         await Shell.Current.GoToAsync(AppRoutes.Stores);
     }
+
+    [RelayCommand]
+    private async Task QuickServiceAsync(string service)
+    {
+        if (string.IsNullOrWhiteSpace(service))
+            return;
+
+        TapFeedback.HapticClick();
+        await Shell.Current.GoToAsync($"{AppRoutes.Stores}?search={Uri.EscapeDataString(service)}");
+    }
+
+    [RelayCommand]
+    private async Task OpenNotificationsAsync()
+    {
+        TapFeedback.HapticClick();
+        await Shell.Current.GoToAsync(AppRoutes.Notifications);
+    }
+
+    [RelayCommand]
+    private async Task OpenPickupLocationAsync()
+    {
+        TapFeedback.HapticClick();
+        await Shell.Current.GoToAsync(AppRoutes.PickupLocation);
+    }
+
+    [RelayCommand]
+    private async Task ApplyPromoAsync()
+    {
+        TapFeedback.HapticClick();
+        await Clipboard.Default.SetTextAsync("VYRON20");
+        SuccessMessage = "VYRON20 copied. Apply it when checking out.";
+    }
+
+    [RelayCommand]
+    private async Task ReorderAsync()
+    {
+        if (LastCompletedOrderId == null)
+        {
+            await Shell.Current.GoToAsync(AppRoutes.Orders);
+            return;
+        }
+
+        TapFeedback.HapticClick();
+        await Shell.Current.GoToAsync($"{AppRoutes.OrderDetails}?orderId={LastCompletedOrderId.Value}");
+    }
 }
 
 // ─── STORES LIST ─────────────────────────────────────────────────
+[QueryProperty(nameof(SearchText), "search")]
 public partial class StoresViewModel : BaseViewModel
 {
     private readonly StoreService _stores;
@@ -219,10 +307,18 @@ public partial class StoresViewModel : BaseViewModel
     private async Task LoadAsync()
     {
         if (IsBusy)
+        {
+            IsRefreshing = false;
             return;
+        }
 
         // "toprated" → sort by rating, do NOT filter by IsTopRated flag (flag may be empty)
-        var sort = SelectedFilter == "toprated" ? "rating" : null;
+        var sort = SelectedFilter switch
+        {
+            "toprated" => "rating",
+            "cheapest" => "price",
+            _ => null
+        };
         var filter = SelectedFilter switch
         {
             "fast"     => "fast",
@@ -230,19 +326,33 @@ public partial class StoresViewModel : BaseViewModel
             _          => (string?)null   // "toprated" handled by sort only
         };
 
-        var (data, _) = await SafeCallAsync(() =>
-            _stores.GetStoresAsync(
-                search: string.IsNullOrWhiteSpace(SearchText) ? null : SearchText,
-                sort:   sort,
-                filter: filter), "stores");
+        try
+        {
+            var (data, _) = await SafeRefreshCallAsync(() =>
+                _stores.GetStoresAsync(
+                    search: string.IsNullOrWhiteSpace(SearchText) ? null : SearchText,
+                    sort: sort,
+                    filter: filter), "stores");
 
-        StoreItems.Clear();
-        foreach (var s in data ?? Enumerable.Empty<StoreListItemDto>())
-            StoreItems.Add(s);
+            if (data != null)
+            {
+                var stores = data.AsEnumerable();
+                if (SelectedFilter == "cheapest")
+                    stores = stores.OrderBy(s => s.Services.Where(x => x.IsActive).Select(x => x.BasePrice).DefaultIfEmpty(decimal.MaxValue).Min());
 
-        IsEmpty = StoreItems.Count == 0;
-        _hasLoaded = true;
-        _lastLoadedAt = DateTime.UtcNow;
+                StoreItems.Clear();
+                foreach (var s in stores)
+                    StoreItems.Add(s);
+            }
+
+            IsEmpty = StoreItems.Count == 0;
+            _hasLoaded = true;
+            _lastLoadedAt = DateTime.UtcNow;
+        }
+        finally
+        {
+            IsRefreshing = false;
+        }
     }
 
     [RelayCommand]
@@ -300,11 +410,31 @@ public partial class StoreDetailsViewModel : BaseViewModel
     [RelayCommand]
     private async Task LoadAsync()
     {
-        if (!Guid.TryParse(StoreId, out var id)) return;
+        if (IsBusy)
+        {
+            IsRefreshing = false;
+            return;
+        }
 
-        var (data, _) = await SafeCallAsync(() => _stores.GetStoreAsync(id), "stores");
-        Store      = data;
-        HasReviews = Store?.RecentReviews?.Count > 0;
+        if (!Guid.TryParse(StoreId, out var id))
+        {
+            IsRefreshing = false;
+            return;
+        }
+
+        try
+        {
+            var (data, _) = await SafeRefreshCallAsync(() => _stores.GetStoreAsync(id), "stores");
+            if (data != null)
+            {
+                Store = data;
+                HasReviews = Store?.RecentReviews?.Count > 0;
+            }
+        }
+        finally
+        {
+            IsRefreshing = false;
+        }
     }
 
     [RelayCommand]

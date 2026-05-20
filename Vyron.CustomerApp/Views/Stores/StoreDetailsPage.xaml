@@ -12,7 +12,8 @@
     <Grid RowDefinitions="*,Auto">
 
         <!-- ── Scrollable body ─────────────────────────────────── -->
-        <ScrollView Grid.Row="0">
+        <RefreshView Grid.Row="0" Command="{Binding LoadCommand}" IsRefreshing="{Binding IsRefreshing}">
+        <ScrollView>
             <VerticalStackLayout Spacing="0">
 
                 <!-- Loading indicator (covers the banner placeholder) -->
@@ -305,6 +306,7 @@
                 </VerticalStackLayout>
             </VerticalStackLayout>
         </ScrollView>
+        </RefreshView>
 
         <!-- ── Closed store banner ───────────────────────────────── -->
         <Border Grid.Row="1"

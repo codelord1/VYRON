@@ -52,7 +52,7 @@
             </Grid>
         </Border>
 
-        <RefreshView Grid.Row="1" Command="{Binding LoadCommand}" IsRefreshing="{Binding IsBusy}">
+        <RefreshView Grid.Row="1" Command="{Binding LoadCommand}" IsRefreshing="{Binding IsRefreshing}">
         <ScrollView>
             <VerticalStackLayout Padding="20,16,20,24" Spacing="16">
                 <ActivityIndicator IsRunning="{Binding IsBusy}"
@@ -383,3 +383,4 @@
         </Grid>
     </Grid>
 </ContentPage>
+

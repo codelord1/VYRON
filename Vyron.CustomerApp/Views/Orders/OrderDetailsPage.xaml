@@ -10,7 +10,7 @@
              BackgroundColor="{StaticResource Bg}">
 
     <Grid RowDefinitions="*,Auto">
-        <RefreshView Grid.Row="0" Command="{Binding LoadCommand}" IsRefreshing="{Binding IsBusy}">
+        <RefreshView Grid.Row="0" Command="{Binding LoadCommand}" IsRefreshing="{Binding IsRefreshing}">
         <ScrollView>
             <VerticalStackLayout Padding="16" Spacing="14">
 
@@ -210,3 +210,4 @@
 
     </Grid>
 </ContentPage>
+

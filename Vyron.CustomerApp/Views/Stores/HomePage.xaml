@@ -8,9 +8,9 @@
              x:Name="ThisPage"
              x:DataType="vm:HomeViewModel"
              Shell.NavBarIsVisible="False"
-             BackgroundColor="{StaticResource Bg}">
+             BackgroundColor="{DynamicResource Bg}">
 
-    <RefreshView Command="{Binding LoadCommand}" IsRefreshing="{Binding IsBusy}">
+    <RefreshView Command="{Binding LoadCommand}" IsRefreshing="{Binding IsRefreshing}">
     <ScrollView>
         <VerticalStackLayout Spacing="0">
             <Grid BackgroundColor="{StaticResource TealDark}" Padding="18,38,18,28">
@@ -19,15 +19,51 @@
                         <VerticalStackLayout Spacing="2">
                             <Label Text="Pickup at" TextColor="#C9F4E6" FontSize="12" />
                             <HorizontalStackLayout Spacing="5">
-                                <Label Text="PIN" TextColor="White" FontSize="11" VerticalOptions="Center" />
+                                <HorizontalStackLayout.Behaviors>
+                                    <behaviors:TapFeedbackBehavior />
+                                </HorizontalStackLayout.Behaviors>
+                                <HorizontalStackLayout.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding OpenPickupLocationCommand}" />
+                                </HorizontalStackLayout.GestureRecognizers>
+                                <Path Stroke="White"
+                                      StrokeThickness="2"
+                                      StrokeLineCap="Round"
+                                      StrokeLineJoin="Round"
+                                      WidthRequest="16"
+                                      HeightRequest="16"
+                                      VerticalOptions="Center"
+                                      Data="M8,14 L8,14 M8,2 A5,5 0 0 0 3,7 C3,10.5 8,14 8,14 C8,14 13,10.5 13,7 A5,5 0 0 0 8,2 M8,5.5 A1.5,1.5 0 1 0 8,8.5 A1.5,1.5 0 1 0 8,5.5" />
                                 <Label Text="{Binding PickupLocation}" TextColor="White" FontSize="14" FontFamily="OpenSansSemibold" />
                                 <Label Text="⌄" TextColor="White" FontSize="14" />
                             </HorizontalStackLayout>
                         </VerticalStackLayout>
                         <Border Grid.Column="1" WidthRequest="42" HeightRequest="42" BackgroundColor="#1F9678" Stroke="Transparent" StrokeShape="RoundRectangle 21">
+                            <Border.Behaviors>
+                                <behaviors:TapFeedbackBehavior />
+                            </Border.Behaviors>
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding OpenNotificationsCommand}" />
+                            </Border.GestureRecognizers>
                             <Grid>
-                                <Label Text="BELL" FontSize="9" TextColor="White" HorizontalOptions="Center" VerticalOptions="Center" />
-                                <Ellipse Fill="#F4C542" WidthRequest="8" HeightRequest="8" HorizontalOptions="End" VerticalOptions="Start" Margin="0,8,8,0" />
+                                <Path Stroke="White"
+                                      StrokeThickness="2"
+                                      StrokeLineCap="Round"
+                                      StrokeLineJoin="Round"
+                                      WidthRequest="20"
+                                      HeightRequest="20"
+                                      HorizontalOptions="Center"
+                                      VerticalOptions="Center"
+                                      Data="M10,18 A2,2 0 0 0 14,18 M6,15 L18,15 M8,15 L8,9 A4,4 0 0 1 16,9 L16,15 M12,3 L12,5" />
+                                <Border BackgroundColor="{DynamicResource Danger}"
+                                        Stroke="Transparent"
+                                        StrokeShape="RoundRectangle 9"
+                                        Padding="5,1"
+                                        HorizontalOptions="End"
+                                        VerticalOptions="Start"
+                                        Margin="0,5,4,0"
+                                        IsVisible="{Binding HasUnreadNotifications}">
+                                    <Label Text="{Binding UnreadNotificationCount}" TextColor="White" FontSize="10" FontFamily="OpenSansSemibold" />
+                                </Border>
                             </Grid>
                         </Border>
                     </Grid>
@@ -40,7 +76,11 @@
                     <Border BackgroundColor="White" Stroke="Transparent" StrokeShape="RoundRectangle 24" HeightRequest="54">
                         <Grid ColumnDefinitions="Auto,*" Padding="16,0" ColumnSpacing="10">
                             <Label Text="SEARCH" FontSize="10" TextColor="{StaticResource Gray3}" VerticalOptions="Center" />
-                            <Entry Grid.Column="1" Placeholder="Search laundry store or service" Text="{Binding SearchText}" />
+                            <Entry Grid.Column="1"
+                                   Placeholder="Search laundry store or service"
+                                   Text="{Binding SearchText}"
+                                   ReturnType="Search"
+                                   ReturnCommand="{Binding GoToStoresCommand}" />
                         </Grid>
                     </Border>
 
@@ -97,6 +137,8 @@
 
                 <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
                     <Border Style="{StaticResource CardBorderStyle}" Padding="12" HeightRequest="94">
+                        <Border.Behaviors><behaviors:TapFeedbackBehavior /></Border.Behaviors>
+                        <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding QuickServiceCommand}" CommandParameter="Wash Only" /></Border.GestureRecognizers>
                         <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
                             <Border BackgroundColor="{StaticResource Mint}" WidthRequest="44" HeightRequest="44" Stroke="Transparent" StrokeShape="RoundRectangle 22">
                                 <Path Stroke="{StaticResource TealDark}" StrokeThickness="2" StrokeLineCap="Round" Data="M13,24 C20,17 27,31 35,22" />
@@ -105,6 +147,8 @@
                         </VerticalStackLayout>
                     </Border>
                     <Border Grid.Column="1" Style="{StaticResource CardBorderStyle}" Padding="12" HeightRequest="94">
+                        <Border.Behaviors><behaviors:TapFeedbackBehavior /></Border.Behaviors>
+                        <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding QuickServiceCommand}" CommandParameter="Wash &amp; Iron" /></Border.GestureRecognizers>
                         <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
                             <Border BackgroundColor="{StaticResource Mint}" WidthRequest="44" HeightRequest="44" Stroke="Transparent" StrokeShape="RoundRectangle 22">
                                 <Path Stroke="{StaticResource TealDark}" StrokeThickness="2" StrokeLineCap="Round" StrokeLineJoin="Round" Data="M20,32 L30,14 M22,18 L30,14 L34,22 M15,24 C22,17 28,31 36,23" />
@@ -113,6 +157,8 @@
                         </VerticalStackLayout>
                     </Border>
                     <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}" Padding="12" HeightRequest="94">
+                        <Border.Behaviors><behaviors:TapFeedbackBehavior /></Border.Behaviors>
+                        <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding QuickServiceCommand}" CommandParameter="Iron Only" /></Border.GestureRecognizers>
                         <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
                             <Border BackgroundColor="{StaticResource Mint}" WidthRequest="44" HeightRequest="44" Stroke="Transparent" StrokeShape="RoundRectangle 22">
                                 <Path Stroke="{StaticResource TealDark}" StrokeThickness="2" StrokeLineCap="Round" StrokeLineJoin="Round" Data="M16,20 L24,16 L32,20 L28,24 L28,34 L20,34 L20,24 Z" />
@@ -121,6 +167,8 @@
                         </VerticalStackLayout>
                     </Border>
                     <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}" Padding="12" HeightRequest="94">
+                        <Border.Behaviors><behaviors:TapFeedbackBehavior /></Border.Behaviors>
+                        <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding QuickServiceCommand}" CommandParameter="Dry Clean" /></Border.GestureRecognizers>
                         <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
                             <Border BackgroundColor="{StaticResource Mint}" WidthRequest="44" HeightRequest="44" Stroke="Transparent" StrokeShape="RoundRectangle 22">
                                 <Path Stroke="{StaticResource TealDark}" StrokeThickness="2" StrokeLineCap="Round" StrokeLineJoin="Round" Data="M15,30 L19,20 L24,28 L29,20 L33,30 Z M16,34 L32,34" />
@@ -129,6 +177,8 @@
                         </VerticalStackLayout>
                     </Border>
                     <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource CardBorderStyle}" Padding="12" HeightRequest="94">
+                        <Border.Behaviors><behaviors:TapFeedbackBehavior /></Border.Behaviors>
+                        <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding QuickServiceCommand}" CommandParameter="Bedsheets" /></Border.GestureRecognizers>
                         <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
                             <Border BackgroundColor="{StaticResource Mint}" WidthRequest="44" HeightRequest="44" Stroke="Transparent" StrokeShape="RoundRectangle 22">
                                 <Path Stroke="{StaticResource TealDark}" StrokeThickness="2" StrokeLineCap="Round" StrokeLineJoin="Round" Data="M14,30 L14,22 L34,22 L34,34 M14,34 L34,34 M17,22 L17,18 L31,18 L31,22" />
@@ -137,6 +187,8 @@
                         </VerticalStackLayout>
                     </Border>
                     <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource CardBorderStyle}" Padding="12" HeightRequest="94">
+                        <Border.Behaviors><behaviors:TapFeedbackBehavior /></Border.Behaviors>
+                        <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding QuickServiceCommand}" CommandParameter="Suits" /></Border.GestureRecognizers>
                         <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
                             <Border BackgroundColor="{StaticResource Mint}" WidthRequest="44" HeightRequest="44" Stroke="Transparent" StrokeShape="RoundRectangle 22">
                                 <Path Stroke="{StaticResource TealDark}" StrokeThickness="2" StrokeLineCap="Round" StrokeLineJoin="Round" Data="M15,30 L19,20 L24,28 L29,20 L33,30 Z M16,34 L32,34" />
@@ -240,6 +292,9 @@
                     <Border.Behaviors>
                         <behaviors:TapFeedbackBehavior />
                     </Border.Behaviors>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding ApplyPromoCommand}" />
+                    </Border.GestureRecognizers>
                     <Grid ColumnDefinitions="54,*,Auto" ColumnSpacing="12">
                         <Border BackgroundColor="#2B9278" WidthRequest="48" HeightRequest="48" Stroke="Transparent" StrokeShape="RoundRectangle 24">
                             <Path Stroke="White" StrokeThickness="2" StrokeLineCap="Round" StrokeLineJoin="Round" Data="M17,24 L30,15 L35,20 L22,32 Z M28,17 L33,22" />
@@ -252,14 +307,20 @@
                     </Grid>
                 </Border>
 
-                <Border Style="{StaticResource CardBorderStyle}">
+                <Border Style="{StaticResource CardBorderStyle}" IsVisible="{Binding HasReorder}">
+                    <Border.Behaviors>
+                        <behaviors:TapFeedbackBehavior />
+                    </Border.Behaviors>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding ReorderCommand}" />
+                    </Border.GestureRecognizers>
                     <Grid ColumnDefinitions="54,*,Auto" ColumnSpacing="12">
                         <Border BackgroundColor="{StaticResource Mint}" WidthRequest="44" HeightRequest="44" Stroke="Transparent" StrokeShape="RoundRectangle 22">
                             <Path Stroke="{StaticResource TealDark}" StrokeThickness="2" StrokeLineCap="Round" StrokeLineJoin="Round" Data="M14,18 L24,13 L34,18 L34,30 L24,35 L14,30 Z M24,13 L24,35 M14,18 L24,23 L34,18" />
                         </Border>
                         <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                            <Label Text="Reorder from FreshFold" FontFamily="OpenSansSemibold" FontSize="14" />
-                            <Label Text="Wash Only · 5 kg · ₦3,000" FontSize="12" TextColor="{StaticResource Gray3}" />
+                            <Label Text="{Binding ReorderTitle}" FontFamily="OpenSansSemibold" FontSize="14" />
+                            <Label Text="{Binding ReorderSubtitle}" FontSize="12" TextColor="{StaticResource Gray3}" />
                         </VerticalStackLayout>
                         <Border Grid.Column="2" BackgroundColor="{StaticResource Mint}" Stroke="Transparent" StrokeShape="RoundRectangle 18" Padding="14,8" VerticalOptions="Center">
                             <Label Text="Reorder" TextColor="{StaticResource TealDark}" FontSize="12" FontFamily="OpenSansSemibold" />

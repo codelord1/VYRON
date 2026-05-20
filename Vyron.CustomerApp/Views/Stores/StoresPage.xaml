@@ -8,9 +8,9 @@
              x:Name="ThisPage"
              x:DataType="vm:StoresViewModel"
              Shell.NavBarIsVisible="False"
-             BackgroundColor="{StaticResource Bg}">
+             BackgroundColor="{DynamicResource Bg}">
 
-    <RefreshView Command="{Binding LoadCommand}" IsRefreshing="{Binding IsBusy}">
+    <RefreshView Command="{Binding LoadCommand}" IsRefreshing="{Binding IsRefreshing}">
         <CollectionView ItemsSource="{Binding StoreItems}" SelectionMode="None">
             <CollectionView.Header>
                 <VerticalStackLayout Padding="20,18,20,14" Spacing="16">
@@ -86,6 +86,9 @@
                                     <behaviors:TapFeedbackBehavior />
                                 </Border.Behaviors>
                                 <Label Text="Cheapest" FontSize="12" />
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="cheapest" />
+                                </Border.GestureRecognizers>
                             </Border>
                         </HorizontalStackLayout>
                     </ScrollView>
@@ -163,3 +166,4 @@
         </CollectionView>
     </RefreshView>
 </ContentPage>
+

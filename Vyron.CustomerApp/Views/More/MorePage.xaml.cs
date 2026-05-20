@@ -18,6 +18,7 @@ public partial class MorePage : ContentPage
     {
         base.OnAppearing();
         _vm.RefreshUserInfo();
+        _ = _vm.RefreshNotificationCountAsync();
     }
 
     private async void OnPaymentMethodsTapped(object sender, TappedEventArgs e)

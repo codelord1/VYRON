@@ -71,9 +71,13 @@ public partial class TrackViewModel : BaseViewModel
     private async Task LoadAsync()
     {
         if (IsBusy)
+        {
+            IsRefreshing = false;
             return;
+        }
 
         IsBusy = true;
+        IsRefreshing = true;
         try
         {
             ClearMessages();
@@ -125,6 +129,7 @@ public partial class TrackViewModel : BaseViewModel
         finally
         {
             IsBusy = false;
+            IsRefreshing = false;
         }
     }
 
@@ -247,19 +252,29 @@ public partial class TrackViewModel : BaseViewModel
 public partial class MoreViewModel : BaseViewModel
 {
     private readonly IAuthService _auth;
+    private readonly NotificationService _notifications;
 
     [ObservableProperty] private string _userName    = "VYRON User";
     [ObservableProperty] private string _userInitials = "V";
     [ObservableProperty] private string _userPhone   = "";
     [ObservableProperty] private string _selectedTheme = AppThemeService.CurrentTheme;
+    [ObservableProperty] private int _notificationCount;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsNotNavigating))]
     private bool _isNavigating;
 
     public IReadOnlyList<string> ThemeOptions => AppThemeService.ThemeOptions;
     public bool IsNotNavigating => !IsNavigating;
+    public bool HasNotificationCount => NotificationCount > 0;
 
-    public MoreViewModel(IAuthService auth) => _auth = auth;
+    public MoreViewModel(IAuthService auth, NotificationService notifications)
+    {
+        _auth = auth;
+        _notifications = notifications;
+    }
+
+    partial void OnNotificationCountChanged(int value) =>
+        OnPropertyChanged(nameof(HasNotificationCount));
 
     partial void OnSelectedThemeChanged(string value)
     {
@@ -278,6 +293,19 @@ public partial class MoreViewModel : BaseViewModel
         var parts = UserName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         UserInitials = string.Concat(parts.Take(2).Select(p => p[0].ToString().ToUpperInvariant()));
         if (string.IsNullOrEmpty(UserInitials)) UserInitials = "V";
+    }
+
+    public async Task RefreshNotificationCountAsync()
+    {
+        if (!ApiErrorHelper.HasInternetAccess)
+            return;
+
+        var (notifications, error) = await _notifications.GetMyNotificationsAsync();
+        if (error == null && notifications != null)
+        {
+            NotificationCount = notifications.Count(n => !n.IsRead);
+            OnPropertyChanged(nameof(HasNotificationCount));
+        }
     }
 
     [RelayCommand]
@@ -453,14 +481,28 @@ public partial class NotificationsViewModel : BaseViewModel
     [RelayCommand]
     private async Task LoadAsync()
     {
-        IsBusy = true;
-        var (data, _) = await SafeCallAsync(() => _notifications.GetMyNotificationsAsync(), "notifications");
-        Items.Clear();
-        foreach (var n in data ?? Enumerable.Empty<NotificationDto>())
-            Items.Add(n);
-        UnreadCount = Items.Count(n => !n.IsRead);
-        OnPropertyChanged(nameof(IsEmpty));
-        IsBusy = false;
+        if (IsBusy)
+        {
+            IsRefreshing = false;
+            return;
+        }
+
+        try
+        {
+            var (data, _) = await SafeRefreshCallAsync(() => _notifications.GetMyNotificationsAsync(), "notifications");
+            if (data != null)
+            {
+                Items.Clear();
+                foreach (var n in data)
+                    Items.Add(n);
+            }
+            UnreadCount = Items.Count(n => !n.IsRead);
+            OnPropertyChanged(nameof(IsEmpty));
+        }
+        finally
+        {
+            IsRefreshing = false;
+        }
     }
 
     [RelayCommand]
@@ -508,8 +550,16 @@ public partial class MessageRiderViewModel : BaseViewModel
         { SetError("Invalid order."); return; }
 
         IsBusy = true;
-        var (data, error) = await _riderMessages.SendAsync(orderId, Message.Trim());
-        IsBusy = false;
+        object? data = null;
+        string? error = null;
+        try
+        {
+            (data, error) = await _riderMessages.SendAsync(orderId, Message.Trim());
+        }
+        finally
+        {
+            IsBusy = false;
+        }
 
         if (data != null)
         {

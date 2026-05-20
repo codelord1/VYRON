@@ -15,6 +15,9 @@ public abstract partial class BaseViewModel : ObservableObject
     [ObservableProperty]
     private string? _successMessage;
 
+    [ObservableProperty]
+    private bool _isRefreshing;
+
     public bool IsNotBusy => !IsBusy;
 
     protected void SetError(string? message) => ErrorMessage = FriendlyError(message);
@@ -50,6 +53,21 @@ public abstract partial class BaseViewModel : ObservableObject
             return (data, false);
         }
         finally { IsBusy = false; }
+    }
+
+    protected async Task<(T? result, bool handled)> SafeRefreshCallAsync<T>(
+        Func<Task<(T? Data, string? Error)>> call,
+        string? errorContext = null)
+    {
+        IsRefreshing = true;
+        try
+        {
+            return await SafeCallAsync(call, errorContext);
+        }
+        finally
+        {
+            IsRefreshing = false;
+        }
     }
 
     private static string? FriendlyError(string? message)

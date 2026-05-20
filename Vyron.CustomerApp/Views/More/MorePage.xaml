@@ -44,15 +44,15 @@
                             Padding="18,14">
                         <Grid ColumnDefinitions="*,*,*">
                             <VerticalStackLayout Spacing="2" HorizontalOptions="Center">
-                                <Label Text="24" TextColor="White" FontFamily="OpenSansSemibold" FontSize="16" HorizontalTextAlignment="Center" />
+                                <Label Text="0" TextColor="White" FontFamily="OpenSansSemibold" FontSize="16" HorizontalTextAlignment="Center" />
                                 <Label Text="ORDERS" TextColor="#D9F8EC" FontSize="11" HorizontalTextAlignment="Center" />
                             </VerticalStackLayout>
                             <VerticalStackLayout Grid.Column="1" Spacing="2" HorizontalOptions="Center">
-                                <Label Text="₦12k" TextColor="White" FontFamily="OpenSansSemibold" FontSize="16" HorizontalTextAlignment="Center" />
+                                <Label Text="₦0" TextColor="White" FontFamily="OpenSansSemibold" FontSize="16" HorizontalTextAlignment="Center" />
                                 <Label Text="SAVED" TextColor="#D9F8EC" FontSize="11" HorizontalTextAlignment="Center" />
                             </VerticalStackLayout>
                             <VerticalStackLayout Grid.Column="2" Spacing="2" HorizontalOptions="Center">
-                                <Label Text="4.9" TextColor="White" FontFamily="OpenSansSemibold" FontSize="16" HorizontalTextAlignment="Center" />
+                                <Label Text="0.0" TextColor="White" FontFamily="OpenSansSemibold" FontSize="16" HorizontalTextAlignment="Center" />
                                 <Label Text="RATING" TextColor="#D9F8EC" FontSize="11" HorizontalTextAlignment="Center" />
                             </VerticalStackLayout>
                         </Grid>
@@ -121,8 +121,8 @@
                                 <Label Text="Bell" FontSize="11" TextColor="{StaticResource TealDark}" HorizontalOptions="Center" VerticalOptions="Center" />
                             </Border>
                             <Label Grid.Column="1" Text="Notifications" FontFamily="OpenSansSemibold" FontSize="15" VerticalOptions="Center" />
-                            <Border Grid.Column="2" BackgroundColor="{StaticResource Danger}" Stroke="Transparent" StrokeShape="RoundRectangle 10" Padding="7,2" VerticalOptions="Center">
-                                <Label Text="3" TextColor="White" FontSize="11" FontFamily="OpenSansSemibold" />
+                            <Border Grid.Column="2" BackgroundColor="{StaticResource Danger}" Stroke="Transparent" StrokeShape="RoundRectangle 10" Padding="7,2" VerticalOptions="Center" IsVisible="{Binding HasNotificationCount}">
+                                <Label Text="{Binding NotificationCount}" TextColor="White" FontSize="11" FontFamily="OpenSansSemibold" />
                             </Border>
                             <Label Grid.Column="3" Text=">" FontSize="20" TextColor="{StaticResource Gray3}" VerticalOptions="Center" />
                         </Grid>

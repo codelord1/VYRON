@@ -62,10 +62,10 @@ public partial class ServiceSelectionViewModel : BaseViewModel
     private async Task LoadAsync()
     {
         if (!Guid.TryParse(StoreId, out var id)) return;
-        var (data, _) = await SafeCallAsync(() => _stores.GetStoreAsync(id), "stores");
-        Store = data;
-        if (Store != null)
+        var (data, _) = await SafeRefreshCallAsync(() => _stores.GetStoreAsync(id), "stores");
+        if (data != null)
         {
+            Store = data;
             _draft.SetStore(id, Store.Name, Store.PickupFee, Store.DeliveryFee);
             // Build service card wrappers
             ServiceCards.Clear();
@@ -362,15 +362,28 @@ public partial class OrdersViewModel : BaseViewModel
     private async Task LoadAsync()
     {
         if (IsBusy)
+        {
+            IsRefreshing = false;
             return;
+        }
 
-        var (data, _) = await SafeCallAsync(() => _orders.GetMyOrdersAsync(CurrentPage), "orders");
-        Orders_.Clear();
-        foreach (var o in data ?? Enumerable.Empty<OrderDto>())
-            Orders_.Add(o);
-        IsEmpty = Orders_.Count == 0;
-        _hasLoaded = true;
-        _lastLoadedAt = DateTime.UtcNow;
+        try
+        {
+            var (data, _) = await SafeRefreshCallAsync(() => _orders.GetMyOrdersAsync(CurrentPage), "orders");
+            if (data != null)
+            {
+                Orders_.Clear();
+                foreach (var o in data)
+                    Orders_.Add(o);
+            }
+            IsEmpty = Orders_.Count == 0;
+            _hasLoaded = true;
+            _lastLoadedAt = DateTime.UtcNow;
+        }
+        finally
+        {
+            IsRefreshing = false;
+        }
     }
 
     [RelayCommand]
@@ -424,8 +437,9 @@ public partial class OrderDetailsViewModel : BaseViewModel
     private async Task LoadAsync()
     {
         if (!Guid.TryParse(OrderId, out var id)) return;
-        var (data, _) = await SafeCallAsync(() => _orders.GetOrderAsync(id), "orders");
-        Order = data;
+        var (data, _) = await SafeRefreshCallAsync(() => _orders.GetOrderAsync(id), "orders");
+        if (data != null)
+            Order = data;
     }
 
     [RelayCommand]
