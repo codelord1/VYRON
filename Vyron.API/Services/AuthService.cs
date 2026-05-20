@@ -2,6 +2,7 @@ using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using MimeKit;
 using System.Net.Http;
 using Vyron.API.Data;
@@ -29,10 +30,13 @@ public class NotificationService : INotificationService
     private readonly ILogger<NotificationService> _logger;
     private readonly VyronDbContext _db;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly EmailSettings _email;
 
     public NotificationService(IConfiguration config, ILogger<NotificationService> logger,
-        VyronDbContext db, IHttpClientFactory httpClientFactory)
-    { _config = config; _logger = logger; _db = db; _httpClientFactory = httpClientFactory; }
+        VyronDbContext db, IHttpClientFactory httpClientFactory,
+        IOptions<EmailSettings> emailOptions)
+    { _config = config; _logger = logger; _db = db; _httpClientFactory = httpClientFactory;
+      _email = emailOptions.Value; }
 
     public async Task SendSmsAsync(string phone, string message, Guid? userId = null,
         string? entityType = null, Guid? entityId = null)
@@ -89,41 +93,51 @@ public class NotificationService : INotificationService
             Subject = subject.Length > 300 ? subject[..300] : subject,
             Body = htmlBody.Length > 4000 ? htmlBody[..4000] : htmlBody,
             RelatedEntityType = entityType, RelatedEntityId = entityId,
-            Provider = "SMTP", Status = "Pending"
+            Provider = _email.Provider, Status = "Pending"
         };
         _db.CommunicationLogs.Add(log);
 
-        var host = _config["Email:Host"];
-        var username = _config["Email:Username"];
-        var password = _config["Email:Password"];
-
-        if (!string.IsNullOrEmpty(host) && !string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
+        if (!_email.Enabled)
+        {
+            log.Status = "Skipped"; log.ErrorMessage = "Email disabled";
+            _logger.LogWarning("[EMAIL-SKIP] Email.Enabled=false -> {To}: {Subject}", to, subject);
+        }
+        else if (!_email.IsFullyConfigured)
+        {
+            log.Status = "Skipped"; log.ErrorMessage = "Email provider not fully configured (missing host, username or password)";
+            _logger.LogWarning("[EMAIL-SKIP] not configured -> {To}: {Subject}", to, subject);
+        }
+        else
         {
             try
             {
-                var email = new MimeMessage();
-                email.From.Add(new MailboxAddress(_config["Email:FromName"] ?? "VYRON", username));
-                email.To.Add(MailboxAddress.Parse(to));
-                email.Subject = subject;
-                email.Body = new BodyBuilder { HtmlBody = htmlBody }.ToMessageBody();
+                var msg = new MimeMessage();
+                msg.From.Add(new MailboxAddress(_email.FromName, _email.FromEmail));
+                msg.To.Add(MailboxAddress.Parse(to));
+                msg.Subject = subject;
+                msg.Body = new BodyBuilder { HtmlBody = htmlBody }.ToMessageBody();
+
+                var socketOpt = _email.UseSsl
+                    ? SecureSocketOptions.SslOnConnect
+                    : _email.UseStartTls
+                        ? SecureSocketOptions.StartTls
+                        : SecureSocketOptions.None;
 
                 using var smtp = new SmtpClient();
-                await smtp.ConnectAsync(host, int.Parse(_config["Email:Port"] ?? "587"), SecureSocketOptions.StartTls);
-                await smtp.AuthenticateAsync(username, password);
-                await smtp.SendAsync(email);
+                smtp.Timeout = _email.TimeoutSeconds * 1000;
+                await smtp.ConnectAsync(_email.Host, _email.Port, socketOpt);
+                await smtp.AuthenticateAsync(_email.Username, _email.Password);
+                await smtp.SendAsync(msg);
                 await smtp.DisconnectAsync(true);
+
                 log.Status = "Sent"; log.SentAt = DateTime.UtcNow;
+                _logger.LogInformation("[EMAIL] sent to {To} | subject: {Subject}", to, subject);
             }
             catch (Exception ex)
             {
                 log.Status = "Failed"; log.ErrorMessage = ex.Message;
-                _logger.LogError(ex, "Email failed to {To}", to);
+                _logger.LogError(ex, "[EMAIL-FAIL] to {To} | subject: {Subject}", to, subject);
             }
-        }
-        else
-        {
-            log.Status = "Skipped"; log.ErrorMessage = "Email provider not configured";
-            _logger.LogWarning("[EMAIL-SKIP] no provider -> {To}: {Subject}", to, subject);
         }
 
         try { await _db.SaveChangesAsync(); }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
@@ -14,6 +15,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using Vyron.API.Data;
 using Vyron.API.Hubs;
+using Vyron.API.Models;
 using Vyron.API.Persistence;
 using Vyron.API.Services;
 using Vyron.Shared.Enums;
@@ -127,6 +129,11 @@ builder.Services.AddCors(opt => opt.AddPolicy("VyronV3", p =>
 // ─── SIGNALR ──────────────────────────────────────────────────────
 builder.Services.AddSignalR();
 
+// ─── EMAIL SETTINGS ───────────────────────────────────────────────
+// Password bound from user-secrets (Development) or Email__Password env-var (Production).
+// The Password property is NEVER written to any appsettings file.
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
+
 // ─── SERVICES (DI) ────────────────────────────────────────────────
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -177,6 +184,18 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
+// ─── EMAIL CONFIG STARTUP LOG ─────────────────────────────────────
+{
+    var emailCfg = app.Services.GetRequiredService<IOptions<EmailSettings>>().Value;
+    if (!emailCfg.Enabled)
+        Log.Information("[INFO] Email sending is disabled.");
+    else if (string.IsNullOrWhiteSpace(emailCfg.Password))
+        Log.Warning("[WARN] Email is enabled but Email:Password is missing. Set via user-secrets or env var.");
+    else
+        Log.Information("[OK] Email provider configured: {Provider} {Host}:{Port} STARTTLS={StartTls}",
+            emailCfg.Provider, emailCfg.Host, emailCfg.Port, emailCfg.UseStartTls);
+}
 
 // ─── REQUEST TIMING MIDDLEWARE ────────────────────────────────────
 // Logs path, elapsed ms, HTTP status, and user ID for CustomerApp requests.
