@@ -1,14 +1,20 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Vyron.API.Data;
 
 #nullable disable
 
-namespace Vyron.API.Migrations;
+namespace Vyron.API.Migrations
+{
 
 /// <summary>
 /// Additive migration — adds Coupons + CouponUsages tables and seeds VYRON20 promo.
 /// All DDL is idempotent (IF NOT EXISTS guards) so it is safe on the current DB
 /// as well as fresh installations.
 /// </summary>
+[DbContext(typeof(VyronDbContext))]
+[Migration("20260520150000_AddCoupons")]
 public partial class AddCoupons : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
@@ -93,4 +99,6 @@ IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id = OBJECT_ID('Coupons') AND 
     DROP TABLE Coupons;
 ");
     }
+}
+
 }
