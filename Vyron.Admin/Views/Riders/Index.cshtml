@@ -1,5 +1,8 @@
 @model List<Rider>
-@{ ViewData["Title"] = "Riders"; }
+@{
+    ViewData["Title"] = "Riders";
+    var deliveryMap = (Dictionary<Guid, int>)(ViewBag.DeliveryCountsMap ?? new Dictionary<Guid, int>());
+}
 
 <div class="page-header">
     <h1>Riders</h1>
@@ -9,37 +12,112 @@
 <div class="table-wrap">
     <table class="table-mobile-card">
         <thead>
-            <tr><th>Name</th><th>Phone</th><th>Vehicle</th><th>Status</th><th>Deliveries</th><th>Earnings</th><th>Active Orders</th><th></th></tr>
+            <tr>
+                <th>Name / Vehicle</th>
+                <th>Status</th>
+                <th>Pickup Trips</th>
+                <th>Delivery Trips</th>
+                <th>Total Trips</th>
+                <th>Earnings</th>
+                <th>Active Jobs</th>
+                <th></th>
+            </tr>
         </thead>
         <tbody>
             @foreach (var r in Model)
             {
-                var active = r.Orders.Count(o => o.Status != OrderStatus.Completed && o.Status != OrderStatus.Cancelled);
+                var pickupTrips   = r.Orders.Count(o => o.Status == OrderStatus.Completed || o.Status == OrderStatus.Delivered);
+                var activePickup  = r.Orders.Count(o => o.Status == OrderStatus.PickUpRiderAssigned || o.Status == OrderStatus.RiderAssigned || o.Status == OrderStatus.PickedUp);
+                var deliveryTrips = deliveryMap.TryGetValue(r.Id, out var dt) ? dt : 0;
+                var totalTrips    = r.TotalDeliveries > 0 ? r.TotalDeliveries : (pickupTrips + deliveryTrips);
+
                 <tr>
-                    <td class="text-bold">@r.User.FullName</td>
-                    <td>@r.User.Phone</td>
-                    <td>@r.VehicleType<br /><small class="text-muted">@r.VehiclePlate</small></td>
                     <td>
-                        <span class="badge badge-@(r.Status == RiderStatus.OnlineAvailable ? "success" : r.Status == RiderStatus.OnDelivery ? "info" : "gray")">
+                        <span class="text-bold">@r.User.FullName</span><br />
+                        <small class="text-muted">@r.User.Phone</small><br />
+                        <small class="text-muted">@r.VehicleType &mdash; @r.VehiclePlate</small>
+                        <div class="rider-stat-strip">
+                            @if (activePickup > 0)  { <span class="rider-stat pickup">@activePickup active pickup</span> }
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge badge-@(r.Status == RiderStatus.OnlineAvailable ? "success" : r.Status == RiderStatus.OnDelivery || r.Status == RiderStatus.OutForDelivery ? "info" : r.Status == RiderStatus.PickingUp ? "warn" : "gray")">
                             @r.Status
                         </span>
                     </td>
-                    <td>@r.TotalDeliveries</td>
-                    <td>₦@r.TotalEarnings.ToString("N0")</td>
-                    <td>@active</td>
                     <td>
+                        <span class="rider-stat pickup">@pickupTrips</span>
+                    </td>
+                    <td>
+                        <span class="rider-stat delivery">@deliveryTrips</span>
+                    </td>
+                    <td>
+                        <strong>@totalTrips</strong>
+                    </td>
+                    <td>
+                        <span class="rider-stat earnings">&#8358;@r.TotalEarnings.ToString("N0")</span>
+                    </td>
+                    <td>
+                        @{ var active = r.Orders.Count(o => o.Status != OrderStatus.Completed && o.Status != OrderStatus.Cancelled && o.Status != OrderStatus.Delivered); }
+                        @if (active > 0)
+                        {
+                            <span class="badge badge-info">@active job@(active != 1 ? "s" : "")</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted" style="font-size:12px;">Free</span>
+                        }
+                    </td>
+                    <td>
+                        <a href="/Riders/Details/@r.Id" class="btn btn-ghost btn-sm">View</a>
                         <form asp-action="ToggleOnline" method="post" style="display:inline;">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="id" value="@r.Id" />
-                            <button class="btn btn-secondary btn-sm">Toggle</button>
+                            <button class="btn btn-secondary btn-sm" title="Toggle online/offline">
+                                @(r.Status == RiderStatus.OnlineAvailable ? "Set Offline" : "Set Online")
+                            </button>
                         </form>
                     </td>
                 </tr>
             }
             @if (!Model.Any())
             {
-                <tr><td colspan="8" class="text-center text-muted" style="padding:30px;">No riders yet. <a href="/Riders/Create">Add the first one →</a></td></tr>
+                <tr>
+                    <td colspan="8" class="text-center text-muted" style="padding:40px 0;">
+                        No riders yet. <a href="/Riders/Create">Add the first one &rarr;</a>
+                    </td>
+                </tr>
             }
         </tbody>
     </table>
 </div>
+
+@if (Model.Any())
+{
+    <div class="stats-grid" style="margin-top:1.5rem;">
+        <div class="stat-card">
+            <div class="stat-label">Total Riders</div>
+            <div class="stat-value">@Model.Count</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Online / Available</div>
+            <div class="stat-value text-success">@Model.Count(r => r.Status == RiderStatus.OnlineAvailable)</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">On Delivery</div>
+            <div class="stat-value text-info">@Model.Count(r => r.Status == RiderStatus.OnDelivery || r.Status == RiderStatus.OutForDelivery)</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Total Pickup Trips</div>
+            <div class="stat-value">@Model.Sum(r => r.Orders.Count(o => o.Status == OrderStatus.Completed || o.Status == OrderStatus.Delivered))</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Total Delivery Trips</div>
+            <div class="stat-value">@deliveryMap.Values.Sum()</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Total Earnings Paid</div>
+            <div class="stat-value">&#8358;@Model.Sum(r => r.TotalEarnings).ToString("N0")</div>
+        </div>
+    </div>
+}

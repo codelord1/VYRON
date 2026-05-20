@@ -120,12 +120,48 @@
 
             <div class="topbar-actions">
                 <span class="topbar-date">@DateTime.Now.ToString("ddd, MMM dd yyyy")</span>
-                <button class="icon-button has-badge" type="button" aria-label="Notifications"><span>♧</span></button>
-                <a class="user-chip" href="/Account/Profile">
-                    <span class="chip-store">@initials.Substring(0, 1)</span>
-                    <span>@displayName</span>
-                    <span class="chip-caret">⌄</span>
+
+                @* Notification icon — links to Activity Logs for a real trail *@
+                <a href="@(isAdmin ? "/ActivityLogs" : "/StoreOwner/Orders")"
+                   class="icon-button topbar-notif" title="Notifications / Activity" aria-label="Notifications">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0m6 0H9" />
+                    </svg>
                 </a>
+
+                @* Profile dropdown *@
+                <div class="profile-drop-wrap" id="profileDropWrap">
+                    <button class="user-chip" type="button" id="profileDropBtn"
+                            aria-haspopup="true" aria-expanded="false" aria-controls="profileDropMenu">
+                        <span class="chip-avatar">@(initials.Length > 0 ? initials[0].ToString() : "V")</span>
+                        <span class="chip-name">@displayName</span>
+                        <span class="chip-caret" aria-hidden="true">&#8964;</span>
+                    </button>
+                    <div class="profile-drop-menu" id="profileDropMenu" role="menu" aria-labelledby="profileDropBtn" hidden>
+                        <div class="profile-drop-header">
+                            <span class="drop-avatar">@initials</span>
+                            <div class="drop-info">
+                                <strong>@displayName</strong>
+                                <small>@(User.IsInRole("SuperAdmin") ? "Super Admin" : isAdmin ? "Administrator" : "Store Owner")</small>
+                            </div>
+                        </div>
+                        <div class="profile-drop-divider"></div>
+                        <a href="/Account/Profile" class="profile-drop-item" role="menuitem">
+                            <span class="drop-item-icon" aria-hidden="true">&#128100;</span> Profile
+                        </a>
+                        <a href="/Account/ChangePassword" class="profile-drop-item" role="menuitem">
+                            <span class="drop-item-icon" aria-hidden="true">&#128274;</span> Change Password
+                        </a>
+                        <div class="profile-drop-divider"></div>
+                        <form asp-controller="Account" asp-action="Logout" method="post" style="display:contents;">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="profile-drop-item profile-drop-logout" role="menuitem">
+                                <span class="drop-item-icon" aria-hidden="true">&#8263;</span> Log Out
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -141,5 +177,30 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script src="~/js/admin.js" asp-append-version="true"></script>
 @await RenderSectionAsync("Scripts", required: false)
+<script>
+// ── Profile dropdown ──────────────────────────────────────────────
+(function () {
+    var btn  = document.getElementById('profileDropBtn');
+    var menu = document.getElementById('profileDropMenu');
+    var wrap = document.getElementById('profileDropWrap');
+    if (!btn || !menu) return;
+
+    function open()  { menu.hidden = false; btn.setAttribute('aria-expanded', 'true'); }
+    function close() { menu.hidden = true;  btn.setAttribute('aria-expanded', 'false'); }
+    function toggle(){ menu.hidden ? open() : close(); }
+
+    btn.addEventListener('click', function (e) { e.stopPropagation(); toggle(); });
+
+    // Close when clicking outside the dropdown wrap
+    document.addEventListener('click', function (e) {
+        if (!wrap.contains(e.target)) close();
+    });
+
+    // Close on Escape
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') close();
+    });
+})();
+</script>
 </body>
 </html>

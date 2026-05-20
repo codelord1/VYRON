@@ -287,8 +287,15 @@ public class AdminUserCreateVm
     [Required, MinLength(8)]
     public string Password { get; set; } = string.Empty;
 
-    /// <summary>True = AdminUser (limited), False = Admin (full admin access).</summary>
-    public bool IsAdminUser { get; set; } = true;
+    /// <summary>
+    /// Role to assign: "AdminUser", "Admin", or "SuperAdmin".
+    /// SuperAdmin is only honoured when the creating user is already SuperAdmin.
+    /// </summary>
+    [Required]
+    public string SelectedRole { get; set; } = "AdminUser";
+
+    // Legacy helper kept for backward compatibility (not used in new Create flow)
+    public bool IsAdminUser => SelectedRole == "AdminUser";
 }
 
 // ─── STORE STAFF ──────────────────────────────────────────────────

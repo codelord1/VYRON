@@ -3,43 +3,71 @@
 
 <div class="page-header">
     <h1>Create Admin User</h1>
-    <a href="/AdminUsers" class="btn btn-ghost btn-sm">← Back</a>
+    <a href="/AdminUsers" class="btn btn-ghost btn-sm">&larr; Back</a>
 </div>
 
-<div class="card" style="max-width:540px">
+<div class="card" style="max-width:560px;">
     <form asp-action="Create" method="post">
         @Html.AntiForgeryToken()
-        <asp-validation-summary asp-validation-summary="ModelOnly" class="alert alert-danger" />
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
         <div class="form-group">
             <label asp-for="FullName">Full Name</label>
-            <input asp-for="FullName" class="form-control" placeholder="John Doe" />
+            <input asp-for="FullName" class="form-control" placeholder="Jane Doe" autocomplete="off" />
             <span asp-validation-for="FullName" class="text-danger"></span>
         </div>
+
         <div class="form-group">
             <label asp-for="Phone">Phone</label>
-            <input asp-for="Phone" class="form-control" placeholder="+2348012345678" />
+            <input asp-for="Phone" class="form-control" placeholder="+2348012345678" autocomplete="off" />
             <span asp-validation-for="Phone" class="text-danger"></span>
         </div>
+
         <div class="form-group">
-            <label asp-for="Email">Email (optional)</label>
-            <input asp-for="Email" type="email" class="form-control" />
+            <label asp-for="Email">Email <span class="text-muted">(optional)</span></label>
+            <input asp-for="Email" type="email" class="form-control" autocomplete="off" />
         </div>
+
         <div class="form-group">
             <label asp-for="Password">Password</label>
-            <input asp-for="Password" type="password" class="form-control" />
+            <input asp-for="Password" type="password" class="form-control" autocomplete="new-password" />
             <span asp-validation-for="Password" class="text-danger"></span>
         </div>
+
         <div class="form-group">
             <label>Role</label>
-            <div class="radio-group">
-                <label><input asp-for="IsAdminUser" type="radio" value="true" /> <strong>AdminUser</strong> — limited admin (cannot manage other admins)</label><br />
-                <label><input asp-for="IsAdminUser" type="radio" value="false" /> <strong>Admin</strong> — full platform administrator</label>
-            </div>
+            <select asp-for="SelectedRole" class="form-control" id="roleSelect">
+                <option value="AdminUser">AdminUser &mdash; limited access (cannot manage other admins)</option>
+                <option value="Admin">Admin &mdash; full platform administrator</option>
+                @if (User.IsInRole("SuperAdmin"))
+                {
+                    <option value="SuperAdmin">SuperAdmin &mdash; platform superadmin (full access)</option>
+                }
+            </select>
+            @if (User.IsInRole("SuperAdmin"))
+            {
+                <p class="text-muted" style="font-size:11px;margin-top:4px;" id="superAdminNote" hidden>
+                    &#9888; SuperAdmin accounts have unrestricted access to the entire platform. Create with care.
+                </p>
+            }
         </div>
+
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Create Admin User</button>
+            <button type="submit" class="btn btn-primary">Create Account</button>
             <a href="/AdminUsers" class="btn btn-ghost">Cancel</a>
         </div>
     </form>
 </div>
+
+@section Scripts {
+<script>
+(function () {
+    var sel  = document.getElementById('roleSelect');
+    var note = document.getElementById('superAdminNote');
+    if (!sel || !note) return;
+    function update() { note.hidden = sel.value !== 'SuperAdmin'; }
+    sel.addEventListener('change', update);
+    update();
+})();
+</script>
+}

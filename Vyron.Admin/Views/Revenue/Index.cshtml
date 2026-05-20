@@ -1,35 +1,68 @@
 @{
-    ViewData["Title"] = "Revenue Summary";
-    var fmt = (decimal d) => d.ToString("N2");
+    ViewData["Title"] = "Revenue";
+    ViewData["Subtitle"] = "Platform earnings, fees and payout estimates";
+    var fmt  = (decimal d) => "&#8358;" + d.ToString("N0");
+    var fmtD = (decimal d) => "&#8358;" + d.ToString("N2");
 }
 
-<div class="filter-bar">
-    <form method="get" class="filter-form">
+@* ── Period quick-select ──────────────────────────────────────────── *@
+<div class="filter-bar" style="margin-bottom:1rem;">
+    <div class="period-btns">
+        @{
+            var today7From  = DateTime.UtcNow.AddDays(-7).ToString("yyyy-MM-dd");
+            var today30From = DateTime.UtcNow.AddDays(-30).ToString("yyyy-MM-dd");
+            var todayStr    = DateTime.UtcNow.ToString("yyyy-MM-dd");
+            var todayFrom   = DateTime.UtcNow.Date.ToString("yyyy-MM-dd");
+        }
+        <a href="/Revenue?from=@todayFrom&to=@todayStr"
+           class="period-btn @(ViewBag.From == todayFrom ? "active" : "")">Today</a>
+        <a href="/Revenue?from=@today7From&to=@todayStr"
+           class="period-btn @(ViewBag.From == today7From ? "active" : "")">Last 7 days</a>
+        <a href="/Revenue?from=@today30From&to=@todayStr"
+           class="period-btn @(ViewBag.From == today30From ? "active" : "")">Last 30 days</a>
+    </div>
+    <form method="get" class="filter-form" style="display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap;">
         <div class="filter-group">
-            <label>From</label>
-            <input type="date" name="from" value="@ViewBag.From" class="form-control" />
+            <label style="font-size:12px;font-weight:600;">From</label>
+            <input type="date" name="from" value="@ViewBag.From" class="form-control" style="min-width:130px;" />
         </div>
         <div class="filter-group">
-            <label>To</label>
-            <input type="date" name="to" value="@ViewBag.To" class="form-control" />
+            <label style="font-size:12px;font-weight:600;">To</label>
+            <input type="date" name="to" value="@ViewBag.To" class="form-control" style="min-width:130px;" />
         </div>
-        <button type="submit" class="btn btn-primary">Apply</button>
+        @if (ViewBag.Stores != null)
+        {
+            <div class="filter-group">
+                <label style="font-size:12px;font-weight:600;">Store</label>
+                <select name="storeId" class="form-control" style="min-width:160px;">
+                    <option value="">All Stores</option>
+                    @foreach (var s in (IEnumerable<dynamic>)ViewBag.Stores)
+                    {
+                        <option value="@s.Id" selected="@(ViewBag.StoreId?.ToString() == s.Id.ToString())">@s.Name</option>
+                    }
+                </select>
+            </div>
+        }
+        <button type="submit" class="btn btn-primary" style="align-self:flex-end;">Apply</button>
     </form>
 </div>
 
+@* ── Order counts row ─────────────────────────────────────────────── *@
 <div class="stats-grid">
     <div class="stat-card">
         <div class="stat-label">Total Orders</div>
         <div class="stat-value">@ViewBag.TotalOrders</div>
-        <div class="stat-sub">In period</div>
+        <div class="stat-sub">@ViewBag.From &rarr; @ViewBag.To</div>
     </div>
     <div class="stat-card">
-        <div class="stat-label">Completed</div>
+        <div class="stat-label">Completed / Paid</div>
         <div class="stat-value text-success">@ViewBag.CompletedCount</div>
+        <div class="stat-sub">Fully paid orders</div>
     </div>
     <div class="stat-card">
         <div class="stat-label">Pending / Partial</div>
         <div class="stat-value text-warn">@ViewBag.PendingCount</div>
+        <div class="stat-sub">Awaiting full payment</div>
     </div>
     <div class="stat-card">
         <div class="stat-label">Cancelled</div>
@@ -37,38 +70,114 @@
     </div>
 </div>
 
+@* ── Revenue KPI row ──────────────────────────────────────────────── *@
 <div class="stats-grid" style="margin-top:1rem;">
     <div class="stat-card">
         <div class="stat-label">Total Order Value</div>
-        <div class="stat-value">₦@fmt((decimal)ViewBag.TotalOrderValue)</div>
+        <div class="stat-value">@Html.Raw(fmt((decimal)ViewBag.TotalOrderValue))</div>
+        <div class="stat-sub">All orders in period</div>
     </div>
     <div class="stat-card">
         <div class="stat-label">Completed Revenue</div>
-        <div class="stat-value text-success">₦@fmt((decimal)ViewBag.CompletedRevenue)</div>
+        <div class="stat-value text-success">@Html.Raw(fmt((decimal)ViewBag.CompletedRevenue))</div>
+        <div class="stat-sub">Confirmed + fully paid</div>
     </div>
     <div class="stat-card">
         <div class="stat-label">Pickup Fees Collected</div>
-        <div class="stat-value">₦@fmt((decimal)ViewBag.PickupFeesCollected)</div>
+        <div class="stat-value">@Html.Raw(fmt((decimal)ViewBag.PickupFeesCollected))</div>
+        <div class="stat-sub">From successful payments</div>
     </div>
     <div class="stat-card">
-        <div class="stat-label">Delivery Fees</div>
-        <div class="stat-value">₦@fmt((decimal)ViewBag.DeliveryFees)</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label">Platform Commission (@ViewBag.CommissionPct%)</div>
-        <div class="stat-value">₦@fmt((decimal)ViewBag.CommissionEstimate)</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label">Store Payout Estimate</div>
-        <div class="stat-value">₦@fmt((decimal)ViewBag.StorePayoutEstimate)</div>
+        <div class="stat-label">Delivery Fees (est.)</div>
+        <div class="stat-value">@Html.Raw(fmt((decimal)ViewBag.DeliveryFees))</div>
+        <div class="stat-sub">From order records</div>
     </div>
 </div>
 
-@if (ViewBag.RecentPayments != null)
+@* ── Platform + payout row ────────────────────────────────────────── *@
+<div class="stats-grid" style="margin-top:1rem;">
+    <div class="stat-card" style="border-left:3px solid var(--teal-dark);">
+        <div class="stat-label">Platform Commission (@ViewBag.CommissionPct%)</div>
+        <div class="stat-value text-teal">@Html.Raw(fmt((decimal)ViewBag.CommissionEstimate))</div>
+        <div class="stat-sub">Estimate based on completed revenue</div>
+    </div>
+    <div class="stat-card" style="border-left:3px solid #12a150;">
+        <div class="stat-label">Store Payout Estimate</div>
+        <div class="stat-value" style="color:#12a150;">@Html.Raw(fmt((decimal)ViewBag.StorePayoutEstimate))</div>
+        <div class="stat-sub">Completed revenue minus commission</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Pending Value</div>
+        <div class="stat-value text-warn">@Html.Raw(fmt((decimal)ViewBag.PendingOrderValue))</div>
+        <div class="stat-sub">Orders not yet fully paid</div>
+    </div>
+    @if (ViewBag.CancelledValue != null)
+    {
+        <div class="stat-card">
+            <div class="stat-label">Cancelled Value</div>
+            <div class="stat-value text-danger">@Html.Raw(fmt((decimal)ViewBag.CancelledValue))</div>
+            <div class="stat-sub">Lost from cancellations</div>
+        </div>
+    }
+</div>
+
+<p class="text-muted" style="font-size:11px;margin:6px 0 16px;">
+    * Commission and payout values are <strong>estimates</strong> based on order totals.
+    Actual disbursements depend on confirmed payment records.
+</p>
+
+@* ── Per-store breakdown ──────────────────────────────────────────── *@
+@if (ViewBag.StoreBreakdown != null)
 {
-    <div class="card" style="margin-top:1.5rem;">
-        <div class="card-header">Recent Successful Payments</div>
-        <div class="card-body p-0">
+    var sb = (IEnumerable<dynamic>)ViewBag.StoreBreakdown;
+    if (sb.Any())
+    {
+        <div class="card" style="margin-top:1rem;">
+            <div class="card-header">Store Revenue Breakdown</div>
+            <div class="card-body p-0">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Store</th>
+                            <th class="text-right">Orders</th>
+                            <th class="text-right">Revenue (est.)</th>
+                            <th class="text-right">Commission (est.)</th>
+                            <th class="text-right">Payout (est.)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in sb)
+                        {
+                            <tr>
+                                <td class="text-bold">@row.StoreName</td>
+                                <td class="text-right">@row.OrderCount</td>
+                                <td class="text-right">@Html.Raw(fmt((decimal)row.Revenue))</td>
+                                <td class="text-right text-teal">@Html.Raw(fmt((decimal)row.Commission))</td>
+                                <td class="text-right" style="color:#12a150;">@Html.Raw(fmt((decimal)row.Payout))</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}
+
+@* ── Recent payments ──────────────────────────────────────────────── *@
+<div class="card" style="margin-top:1.5rem;">
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>Recent Successful Payments</span>
+        <a href="/Payments" class="btn btn-ghost btn-sm">View all &rarr;</a>
+    </div>
+    <div class="card-body p-0">
+        @if (ViewBag.RecentPayments == null || !((IEnumerable<dynamic>)ViewBag.RecentPayments).Any())
+        {
+            <div class="empty-state" style="padding:32px;text-align:center;">
+                <p class="text-muted">No payment records in this period.</p>
+            </div>
+        }
+        else
+        {
             <table class="data-table">
                 <thead>
                     <tr>
@@ -85,17 +194,25 @@
                     @foreach (var p in (IEnumerable<dynamic>)ViewBag.RecentPayments)
                     {
                         <tr>
-                            <td><code>@p.PaymentRef</code></td>
-                            <td>@p.Order?.OrderNumber</td>
-                            <td>@p.Order?.Store?.Name</td>
-                            <td>@p.Type</td>
+                            <td><code style="font-size:11px;">@p.PaymentRef</code></td>
+                            <td>
+                                @if (p.Order != null)
+                                {
+                                    <a href="/Orders/Detail/@p.Order.Id">@p.Order.OrderNumber</a>
+                                }
+                            </td>
+                            <td>@(p.Order?.Store?.Name ?? "—")</td>
+                            <td>
+                                <span class="badge badge-@(p.Type == "pickup_fee" ? "info" : p.Type == "balance" ? "success" : "gray")"
+                                      style="font-size:11px;">@p.Type</span>
+                            </td>
                             <td>@p.Method</td>
-                            <td class="text-right">₦@((decimal)p.Amount).ToString("N2")</td>
-                            <td>@((DateTime)p.CreatedAt).ToString("dd MMM HH:mm")</td>
+                            <td class="text-right text-bold">@Html.Raw(fmtD((decimal)p.Amount))</td>
+                            <td style="font-size:12px;color:var(--muted);">@((DateTime)p.CreatedAt).ToString("dd MMM HH:mm")</td>
                         </tr>
                     }
                 </tbody>
             </table>
-        </div>
+        }
     </div>
-}
+</div>

@@ -97,10 +97,23 @@
                     <select name="newStatus" required>
                         @foreach (var s in Enum.GetValues<OrderStatus>())
                         {
+                            @* Hide PickUpRiderAssigned / DeliveryRiderAssigned from manual dropdown
+                               for non-SuperAdmin — those are set only via rider assignment actions *@
+                            @if ((s == OrderStatus.PickUpRiderAssigned || s == OrderStatus.DeliveryRiderAssigned)
+                                 && !User.IsInRole("SuperAdmin"))
+                            {
+                                continue;
+                            }
                             <option value="@s" selected="@(Model.Status == s)">@s</option>
                         }
                     </select>
                 </div>
+                @if (User.IsInRole("SuperAdmin"))
+                {
+                    <p class="text-muted" style="font-size:11px;margin-top:-6px;">
+                        SuperAdmin: PickUpRiderAssigned / DeliveryRiderAssigned available. Use rider assignment forms instead where possible.
+                    </p>
+                }
                 <div class="form-group">
                     <label>Note (optional)</label>
                     <input type="text" name="note" placeholder="What changed?" />
@@ -109,8 +122,9 @@
             </form>
         </div>
 
-        <!-- Assign rider -->
-        @if (Model.Status is OrderStatus.PickupFeePaid or OrderStatus.RiderAssigned or OrderStatus.Confirmed)
+        <!-- Assign pickup rider -->
+        @if (Model.Status is OrderStatus.PickupFeePaid or OrderStatus.RiderAssigned
+                           or OrderStatus.Confirmed or OrderStatus.PickUpRiderAssigned)
         {
             <div class="card">
                 <h3 class="card-title">Assign Rider</h3>
@@ -135,7 +149,7 @@
         }
 
         <!-- Assign delivery rider -->
-        @if (Model.Status is OrderStatus.Ready or OrderStatus.OutForDelivery)
+        @if (Model.Status is OrderStatus.Ready or OrderStatus.OutForDelivery or OrderStatus.DeliveryRiderAssigned)
         {
             <div class="card">
                 <h3 class="card-title">Assign Delivery Rider</h3>

@@ -63,7 +63,8 @@ public class AdminAnalytics : IAdminAnalytics
         return new DashboardVm
         {
             OrdersToday = orders.Count(o => o.CreatedAt.Date == today),
-            PendingPickups = orders.Count(o => o.Status == OrderStatus.RiderAssigned),
+            PendingPickups = orders.Count(o => o.Status == OrderStatus.RiderAssigned
+                                          || o.Status == OrderStatus.PickUpRiderAssigned),
             Processing = orders.Count(o => o.Status == OrderStatus.Processing),
             OutForDelivery = orders.Count(o => o.Status == OrderStatus.OutForDelivery),
             ActiveDisputes = await _db.Disputes.CountAsync(d =>
@@ -993,8 +994,8 @@ public class AdminUserRepo : IAdminUserRepo
             return (null, "A user with this phone number already exists.");
         if (!string.IsNullOrEmpty(email) && await _db.Users.AnyAsync(u => u.Email == email))
             return (null, "A user with this email already exists.");
-        if (role is not (UserRole.Admin or UserRole.AdminUser))
-            return (null, "Only Admin or AdminUser roles can be created here.");
+        if (role is not (UserRole.Admin or UserRole.AdminUser or UserRole.SuperAdmin))
+            return (null, "Only Admin, AdminUser, or SuperAdmin roles can be created here.");
 
         var user = new User
         {

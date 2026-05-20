@@ -1,6 +1,11 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.EntityFrameworkCore;
+using Vyron.Admin.Data;
+using Vyron.Admin.Helpers;
 using Vyron.Admin.Persistence;
 using Vyron.Admin.Services;
+using Vyron.API.Models;
+using Vyron.Shared.Enums;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -80,5 +85,46 @@ app.UseAuthorization();
 
 app.MapControllerRoute(name: "default",
     pattern: "{controller=Account}/{action=Index}/{id?}");
+
+// ─── SUPERADMIN SEED ─────────────────────────────────────────────
+// Idempotent: runs only if no SuperAdmin exists in the DB.
+// CHANGE the default password after first login.
+// Default credentials:
+//   Email:    superadmin@vyron.com
+//   Password: Vyron@SuperAdmin2024!   ← CHANGE ON FIRST LOGIN
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AdminDbContext>();
+    try
+    {
+        var hasSuperAdmin = await db.Users.AnyAsync(u => u.Role == UserRole.SuperAdmin);
+        if (!hasSuperAdmin)
+        {
+            var superAdminRole = await db.Roles.FirstOrDefaultAsync(r => r.NormalizedName == "SUPERADMIN");
+            var su = new User
+            {
+                FullName  = "Super Admin",
+                Email     = "superadmin@vyron.com",
+                Phone     = "+2340000000001",
+                Role      = UserRole.SuperAdmin,
+                IsActive  = true,
+                CreatedAt = DateTime.UtcNow,
+                LastLoginAt = null
+            };
+            su.PasswordHash = FileUploadHelper.HashPassword(su, "Vyron@SuperAdmin2024!");
+            db.Users.Add(su);
+            if (superAdminRole != null)
+                db.UserRoles.Add(new AppUserRole { UserId = su.Id, RoleId = superAdminRole.Id });
+            await db.SaveChangesAsync();
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation("[SEED] SuperAdmin created: superadmin@vyron.com — CHANGE PASSWORD NOW.");
+        }
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogWarning(ex, "[SEED] SuperAdmin seed skipped (DB may not be ready).");
+    }
+}
 
 app.Run();

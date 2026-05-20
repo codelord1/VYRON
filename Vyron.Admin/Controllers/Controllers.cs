@@ -513,11 +513,27 @@ public class RidersController : VyronAdminController
     private readonly IRiderRepo _riders;
     private readonly IRiderExtendedRepo _riderExt;
     private readonly IWebHostEnvironment _env;
+    private readonly AdminDbContext _db;
 
-    public RidersController(IRiderRepo riders, IRiderExtendedRepo riderExt, IWebHostEnvironment env)
-    { _riders = riders; _riderExt = riderExt; _env = env; }
+    public RidersController(IRiderRepo riders, IRiderExtendedRepo riderExt, IWebHostEnvironment env, AdminDbContext db)
+    { _riders = riders; _riderExt = riderExt; _env = env; _db = db; }
 
-    public async Task<IActionResult> Index() => View(await _riders.GetAllAsync());
+    public async Task<IActionResult> Index()
+    {
+        var riders = await _riders.GetAllAsync();
+        var riderIds = riders.Select(r => r.Id).ToList();
+
+        // Delivery trip counts: orders where this rider is the delivery rider
+        var deliveryCounts = await _db.Orders
+            .Where(o => o.DeliveryRiderId.HasValue && riderIds.Contains(o.DeliveryRiderId.Value))
+            .GroupBy(o => o.DeliveryRiderId!.Value)
+            .Select(g => new { RiderId = g.Key, Count = g.Count() })
+            .AsNoTracking()
+            .ToListAsync();
+
+        ViewBag.DeliveryCountsMap = deliveryCounts.ToDictionary(x => x.RiderId, x => x.Count);
+        return View(riders);
+    }
 
     public async Task<IActionResult> Details(Guid id)
     {
@@ -976,6 +992,22 @@ public class StoreOwnerController : VyronAdminController
         TempData["Success"] = "Service offering updated.";
         return RedirectToAction("ServiceOfferings");
     }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleServiceActive(Guid id, [FromServices] IServiceOfferingRepo svcRepo)
+    {
+        // Security: ensure this service belongs to one of the store owner's stores
+        var s = await svcRepo.GetByIdAsync(id);
+        if (s == null) return NotFound();
+        if (!IsAdmin)
+        {
+            var myStores = await _stores.GetByOwnerAsync(CurrentUserId);
+            if (!myStores.Any(store => store.Id == s.StoreId)) return Forbid();
+        }
+        await svcRepo.ToggleActiveAsync(id);
+        TempData["Success"] = "Service status updated.";
+        return RedirectToAction("ServiceOfferings");
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1368,9 +1400,25 @@ public class AdminUsersController : VyronAdminController
     public async Task<IActionResult> Create(AdminUserCreateVm vm)
     {
         if (!ModelState.IsValid) return View(vm);
-        var role = vm.IsAdminUser ? UserRole.AdminUser : UserRole.Admin;
+
+        // Determine role — SuperAdmin can only be created by an existing SuperAdmin
+        UserRole role;
+        if (vm.SelectedRole == "SuperAdmin")
+        {
+            if (!User.IsInRole("SuperAdmin"))
+            {
+                TempData["Error"] = "Only SuperAdmin can create another SuperAdmin account.";
+                return View(vm);
+            }
+            role = UserRole.SuperAdmin;
+        }
+        else
+        {
+            role = vm.SelectedRole == "Admin" ? UserRole.Admin : UserRole.AdminUser;
+        }
+
         var (id, err) = await _repo.CreateAsync(vm.FullName, vm.Phone, vm.Email ?? "", vm.Password, role);
-        if (id.HasValue) { TempData["Success"] = $"Admin user {vm.FullName} created."; return RedirectToAction("Index"); }
+        if (id.HasValue) { TempData["Success"] = $"{role} account for {vm.FullName} created."; return RedirectToAction("Index"); }
         ModelState.AddModelError("", err!);
         return View(vm);
     }
@@ -1518,46 +1566,70 @@ public class RevenueController : VyronAdminController
     private readonly AdminDbContext _db;
     public RevenueController(AdminDbContext db) => _db = db;
 
-    public async Task<IActionResult> Index(DateTime? from, DateTime? to)
+    public async Task<IActionResult> Index(DateTime? from, DateTime? to, Guid? storeId)
     {
         var fromDate = from ?? DateTime.UtcNow.AddDays(-30);
         var toDate   = (to ?? DateTime.UtcNow).Date.AddDays(1); // end-of-day inclusive
 
-        var orders = await _db.Orders
+        var ordersQ = _db.Orders
             .AsNoTracking()
             .Include(o => o.Store)
-            .Where(o => o.CreatedAt >= fromDate && o.CreatedAt < toDate)
-            .ToListAsync();
+            .Where(o => o.CreatedAt >= fromDate && o.CreatedAt < toDate);
+        if (storeId.HasValue) ordersQ = ordersQ.Where(o => o.StoreId == storeId.Value);
 
-        var payments = await _db.Payments
+        var orders = await ordersQ.ToListAsync();
+
+        var paymentsQ = _db.Payments
             .AsNoTracking()
             .Include(p => p.Order).ThenInclude(o => o.Store)
-            .Where(p => p.CreatedAt >= fromDate && p.CreatedAt < toDate && p.IsSuccessful)
-            .ToListAsync();
+            .Where(p => p.CreatedAt >= fromDate && p.CreatedAt < toDate && p.IsSuccessful);
+        if (storeId.HasValue) paymentsQ = paymentsQ.Where(p => p.Order != null && p.Order.StoreId == storeId.Value);
+
+        var payments = await paymentsQ.ToListAsync();
 
         decimal Total(Order o) => o.ActualTotal > 0 ? o.ActualTotal : o.TotalEstimate;
 
-        var commissionPct = 10m; // default — ideally from SystemConfig
+        var commissionPct = 10m;
         var cfg = await _db.SystemConfigs.AsNoTracking()
             .FirstOrDefaultAsync(c => c.Key == "PlatformCommissionPercent");
         if (cfg != null && decimal.TryParse(cfg.Value, out var pct)) commissionPct = pct;
 
-        var completedOrders = orders.Where(o => o.Status == Vyron.Shared.Enums.OrderStatus.Completed ||
-                                                 o.PaymentState == Vyron.Shared.Enums.PaymentState.FullyPaid).ToList();
-        var pendingOrders   = orders.Where(o => o.PaymentState == Vyron.Shared.Enums.PaymentState.Unpaid ||
-                                                 o.PaymentState == Vyron.Shared.Enums.PaymentState.PickupFeePaid).ToList();
+        var completedOrders = orders.Where(o => o.Status == OrderStatus.Completed ||
+                                                 o.PaymentState == PaymentState.FullyPaid).ToList();
+        var pendingOrders   = orders.Where(o => o.PaymentState == PaymentState.Unpaid ||
+                                                 o.PaymentState == PaymentState.PickupFeePaid).ToList();
+        var cancelledOrders = orders.Where(o => o.Status == OrderStatus.Cancelled).ToList();
 
         var totalOrderValue     = orders.Sum(Total);
         var completedRevenue    = completedOrders.Sum(Total);
+        var pendingOrderValue   = pendingOrders.Sum(Total);
+        var cancelledValue      = cancelledOrders.Sum(Total);
         var pickupFeesCollected = payments.Where(p => p.Type == "pickup_fee").Sum(p => p.Amount);
         var deliveryFees        = orders.Sum(o => o.DeliveryFee);
         var commission          = Math.Round(completedRevenue * commissionPct / 100m, 2);
         var storePayoutEstimate = completedRevenue - commission;
 
-        ViewBag.From            = fromDate.ToString("yyyy-MM-dd");
-        ViewBag.To              = (toDate.AddDays(-1)).ToString("yyyy-MM-dd");
+        // Per-store breakdown
+        var storeBreakdown = orders
+            .Where(o => o.Store != null)
+            .GroupBy(o => new { o.StoreId, StoreName = o.Store!.Name })
+            .Select(g =>
+            {
+                var rev  = g.Where(o => o.Status == OrderStatus.Completed || o.PaymentState == PaymentState.FullyPaid).Sum(Total);
+                var comm = Math.Round(rev * commissionPct / 100m, 2);
+                return new { g.Key.StoreName, OrderCount = g.Count(), Revenue = rev, Commission = comm, Payout = rev - comm };
+            })
+            .OrderByDescending(x => x.Revenue)
+            .ToList();
+
+        ViewBag.From                 = fromDate.ToString("yyyy-MM-dd");
+        ViewBag.To                   = (toDate.AddDays(-1)).ToString("yyyy-MM-dd");
+        ViewBag.StoreId              = storeId;
+        ViewBag.Stores               = await _db.Stores.AsNoTracking().OrderBy(s => s.Name).Select(s => new { s.Id, s.Name }).ToListAsync();
         ViewBag.TotalOrderValue      = totalOrderValue;
         ViewBag.CompletedRevenue     = completedRevenue;
+        ViewBag.PendingOrderValue    = pendingOrderValue;
+        ViewBag.CancelledValue       = cancelledValue;
         ViewBag.PickupFeesCollected  = pickupFeesCollected;
         ViewBag.DeliveryFees         = deliveryFees;
         ViewBag.CommissionPct        = commissionPct;
@@ -1565,11 +1637,12 @@ public class RevenueController : VyronAdminController
         ViewBag.StorePayoutEstimate  = storePayoutEstimate;
         ViewBag.PendingCount         = pendingOrders.Count;
         ViewBag.CompletedCount       = completedOrders.Count;
-        ViewBag.CancelledCount       = orders.Count(o => o.Status == Vyron.Shared.Enums.OrderStatus.Cancelled);
+        ViewBag.CancelledCount       = cancelledOrders.Count;
         ViewBag.TotalOrders          = orders.Count;
         ViewBag.RecentPayments       = payments.OrderByDescending(p => p.CreatedAt).Take(20).ToList();
+        ViewBag.StoreBreakdown       = storeBreakdown;
 
-        ViewData["Title"] = "Revenue Summary";
+        ViewData["Title"] = "Revenue";
         return View();
     }
 }
