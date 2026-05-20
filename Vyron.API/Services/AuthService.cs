@@ -73,7 +73,7 @@ public class NotificationService : INotificationService
         {
             // No SMS provider configured — log as Skipped (graceful degradation)
             log.Status = "Skipped"; log.ErrorMessage = "SMS provider not configured";
-            _logger.LogWarning("📱 SMS (no provider) → {Phone}: {Message}", phone, message);
+            _logger.LogWarning("[SMS-SKIP] no provider -> {Phone}: {Message}", phone, message);
         }
 
         try { await _db.SaveChangesAsync(); }
@@ -123,7 +123,7 @@ public class NotificationService : INotificationService
         else
         {
             log.Status = "Skipped"; log.ErrorMessage = "Email provider not configured";
-            _logger.LogWarning("📧 Email (no provider) → {To}: {Subject}", to, subject);
+            _logger.LogWarning("[EMAIL-SKIP] no provider -> {To}: {Subject}", to, subject);
         }
 
         try { await _db.SaveChangesAsync(); }
@@ -292,7 +292,7 @@ public class AuthService : IAuthService
         var returnOtpInDev = _config.GetValue<bool>("Otp:ReturnOtpInDevelopment", false);
         if (returnOtpInDev)
         {
-            _logger.LogWarning("🔑 [DEV] OTP for {Phone} → {Code} (not sending SMS in dev mode)", phone, code);
+            _logger.LogWarning("[DEV-OTP] for {Phone} -> {Code} (not sending SMS in dev mode)", phone, code);
             return (true, "Verification code generated. (Development mode — see DevOtp in response.)", code);
         }
 
@@ -339,7 +339,7 @@ public class AuthService : IAuthService
                 _db.UserRoles.Add(new AppUserRole { UserId = user.Id, RoleId = customerRole.Id });
             }
 
-            _logger.LogInformation("🆕 New customer registered: {Phone}", request.Phone);
+            _logger.LogInformation("[NEW-USER] registered: {Phone}", request.Phone);
         }
         else
         {
@@ -356,7 +356,7 @@ public class AuthService : IAuthService
                     _db.UserRoles.Add(new AppUserRole { UserId = user.Id, RoleId = matchingRole.Id });
             }
 
-            _logger.LogInformation("✅ Returning customer login: {Phone} ({Name})", user.Phone, user.FullName);
+            _logger.LogInformation("[LOGIN] returning customer: {Phone} ({Name})", user.Phone, user.FullName);
         }
 
         user.LastLoginAt = DateTime.UtcNow;

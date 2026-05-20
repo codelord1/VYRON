@@ -93,8 +93,13 @@ public class StoreService : IStoreService
 
     public async Task<StoreDetailDto?> GetStoreAsync(Guid id)
     {
+        // AsSplitQuery: Services and Reviews are both collection navigations on
+        // LaundryStore. Loading both in one SingleQuery produces a cartesian product
+        // (MultipleCollectionIncludeWarning). Split queries issue separate SELECTs
+        // and are faster for a filtered, bounded collection like Reviews(Take(10)).
         var store = await _db.Stores
             .AsNoTracking()
+            .AsSplitQuery()
             .Include(s => s.Services)
             .Include(s => s.Reviews.Where(r => r.IsVisible).OrderByDescending(r => r.CreatedAt).Take(10))
                 .ThenInclude(r => r.Customer)

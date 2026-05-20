@@ -107,7 +107,7 @@ public class CustomerAuthService : ICustomerAuthService
         var access = _tokens.GenerateAccessToken(user, roleNames.Count > 0 ? roleNames : null);
         await _audit.LogAsync(user.Id, "CUSTOMER_LOGIN", "User", user.Id);
 
-        _logger.LogInformation("✅ Customer login: {Phone} ({Name})", user.Phone, user.FullName);
+        _logger.LogInformation("[LOGIN] {Phone} ({Name})", user.Phone, user.FullName);
         return (new CustomerLoginResponse(access, refreshVal, DateTime.UtcNow.AddMinutes(60),
             new UserDto(user.Id, user.Phone, user.FullName, user.Email, user.Role, user.CreatedAt)), null);
     }
@@ -206,7 +206,7 @@ public class CustomerAuthService : ICustomerAuthService
         var access = _tokens.GenerateAccessToken(user, roleNames.Count > 0 ? roleNames : null);
         await _audit.LogAsync(user.Id, isNew ? "CUSTOMER_REGISTER" : "CUSTOMER_COMPLETE_PROFILE", "User", user.Id);
 
-        _logger.LogInformation("🆕 Customer profile completed: {Phone} ({Name})", user.Phone, user.FullName);
+        _logger.LogInformation("[PROFILE] Customer profile completed: {Phone} ({Name})", user.Phone, user.FullName);
         return (new CustomerLoginResponse(access, refreshVal, DateTime.UtcNow.AddMinutes(60),
             new UserDto(user.Id, user.Phone, user.FullName, user.Email, user.Role, user.CreatedAt)), null);
     }
@@ -251,7 +251,7 @@ public class CustomerAuthService : ICustomerAuthService
         await _db.SaveChangesAsync();
         await _audit.LogAsync(user.Id, "CUSTOMER_PASSWORD_RESET", "User", user.Id);
 
-        _logger.LogInformation("🔑 Password reset: {Phone}", user.Phone);
+        _logger.LogInformation("[PWD-RESET] {Phone}", user.Phone);
         return (true, null);
     }
 
@@ -281,7 +281,7 @@ public class CustomerAuthService : ICustomerAuthService
         var returnOtpInDev = _config.GetValue<bool>("Otp:ReturnOtpInDevelopment", false);
         if (returnOtpInDev)
         {
-            _logger.LogWarning("🔑 [DEV] OTP ({Context}) for {Phone} → {Code}", context, phone, code);
+            _logger.LogWarning("[DEV-OTP] ({Context}) for {Phone} -> {Code}", context, phone, code);
             return (true, "Verification code generated. (Development mode — see DevOtp in response.)", code);
         }
 

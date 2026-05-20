@@ -211,7 +211,7 @@ var app = builder.Build();
         if (!logAll && !isError && !isSlow) return;
 
         var userId = ctx.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "anon";
-        Log.Information("[PERF] {Method} {Path} → {Status} in {Ms}ms | uid={UserId}",
+        Log.Information("[PERF] {Method} {Path} -> {Status} in {Ms}ms | uid={UserId}",
             ctx.Request.Method, path.Value, ctx.Response.StatusCode,
             sw.ElapsedMilliseconds, userId);
     });
@@ -239,12 +239,12 @@ if (app.Environment.IsDevelopment())
                 using var cmd = conn.CreateCommand();
                 cmd.CommandText = $"IF DB_ID(N'{dbName}') IS NULL CREATE DATABASE [{dbName}]";
                 cmd.ExecuteNonQuery();
-                Log.Information("✅ Hangfire database '{DbName}' is ready.", dbName);
+                Log.Information("[OK] Hangfire database '{DbName}' is ready.", dbName);
             }
             catch (Exception ex)
             {
                 Log.Warning(ex,
-                    "⚠️  Could not auto-create Hangfire database. " +
+                    "[WARN] Could not auto-create Hangfire database. " +
                     "Run manually: IF DB_ID(N'VYRONDB_Hangfire') IS NULL CREATE DATABASE [VYRONDB_Hangfire]");
             }
         }
@@ -259,11 +259,11 @@ using (var scope = app.Services.CreateScope())
         var db = scope.ServiceProvider.GetRequiredService<VyronDbContext>();
         db.Database.Migrate();
         var provider = DatabaseConfiguration.GetProvider(builder.Configuration);
-        Log.Information("✅ VYRONDB migrated using {Provider}.", provider);
+        Log.Information("[OK] VYRONDB migrated using {Provider}.", provider);
     }
     catch (Exception ex)
     {
-        Log.Error(ex, "❌ Database migration failed.");
+        Log.Error(ex, "[ERROR] Database migration failed.");
     }
 }
 
@@ -326,16 +326,16 @@ app.UseStaticFiles();  // serves API's own wwwroot/uploads/** for store/rider im
             FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(adminWwwroot),
             RequestPath  = ""
         });
-        Log.Information("✅ Serving Admin uploaded files from {Path}", adminWwwroot);
+        Log.Information("[OK] Serving Admin uploaded files from {Path}", adminWwwroot);
     }
     else
     {
-        Log.Warning("⚠️  Admin wwwroot not found at {Path} — store images may not load.", adminWwwroot);
+        Log.Warning("[WARN] Admin wwwroot not found at {Path} -- store images may not load.", adminWwwroot);
     }
 }
 
 app.MapControllers();
 app.MapHub<OrderTrackingHub>("/hubs/tracking");
 
-Log.Information("🚀 VYRON API v3 started.");
+Log.Information("[STARTED] VYRON API v3 started.");
 app.Run();
