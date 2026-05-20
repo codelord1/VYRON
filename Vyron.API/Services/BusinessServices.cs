@@ -2,6 +2,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Processing;
 using Vyron.API.Data;
 using Vyron.API.DTOs;
 using Vyron.API.Hubs;
@@ -283,7 +286,11 @@ public interface IOrderService
     Task<OrderDto> CreateOrderAsync(Guid customerId, CreateOrderRequest req);
     Task<OrderDto?> GetOrderAsync(Guid id);
     Task<OrderDto?> GetOrderByNumberAsync(string number);
-    Task<List<OrderDto>> GetCustomerOrdersAsync(Guid customerId, int page = 1);
+    /// <summary>
+    /// Returns a customer's orders.
+    /// group: null=all  "active"=in-progress  "completed"=Delivered/BalancePaid/Completed  "cancelled"=Cancelled/Disputed
+    /// </summary>
+    Task<List<OrderDto>> GetCustomerOrdersAsync(Guid customerId, int page = 1, string? group = null);
     Task<List<OrderDto>> GetAllOrdersAsync(OrderStatus? status = null, string? search = null, int page = 1);
     Task<List<OrderDto>> GetStoreOrdersAsync(Guid storeId, int page = 1);
     Task<List<OrderDto>> GetRiderOrdersAsync(Guid riderId);
@@ -307,14 +314,51 @@ public class OrderService : IOrderService
     private readonly IHubContext<OrderTrackingHub> _hub;
     private readonly ILogger<OrderService> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IHttpContextAccessor _httpCtx;
 
     public OrderService(VyronDbContext db, INotificationService notifications,
         IAuditService audit, IHubContext<OrderTrackingHub> hub,
-        ILogger<OrderService> logger, IServiceScopeFactory scopeFactory)
+        ILogger<OrderService> logger, IServiceScopeFactory scopeFactory,
+        IHttpContextAccessor httpCtx)
     {
         _db = db; _notifications = notifications; _audit = audit;
         _hub = hub; _logger = logger; _scopeFactory = scopeFactory;
+        _httpCtx = httpCtx;
     }
+
+    /// <summary>
+    /// Converts a stored relative path (e.g. /uploads/stores/x.jpg) to an absolute URL
+    /// using the current request host so the mobile client can load the image directly.
+    /// Absolute URLs pass through unchanged. Null/empty returns null.
+    /// </summary>
+    private string? ResolveImageUrl(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return null;
+        if (path.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            return path;
+        var req = _httpCtx.HttpContext?.Request;
+        if (req == null) return path;
+        var baseUrl = $"{req.Scheme}://{req.Host}";
+        return $"{baseUrl}{(path.StartsWith('/') ? path : '/' + path)}";
+    }
+
+    // ─── Order status group buckets ───────────────────────────────
+    private static readonly HashSet<OrderStatus> ActiveStatuses = new()
+    {
+        OrderStatus.Pending, OrderStatus.Confirmed, OrderStatus.PickupFeePaid,
+        OrderStatus.RiderAssigned, OrderStatus.PickUpRiderAssigned,
+        OrderStatus.PickedUp, OrderStatus.Processing, OrderStatus.Ready,
+        OrderStatus.OutForDelivery, OrderStatus.DeliveryRiderAssigned
+    };
+    private static readonly HashSet<OrderStatus> CompletedStatuses = new()
+    {
+        OrderStatus.Delivered, OrderStatus.BalancePaid, OrderStatus.Completed
+    };
+    private static readonly HashSet<OrderStatus> CancelledStatuses = new()
+    {
+        OrderStatus.Cancelled, OrderStatus.Disputed
+    };
 
     /// <summary>
     /// Runs post-save side effects (notifications, audit) on a background thread with a
@@ -484,16 +528,27 @@ public class OrderService : IOrderService
         return o == null ? null : MapOrderToDto(o);
     }
 
-    public async Task<List<OrderDto>> GetCustomerOrdersAsync(Guid customerId, int page = 1)
+    public async Task<List<OrderDto>> GetCustomerOrdersAsync(Guid customerId, int page = 1, string? group = null)
     {
         // Lean projection — single SQL query with scalar JOINs only.
         // No collection navigations (StatusHistory, Items, Review, Dispute) loaded here;
         // they are not needed for the orders list screen and caused the
         // MultipleCollectionIncludeWarning + cartesian explosion via LoadOrderDtosAsync.
         // Full data is available via GET /api/orders/{id}.
-        var rows = await _db.Orders
+        var baseQuery = _db.Orders
             .AsNoTracking()
-            .Where(o => o.CustomerId == customerId)
+            .Where(o => o.CustomerId == customerId);
+
+        // ── Status group filter (Task E) ─────────────────────────
+        baseQuery = group?.ToLowerInvariant() switch
+        {
+            "active"    => baseQuery.Where(o => ActiveStatuses.Contains(o.Status)),
+            "completed" => baseQuery.Where(o => CompletedStatuses.Contains(o.Status)),
+            "cancelled" => baseQuery.Where(o => CancelledStatuses.Contains(o.Status)),
+            _           => baseQuery  // null / unrecognised value → return all
+        };
+
+        var rows = await baseQuery
             .OrderByDescending(o => o.CreatedAt)
             .Skip((page - 1) * 20).Take(20)
             .Select(o => new {
@@ -523,12 +578,14 @@ public class OrderService : IOrderService
             })
             .ToListAsync();
 
-        // Map in memory — ToString() on enums cannot translate to SQL
+        // Map in memory — ToString() on enums cannot translate to SQL;
+        // also resolve relative image paths to absolute URLs here (needs HttpContext).
         return rows.Select(o => new OrderDto(
             o.Id, o.OrderNumber,
             new CustomerSummaryDto(o.CustId, o.CustName, o.CustPhone),
             new StoreSummaryDto(o.StoreId, o.StoreName, o.StoreAddr,
-                o.StoreRating, o.StoreLogo, o.StorePhone),
+                o.StoreRating, ResolveImageUrl(o.StoreLogo), o.StorePhone,
+                ResolveImageUrl(o.StoreLogo)),   // PrimaryImageUrl falls back to LogoUrl
             new ServiceSummaryDto(o.SvcId, o.SvcType, o.SvcName, o.SvcDesc,
                 o.SvcPricing, o.SvcBase, o.SvcMin, o.SvcActive, o.SvcHours),
             null,  // Rider — not needed on list screen
@@ -860,15 +917,18 @@ public class OrderService : IOrderService
     }
 
     // ── Shared include chain — used only by DETAIL read paths ──────
-    // AsSplitQuery: intentional — StatusHistory and Items are both collection
-    // navigations; loading them in a SingleQuery produces a cartesian explosion
-    // (MultipleCollectionIncludeWarning). Split queries issue separate SELECTs
-    // per collection and re-join in memory, which is faster and correct.
+    // AsSplitQuery: intentional — StatusHistory, Items, and StoreImages are all
+    // collection navigations. Loading them in a SingleQuery produces a cartesian
+    // explosion (MultipleCollectionIncludeWarning). Split queries issue separate
+    // SELECTs per collection and re-join in memory — correct and faster.
     private IQueryable<Order> OrdersWithIncludes() =>
         _db.Orders
             .AsNoTracking()
             .AsSplitQuery()
-            .Include(x => x.Customer).Include(x => x.Store).Include(x => x.Service)
+            .Include(x => x.Customer)
+            .Include(x => x.Store)
+                .ThenInclude(s => s.StoreImages.Where(img => img.IsPrimary).Take(1))
+            .Include(x => x.Service)
             .Include(x => x.Rider).ThenInclude(r => r!.User)
             .Include(x => x.DeliveryRider).ThenInclude(r => r!.User)
             .Include(x => x.StatusHistory)
@@ -900,43 +960,60 @@ public class OrderService : IOrderService
         return o == null ? null : MapOrderToDto(o);
     }
 
-    /// <summary>Maps a fully-loaded Order entity to its DTO. Synchronous — call after EF hydration.</summary>
-    private static OrderDto MapOrderToDto(Order o) => new(
-        o.Id, o.OrderNumber,
-        new CustomerSummaryDto(o.Customer.Id, o.Customer.FullName, o.Customer.Phone),
-        new StoreSummaryDto(o.Store.Id, o.Store.Name, o.Store.Address, o.Store.AverageRating, o.Store.LogoUrl, o.Store.Phone),
-        new ServiceSummaryDto(o.Service.Id, o.Service.ServiceType, o.Service.Name, o.Service.Description,
-            o.Service.PricingMode, o.Service.BasePrice, o.Service.MinimumCharge,
-            o.Service.IsActive, o.Service.EstimatedHours),
-        o.Rider == null ? null : new RiderSummaryDto(o.Rider.Id, o.Rider.User.FullName,
-            o.Rider.User.Phone, o.Rider.VehicleType, o.Rider.VehiclePlate),
-        o.Status, o.Status.ToString(),
-        o.PaymentState, o.PaymentState.ToString(),
-        o.PaymentMethod,
-        o.EstimatedWeight, o.EstimatedPieces,
-        o.EstimatedLaundryCost, o.ActualLaundryCost,
-        o.PickupFee, o.DeliveryFee, o.TotalEstimate, o.ActualTotal,
-        o.PickupFeeAmount, o.BalanceAmount,
-        o.AdminPriceOverride, o.AdminOverrideReason,
-        o.PickupAddress, o.DeliveryAddress,
-        o.RequestedPickupDate, o.RequestedPickupSlot, o.SpecialInstructions,
-        o.PickedUpAt, o.ProcessingStartedAt, o.ReadyAt,
-        o.OutForDeliveryAt, o.DeliveredAt, o.CompletedAt, o.CreatedAt,
-        o.StatusHistory.OrderByDescending(h => h.ChangedAt)
-            .Select(h => new StatusHistoryDto(h.Status, h.Status.ToString(), h.Note, h.ChangedAt))
-            .ToList(),
-        o.Review == null ? null : new ReviewDto(o.Review.Id, o.Review.OrderId, o.OrderNumber,
-            o.Review.Customer.FullName, o.Review.Rating, o.Review.Comment,
-            o.Review.PhotoUrl, o.Review.IsVisible, o.Review.CreatedAt),
-        o.Dispute == null ? null : new DisputeSummaryDto(o.Dispute.Id, o.Dispute.Type,
-            o.Dispute.Status, o.Dispute.CreatedAt),
-        o.DeliveryRider == null ? null : new RiderSummaryDto(o.DeliveryRider.Id,
-            o.DeliveryRider.User.FullName, o.DeliveryRider.User.Phone,
-            o.DeliveryRider.VehicleType, o.DeliveryRider.VehiclePlate),
-        o.Items.Select(i => new OrderItemDto(
-            i.Id, i.ServiceOfferingId, i.ServiceName,
-            i.PricingMode, i.Weight, i.Pieces,
-            i.UnitPrice, i.LineTotal)).ToList());
+    /// <summary>
+    /// Maps a fully-loaded Order entity to its DTO.
+    /// Instance method (not static) so it can call ResolveImageUrl for absolute URLs.
+    /// </summary>
+    private OrderDto MapOrderToDto(Order o)
+    {
+        // Primary store image: use the first IsPrimary StoreImage if loaded,
+        // otherwise fall back to the store's LogoUrl.
+        var primaryStoreImg = o.Store.StoreImages
+            .FirstOrDefault(img => img.IsPrimary)?.ImagePath
+            ?? o.Store.LogoUrl;
+
+        return new OrderDto(
+            o.Id, o.OrderNumber,
+            new CustomerSummaryDto(o.Customer.Id, o.Customer.FullName, o.Customer.Phone),
+            new StoreSummaryDto(o.Store.Id, o.Store.Name, o.Store.Address,
+                o.Store.AverageRating, ResolveImageUrl(o.Store.LogoUrl), o.Store.Phone,
+                ResolveImageUrl(primaryStoreImg)),
+            new ServiceSummaryDto(o.Service.Id, o.Service.ServiceType, o.Service.Name,
+                o.Service.Description, o.Service.PricingMode, o.Service.BasePrice,
+                o.Service.MinimumCharge, o.Service.IsActive, o.Service.EstimatedHours),
+            o.Rider == null ? null : new RiderSummaryDto(
+                o.Rider.Id, o.Rider.User.FullName, o.Rider.User.Phone,
+                o.Rider.VehicleType, o.Rider.VehiclePlate,
+                ResolveImageUrl(o.Rider.User.ProfilePhoto)),   // AvatarUrl from User.ProfilePhoto
+            o.Status, o.Status.ToString(),
+            o.PaymentState, o.PaymentState.ToString(),
+            o.PaymentMethod,
+            o.EstimatedWeight, o.EstimatedPieces,
+            o.EstimatedLaundryCost, o.ActualLaundryCost,
+            o.PickupFee, o.DeliveryFee, o.TotalEstimate, o.ActualTotal,
+            o.PickupFeeAmount, o.BalanceAmount,
+            o.AdminPriceOverride, o.AdminOverrideReason,
+            o.PickupAddress, o.DeliveryAddress,
+            o.RequestedPickupDate, o.RequestedPickupSlot, o.SpecialInstructions,
+            o.PickedUpAt, o.ProcessingStartedAt, o.ReadyAt,
+            o.OutForDeliveryAt, o.DeliveredAt, o.CompletedAt, o.CreatedAt,
+            o.StatusHistory.OrderByDescending(h => h.ChangedAt)
+                .Select(h => new StatusHistoryDto(h.Status, h.Status.ToString(), h.Note, h.ChangedAt))
+                .ToList(),
+            o.Review == null ? null : new ReviewDto(o.Review.Id, o.Review.OrderId, o.OrderNumber,
+                o.Review.Customer.FullName, o.Review.Rating, o.Review.Comment,
+                o.Review.PhotoUrl, o.Review.IsVisible, o.Review.CreatedAt),
+            o.Dispute == null ? null : new DisputeSummaryDto(o.Dispute.Id, o.Dispute.Type,
+                o.Dispute.Status, o.Dispute.CreatedAt),
+            o.DeliveryRider == null ? null : new RiderSummaryDto(
+                o.DeliveryRider.Id, o.DeliveryRider.User.FullName, o.DeliveryRider.User.Phone,
+                o.DeliveryRider.VehicleType, o.DeliveryRider.VehiclePlate,
+                ResolveImageUrl(o.DeliveryRider.User.ProfilePhoto)), // DeliveryRider AvatarUrl
+            o.Items.Select(i => new OrderItemDto(
+                i.Id, i.ServiceOfferingId, i.ServiceName,
+                i.PricingMode, i.Weight, i.Pieces,
+                i.UnitPrice, i.LineTotal)).ToList());
+    }
 
     // ── Reorder ───────────────────────────────────────────────────
     public async Task<ReorderDraftDto?> GetReorderDraftAsync(Guid originalOrderId, Guid customerId)
@@ -1469,5 +1546,73 @@ public class AnalyticsService : IAnalyticsService
             revenueToday, revenueWeek, revenueMonth,
             totalStores, activeRiders, totalCustomers, completedOrders,
             daily, ordersByStatus);
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// IMAGE PROCESSING SERVICE  (Task G)
+// ═══════════════════════════════════════════════════════════════════
+public interface IImageProcessingService
+{
+    /// <summary>
+    /// Validates, resizes (max 1200 px on longest edge) and re-encodes the uploaded image.
+    /// Returns the processed bytes in JPEG format, or throws if the file is invalid.
+    /// Accepted types: jpg, jpeg, png, webp.
+    /// Max input size: 10 MB.
+    /// </summary>
+    Task<(byte[] Bytes, string ContentType)> ProcessAsync(IFormFile file);
+}
+
+public class ImageProcessingService : IImageProcessingService
+{
+    private const int MaxInputBytes   = 10 * 1024 * 1024; // 10 MB hard limit
+    private const int MaxDimension    = 1200;               // resize to fit within 1200 px
+    private const int JpegQuality     = 82;                 // balanced quality/size
+
+    private static readonly HashSet<string> AllowedContentTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "image/jpeg", "image/jpg", "image/png", "image/webp"
+    };
+
+    private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".jpg", ".jpeg", ".png", ".webp"
+    };
+
+    public async Task<(byte[] Bytes, string ContentType)> ProcessAsync(IFormFile file)
+    {
+        // ── 1. Basic validation ───────────────────────────────────
+        if (file == null || file.Length == 0)
+            throw new InvalidOperationException("No file uploaded.");
+
+        if (file.Length > MaxInputBytes)
+            throw new InvalidOperationException($"File too large (max {MaxInputBytes / 1024 / 1024} MB).");
+
+        var ext = Path.GetExtension(file.FileName);
+        if (!AllowedExtensions.Contains(ext))
+            throw new InvalidOperationException("Unsupported file type. Accepted: jpg, jpeg, png, webp.");
+
+        if (!AllowedContentTypes.Contains(file.ContentType))
+            throw new InvalidOperationException("Invalid MIME type. Accepted: image/jpeg, image/png, image/webp.");
+
+        // ── 2. Load, resize, re-encode ────────────────────────────
+        using var inputStream = file.OpenReadStream();
+        using var image = await Image.LoadAsync(inputStream);
+
+        // Resize if either dimension exceeds 1200 px — maintain aspect ratio
+        if (image.Width > MaxDimension || image.Height > MaxDimension)
+        {
+            var ratio  = Math.Min((double)MaxDimension / image.Width,
+                                  (double)MaxDimension / image.Height);
+            var newW   = (int)Math.Round(image.Width  * ratio);
+            var newH   = (int)Math.Round(image.Height * ratio);
+            image.Mutate(ctx => ctx.Resize(newW, newH));
+        }
+
+        using var output = new MemoryStream();
+        var encoder = new JpegEncoder { Quality = JpegQuality };
+        await image.SaveAsync(output, encoder);
+
+        return (output.ToArray(), "image/jpeg");
     }
 }

@@ -148,6 +148,7 @@ builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
 builder.Services.AddScoped<ICouponService, CouponService>();
+builder.Services.AddScoped<IImageProcessingService, ImageProcessingService>();
 
 // ─── CONTROLLERS + SWAGGER ────────────────────────────────────────
 // JsonStringEnumConverter: serialises UserRole (and all enums) as strings ("Customer")

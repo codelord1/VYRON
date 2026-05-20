@@ -139,8 +139,14 @@ public record OrderDto(
     List<OrderItemDto>? Items = null);
 
 public record CustomerSummaryDto(Guid Id, string FullName, string Phone);
-public record StoreSummaryDto(Guid Id, string Name, string Address, decimal AverageRating, string? LogoUrl, string Phone = "");
-public record RiderSummaryDto(Guid Id, string FullName, string Phone, string VehicleType, string? VehiclePlate);
+public record StoreSummaryDto(Guid Id, string Name, string Address, decimal AverageRating,
+    string? LogoUrl, string Phone = "", string? PrimaryImageUrl = null);
+/// <summary>
+/// Rider summary returned inside OrderDto.
+/// AvatarUrl comes from User.ProfilePhoto (no extra column — no migration needed).
+/// </summary>
+public record RiderSummaryDto(Guid Id, string FullName, string Phone,
+    string VehicleType, string? VehiclePlate, string? AvatarUrl = null);
 public record StatusHistoryDto(OrderStatus Status, string StatusName, string? Note, DateTime ChangedAt);
 public record OrderItemDto(
     Guid Id, Guid ServiceOfferingId, string ServiceName,
@@ -239,6 +245,30 @@ public record ReorderDraftDto(
     string PickupAddress, string DeliveryAddress,
     decimal LaundryCost, decimal PickupFee, decimal DeliveryFee, decimal TotalEstimate,
     PaymentMethod PaymentMethod, bool CanReorder);
+
+// ─── TRACK ORDER (with support contacts) ─────────────────────────
+/// <summary>
+/// Returned by GET /api/orders/track/{number}.
+/// Wraps the full OrderDto with live support contact info from SystemConfig.
+/// </summary>
+public record SupportContactDto(
+    string? Phone, string? Email, string? WhatsApp, string? ChatUrl);
+
+public record TrackOrderResponseDto(OrderDto Order, SupportContactDto Support);
+
+// ─── REPORT ISSUE (route-based convenience endpoint) ─────────────
+/// <summary>
+/// Body for POST /api/orders/{orderId}/report-issue.
+/// Convenience over POST /api/disputes — orderId comes from the route.
+/// </summary>
+public record ReportIssueRequest(DisputeType Type, string Description, string? EvidenceUrl = null);
+
+// ─── ACTIVITY LOG ─────────────────────────────────────────────────
+public record ActivityLogDto(
+    Guid Id, Guid? UserId, string? UserName,
+    string ActivityType, string? Description,
+    string? EntityType, Guid? EntityId,
+    string? IpAddress, DateTime CreatedAt);
 
 // ─── ADDRESS ──────────────────────────────────────────────────────
 public record CreateAddressRequest(

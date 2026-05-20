@@ -144,16 +144,44 @@ public class OrdersController : VyronController
         return order != null ? Ok(order) : NotFound();
     }
 
+    /// <summary>
+    /// Public order tracking by order number.
+    /// Returns the full OrderDto + live customer support contacts from SystemConfig.
+    /// </summary>
     [HttpGet("track/{number}"), AllowAnonymous]
-    public async Task<IActionResult> Track(string number)
+    public async Task<IActionResult> Track(string number, [FromServices] VyronDbContext db)
     {
         var order = await _orders.GetOrderByNumberAsync(number);
-        return order != null ? Ok(order) : NotFound();
+        if (order == null) return NotFound();
+
+        // Load support contact keys in one round-trip
+        var keys = new[] {
+            "CustomerSupportPhone", "CustomerSupportEmail",
+            "CustomerSupportWhatsApp", "CustomerSupportChatUrl"
+        };
+        var configs = await db.SystemConfigs.AsNoTracking()
+            .Where(c => keys.Contains(c.Key))
+            .ToDictionaryAsync(c => c.Key, c => c.Value);
+
+        var support = new SupportContactDto(
+            configs.GetValueOrDefault("CustomerSupportPhone"),
+            configs.GetValueOrDefault("CustomerSupportEmail"),
+            configs.GetValueOrDefault("CustomerSupportWhatsApp"),
+            configs.GetValueOrDefault("CustomerSupportChatUrl"));
+
+        return Ok(new TrackOrderResponseDto(order, support));
     }
 
+    /// <summary>
+    /// Returns the current customer's orders.
+    /// ?group=active   → in-progress orders (Pending … OutForDelivery)
+    /// ?group=completed → Delivered / BalancePaid / Completed
+    /// ?group=cancelled → Cancelled / Disputed
+    /// (omit group to get all orders)
+    /// </summary>
     [HttpGet("my-orders")]
-    public async Task<IActionResult> MyOrders([FromQuery] int page = 1)
-        => Ok(await _orders.GetCustomerOrdersAsync(CurrentUserId, page));
+    public async Task<IActionResult> MyOrders([FromQuery] int page = 1, [FromQuery] string? group = null)
+        => Ok(await _orders.GetCustomerOrdersAsync(CurrentUserId, page, group));
 }
 
 // ─── ADMIN ORDERS ─────────────────────────────────────────────────
@@ -741,6 +769,106 @@ public class ReorderController : VyronController
     {
         var draft = await _orders.GetReorderDraftAsync(id, CurrentUserId);
         return draft != null ? Ok(draft) : NotFound(new { error = "Order not found or does not belong to you." });
+    }
+}
+
+// ─── REPORT ISSUE (Task D) ────────────────────────────────────────
+/// <summary>
+/// Convenience endpoint: POST /api/orders/{orderId}/report-issue
+/// Validates order ownership, creates a dispute record, logs audit + activity,
+/// and notifies admin. Delegates to IDisputeService.
+/// </summary>
+[Route("api/orders"), Authorize]
+public class ReportIssueController : VyronController
+{
+    private readonly IDisputeService _disputes;
+    private readonly IActivityLogService _actLog;
+    private readonly VyronDbContext _db;
+
+    public ReportIssueController(IDisputeService disputes,
+        IActivityLogService actLog, VyronDbContext db)
+    { _disputes = disputes; _actLog = actLog; _db = db; }
+
+    [HttpPost("{orderId:guid}/report-issue")]
+    public async Task<IActionResult> ReportIssue(Guid orderId, [FromBody] ReportIssueRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.Description))
+            return BadRequest(new { error = "Description is required." });
+
+        // Validate order exists and belongs to the current customer
+        var order = await _db.Orders.AsNoTracking()
+            .FirstOrDefaultAsync(o => o.Id == orderId);
+        if (order == null) return NotFound(new { error = "Order not found." });
+        if (order.CustomerId != CurrentUserId)
+            return StatusCode(403, new { error = "You can only report issues on your own orders." });
+
+        // Delegate to dispute service (also sets order status to Disputed)
+        var dispute = await _disputes.CreateDisputeAsync(CurrentUserId,
+            new CreateDisputeRequest(orderId, req.Type, req.Description, req.EvidenceUrl));
+
+        // Activity log (fire-and-forget)
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+        var ua = HttpContext.Request.Headers.UserAgent.ToString();
+        _ = _actLog.LogAsync(CurrentUserId, "REPORT_ISSUE",
+            $"Customer reported issue on order {order.OrderNumber}: {req.Type}",
+            "Order", orderId, ip, ua);
+
+        return CreatedAtAction(nameof(ReportIssue), new { orderId }, new
+        {
+            disputeId    = dispute.Id,
+            status       = dispute.Status.ToString(),
+            message      = "Your issue has been reported and our team will review it shortly."
+        });
+    }
+}
+
+// ─── ADMIN ACTIVITY LOGS (Task F) ────────────────────────────────
+[Route("api/admin/activity-logs"), Authorize(Roles = "Admin,SuperAdmin")]
+public class AdminActivityLogsController : VyronController
+{
+    private readonly VyronDbContext _db;
+    public AdminActivityLogsController(VyronDbContext db) => _db = db;
+
+    /// <summary>
+    /// Paginated activity log with optional filters.
+    /// ?actorId=  &amp;action=  &amp;entity=  &amp;from=  &amp;to=  &amp;page=
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> GetAll(
+        [FromQuery] Guid? actorId,
+        [FromQuery] string? action,
+        [FromQuery] string? entity,
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to,
+        [FromQuery] int page = 1)
+    {
+        var q = _db.ActivityLogs
+            .AsNoTracking()
+            .Include(a => a.User)
+            .AsQueryable();
+
+        if (actorId.HasValue)  q = q.Where(a => a.UserId == actorId.Value);
+        if (!string.IsNullOrEmpty(action))
+            q = q.Where(a => a.ActivityType.Contains(action));
+        if (!string.IsNullOrEmpty(entity))
+            q = q.Where(a => a.EntityType != null && a.EntityType.Contains(entity));
+        if (from.HasValue)  q = q.Where(a => a.CreatedAt >= from.Value);
+        if (to.HasValue)    q = q.Where(a => a.CreatedAt <= to.Value);
+
+        var total = await q.CountAsync();
+        const int pageSize = 50;
+        var logs = await q
+            .OrderByDescending(a => a.CreatedAt)
+            .Skip((page - 1) * pageSize).Take(pageSize)
+            .Select(a => new ActivityLogDto(
+                a.Id, a.UserId,
+                a.User != null ? a.User.FullName : null,
+                a.ActivityType, a.Description,
+                a.EntityType, a.EntityId,
+                a.IpAddress, a.CreatedAt))
+            .ToListAsync();
+
+        return Ok(new { total, page, pageSize, data = logs });
     }
 }
 

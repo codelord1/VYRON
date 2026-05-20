@@ -120,7 +120,9 @@ public enum PaymentMethod
     BankTransfer = 1,
     Paystack = 2,
     Flutterwave = 3,
-    Wallet = 4
+    Wallet = 4,
+    /// <summary>Customer pays pickup fee in cash when the rider arrives for collection.</summary>
+    CashOnPickup = 5
 }
 
 public enum RiderStatus

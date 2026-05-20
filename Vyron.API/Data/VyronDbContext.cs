@@ -543,7 +543,12 @@ public class VyronDbContext : DbContext
             new SystemConfig { Id = new Guid("dddddddd-0000-0000-0000-000000000006"), Key = "PlatformCommissionPercent", Value = "10", Description = "Platform commission %", UpdatedAt = seedDate },
             new SystemConfig { Id = new Guid("dddddddd-0000-0000-0000-000000000007"), Key = "ThirdPartyLogisticsApiUrl", Value = "", Description = "3rd party logistics API endpoint", UpdatedAt = seedDate },
             new SystemConfig { Id = new Guid("dddddddd-0000-0000-0000-000000000008"), Key = "ThirdPartyLogisticsApiKey", Value = "", Description = "3rd party logistics API key", UpdatedAt = seedDate },
-            new SystemConfig { Id = new Guid("dddddddd-0000-0000-0000-000000000009"), Key = "PortalIdleTimeoutMinutes", Value = "15", Description = "Portal idle session timeout (5–120 min). Client-side enforced; server cookie uses its own expiry.", UpdatedAt = seedDate }
+            new SystemConfig { Id = new Guid("dddddddd-0000-0000-0000-000000000009"), Key = "PortalIdleTimeoutMinutes", Value = "15", Description = "Portal idle session timeout (5–120 min). Client-side enforced; server cookie uses its own expiry.", UpdatedAt = seedDate },
+            // ─── Customer support contacts (shown in Track Order screen) ──
+            new SystemConfig { Id = new Guid("dddddddd-0000-0000-0000-000000000010"), Key = "CustomerSupportPhone", Value = "+2348000000000", Description = "Support phone number shown to customers in track/order screens.", UpdatedAt = seedDate },
+            new SystemConfig { Id = new Guid("dddddddd-0000-0000-0000-000000000011"), Key = "CustomerSupportEmail", Value = "support@vyron.com", Description = "Support email address shown to customers.", UpdatedAt = seedDate },
+            new SystemConfig { Id = new Guid("dddddddd-0000-0000-0000-000000000012"), Key = "CustomerSupportWhatsApp", Value = "+2348000000000", Description = "WhatsApp support number (include country code, no spaces).", UpdatedAt = seedDate },
+            new SystemConfig { Id = new Guid("dddddddd-0000-0000-0000-000000000013"), Key = "CustomerSupportChatUrl", Value = "", Description = "Optional live-chat URL (e.g. Intercom widget). Leave empty to hide chat button.", UpdatedAt = seedDate }
         );
 
         // ─── SEED ROLES ────────────────────────────────────────────
