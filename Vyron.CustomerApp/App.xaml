@@ -6,6 +6,16 @@
     <Application.Resources>
         <ResourceDictionary>
             <!-- ── Brand Colours ── -->
+            <Color x:Key="VyronPrimary">#006B50</Color>
+            <Color x:Key="VyronBlack">#111111</Color>
+            <Color x:Key="VyronBackground">#F7F8FA</Color>
+            <Color x:Key="VyronWhite">#FFFFFF</Color>
+            <Color x:Key="VyronText">#1F2937</Color>
+            <Color x:Key="VyronAccent">#008866</Color>
+            <Color x:Key="VyronSuccess">#16A34A</Color>
+            <Color x:Key="VyronWarning">#F59E0B</Color>
+            <Color x:Key="VyronError">#DC2626</Color>
+            
             <Color x:Key="Teal">#008866</Color>
             <Color x:Key="TealDark">#006B50</Color>
             <Color x:Key="Mint">#D9F8EC</Color>
@@ -15,9 +25,10 @@
             <Color x:Key="CardStroke">#DCE9E4</Color>
             <Color x:Key="Gray3">#697780</Color>
             <Color x:Key="Gray5">#071A1F</Color>
-            <Color x:Key="Danger">#F04452</Color>
-            <Color x:Key="Success">#0B8F6A</Color>
-            <Color x:Key="Warning">#D68A00</Color>
+            <Color x:Key="Danger">#DC2626</Color>
+
+            <Color x:Key="Success">#16A34A</Color>
+            <Color x:Key="Warning">#F59E0B</Color>
             <Color x:Key="InputBg">#FFFFFF</Color>
             <Color x:Key="OverlayBg">#99000000</Color>
 

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+﻿<?xml version="1.0" encoding="UTF-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:behaviors="clr-namespace:Vyron.CustomerApp.Behaviors"
@@ -119,9 +119,14 @@
                                      HorizontalOptions="Center"
                                      Spacing="12"
                                      Padding="40,80">
-                    <Label Text="🔔"
-                           FontSize="56"
-                           HorizontalOptions="Center" />
+                    <Border BackgroundColor="{StaticResource Mint}" WidthRequest="76" HeightRequest="76" Stroke="Transparent" StrokeShape="RoundRectangle 38">
+                        <Image Source="vyron_icon_only.png"
+                               HeightRequest="42"
+                               WidthRequest="42"
+                               Aspect="AspectFit"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center" />
+                    </Border>
                     <Label Text="No notifications yet"
                            FontFamily="OpenSansSemibold"
                            FontSize="18"

@@ -13,25 +13,11 @@
     <ScrollView IsEnabled="{Binding IsNotBusy}">
         <VerticalStackLayout Padding="26,50,26,36" Spacing="0">
 
-            <HorizontalStackLayout Spacing="10" Margin="0,0,0,44">
-                <Border BackgroundColor="{StaticResource Teal}"
-                        WidthRequest="42"
-                        HeightRequest="42"
-                        StrokeShape="RoundRectangle 21"
-                        Stroke="Transparent">
-                    <Label Text="~"
-                           TextColor="White"
-                           FontFamily="OpenSansSemibold"
-                           FontSize="26"
-                           HorizontalOptions="Center"
-                           VerticalOptions="Center" />
-                </Border>
-                <Label Text="VYRON"
-                       TextColor="{StaticResource Gray5}"
-                       FontFamily="OpenSansSemibold"
-                       FontSize="22"
-                       VerticalOptions="Center" />
-            </HorizontalStackLayout>
+            <Image Source="vyron_logo_primary.png"
+                   HeightRequest="60"
+                   Aspect="AspectFit"
+                   HorizontalOptions="Center"
+                   Margin="0,20,0,44" />
 
             <Label Text="Welcome back"
                    FontFamily="OpenSansSemibold"

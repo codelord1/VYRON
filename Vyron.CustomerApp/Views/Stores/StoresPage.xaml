@@ -95,7 +95,12 @@
             <CollectionView.EmptyView>
                 <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="12" Padding="40,80">
                     <Border BackgroundColor="{StaticResource Mint}" WidthRequest="76" HeightRequest="76" Stroke="Transparent" StrokeShape="RoundRectangle 38">
-                        <Path Stroke="{StaticResource TealDark}" StrokeThickness="2" StrokeLineCap="Round" StrokeLineJoin="Round" Data="M20,36 L20,24 L14,24 L18,15 L34,15 L38,24 L32,24 L32,36 Z M23,36 L23,29 L29,29 L29,36" />
+                        <Image Source="vyron_icon_only.png"
+                               HeightRequest="42"
+                               WidthRequest="42"
+                               Aspect="AspectFit"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center" />
                     </Border>
                     <Label Text="No stores available yet" FontFamily="OpenSansSemibold" FontSize="18" HorizontalTextAlignment="Center" />
                     <Label Text="Verified laundry stores will appear here." FontSize="13" TextColor="{StaticResource Gray3}" HorizontalTextAlignment="Center" />

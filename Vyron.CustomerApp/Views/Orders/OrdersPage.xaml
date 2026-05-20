@@ -64,9 +64,10 @@
                             HeightRequest="76"
                             Stroke="Transparent"
                             StrokeShape="RoundRectangle 38">
-                        <Label Text="Box"
-                               FontSize="13"
-                               TextColor="{StaticResource TealDark}"
+                        <Image Source="vyron_icon_only.png"
+                               HeightRequest="42"
+                               WidthRequest="42"
+                               Aspect="AspectFit"
                                HorizontalOptions="Center"
                                VerticalOptions="Center" />
                     </Border>
