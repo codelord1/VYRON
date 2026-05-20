@@ -338,6 +338,7 @@ public partial class OrdersViewModel : BaseViewModel
     private readonly OrderService _orders;
     private DateTime _lastLoadedAt = DateTime.MinValue;
     private bool _hasLoaded;
+    private Task? _loadTask;
 
     [ObservableProperty] private ObservableCollection<OrderDto> _orders_ = new();
     [ObservableProperty] private bool _isEmpty;
@@ -355,11 +356,27 @@ public partial class OrdersViewModel : BaseViewModel
         if (_hasLoaded && DateTime.UtcNow - _lastLoadedAt < TimeSpan.FromMinutes(2))
             return;
 
-        await LoadAsync();
+        await LoadOnceAsync(isRefresh: false);
     }
 
     [RelayCommand]
-    private async Task LoadAsync()
+    private async Task LoadAsync() => await LoadOnceAsync(isRefresh: true);
+
+    private Task LoadOnceAsync(bool isRefresh)
+    {
+        if (_loadTask is { IsCompleted: false })
+        {
+            if (isRefresh)
+                IsRefreshing = false;
+
+            return _loadTask;
+        }
+
+        _loadTask = LoadCoreAsync(isRefresh);
+        return _loadTask;
+    }
+
+    private async Task LoadCoreAsync(bool isRefresh)
     {
         if (IsBusy)
         {
@@ -367,9 +384,12 @@ public partial class OrdersViewModel : BaseViewModel
             return;
         }
 
+        if (isRefresh)
+            IsRefreshing = true;
+
         try
         {
-            var (data, _) = await SafeRefreshCallAsync(() => _orders.GetMyOrdersAsync(CurrentPage), "orders");
+            var (data, _) = await SafeCallAsync(() => _orders.GetMyOrdersAsync(CurrentPage), "orders");
             if (data != null)
             {
                 Orders_.Clear();
