@@ -33,6 +33,8 @@ public class AdminDbContext : DbContext
     public DbSet<CommunicationLog> CommunicationLogs => Set<CommunicationLog>();
     public DbSet<StoreUserAssignment> StoreUserAssignments => Set<StoreUserAssignment>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
+    public DbSet<Coupon> Coupons => Set<Coupon>();
+    public DbSet<CouponUsage> CouponUsages => Set<CouponUsage>();
 
     protected override void OnModelCreating(ModelBuilder m)
     {
@@ -61,6 +63,8 @@ public class AdminDbContext : DbContext
         m.Entity<CommunicationLog>().Property(x => x.Id).ValueGeneratedNever();
         m.Entity<StoreUserAssignment>().Property(x => x.Id).ValueGeneratedNever();
         m.Entity<ActivityLog>().Property(x => x.Id).ValueGeneratedNever();
+        m.Entity<Coupon>().Property(x => x.Id).ValueGeneratedNever();
+        m.Entity<CouponUsage>().Property(x => x.Id).ValueGeneratedNever();
 
         // Table names must match API
         m.Entity<AppRole>().ToTable("Roles");
@@ -69,6 +73,24 @@ public class AdminDbContext : DbContext
         m.Entity<CommunicationLog>().ToTable("CommunicationLogs");
         m.Entity<StoreUserAssignment>().ToTable("StoreUserAssignments");
         m.Entity<ActivityLog>().ToTable("ActivityLogs");
+
+        // Coupon / CouponUsage
+        m.Entity<Coupon>(e => {
+            e.ToTable("Coupons");
+            e.HasIndex(x => x.Code).IsUnique();
+            e.Property(x => x.Code).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Description).HasMaxLength(500);
+            e.Property(x => x.DiscountType).HasMaxLength(20).IsRequired();
+            e.Property(x => x.DiscountValue).HasColumnType("decimal(18,2)");
+        });
+        m.Entity<CouponUsage>(e => {
+            e.ToTable("CouponUsages");
+            e.HasIndex(x => new { x.CouponId, x.CustomerId });
+            e.Property(x => x.DiscountApplied).HasColumnType("decimal(18,2)");
+            e.HasOne(x => x.Coupon).WithMany(c => c.Usages).HasForeignKey(x => x.CouponId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Customer).WithMany().HasForeignKey(x => x.CustomerId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Order).WithMany().HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.SetNull).IsRequired(false);
+        });
 
         // ServiceOffering → ServiceTypeEntity optional FK
         m.Entity<ServiceOffering>()

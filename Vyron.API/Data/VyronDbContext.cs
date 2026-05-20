@@ -33,6 +33,8 @@ public class VyronDbContext : DbContext
     public DbSet<CommunicationLog> CommunicationLogs => Set<CommunicationLog>();
     public DbSet<StoreUserAssignment> StoreUserAssignments => Set<StoreUserAssignment>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
+    public DbSet<Coupon> Coupons => Set<Coupon>();
+    public DbSet<CouponUsage> CouponUsages => Set<CouponUsage>();
 
     // ─── Stable seed GUIDs (same across both providers) ─────────────
     private static readonly Guid AdminUserId   = new("11111111-1111-1111-1111-111111111111");
@@ -445,6 +447,34 @@ public class VyronDbContext : DbContext
              .HasForeignKey(x => x.SentByAdminId)
              .OnDelete(DeleteBehavior.NoAction)   // NoAction avoids SQL Server multi-cascade-path error
              .IsRequired(false);
+        });
+
+        // ─── COUPON ────────────────────────────────────────────────
+        m.Entity<Coupon>(e =>
+        {
+            e.ToTable("Coupons");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.Code).IsUnique();
+            e.HasIndex(x => x.IsActive);
+            e.Property(x => x.Code).HasMaxLength(50).IsRequired();
+            e.Property(x => x.Description).HasMaxLength(500);
+            e.Property(x => x.DiscountType).HasMaxLength(20).IsRequired();
+            e.Property(x => x.DiscountValue).HasColumnType("decimal(18,2)");
+        });
+
+        m.Entity<CouponUsage>(e =>
+        {
+            e.ToTable("CouponUsages");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.CouponId, x.CustomerId });
+            e.HasIndex(x => x.CustomerId);
+            e.Property(x => x.DiscountApplied).HasColumnType("decimal(18,2)");
+            e.HasOne(x => x.Coupon).WithMany(c => c.Usages).HasForeignKey(x => x.CouponId)
+             .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Customer).WithMany().HasForeignKey(x => x.CustomerId)
+             .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Order).WithMany().HasForeignKey(x => x.OrderId)
+             .OnDelete(DeleteBehavior.SetNull).IsRequired(false);
         });
 
         // ─── APP ROLE ──────────────────────────────────────────────

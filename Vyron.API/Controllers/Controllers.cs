@@ -7,6 +7,7 @@ using Vyron.API.DTOs;
 using Vyron.API.Models;
 using Vyron.API.Services;
 using Vyron.Shared.Enums;
+// NOTE: Coupon entity is in Vyron.API.Models namespace — no extra using needed.
 
 namespace Vyron.API.Controllers;
 
@@ -177,6 +178,13 @@ public class AdminOrdersController : VyronController
     [HttpPut("{id:guid}/status")]
     public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateOrderStatusRequest req)
     {
+        // PickUpRiderAssigned and DeliveryRiderAssigned can only be set manually by SuperAdmin.
+        // Normal assignment goes through the dedicated assign-rider / assign-delivery-rider actions.
+        if (req.Status is OrderStatus.PickUpRiderAssigned or OrderStatus.DeliveryRiderAssigned)
+        {
+            if (CurrentUserRole != "SuperAdmin")
+                return StatusCode(403, new { error = "Only SuperAdmin can manually set PickUpRiderAssigned or DeliveryRiderAssigned status." });
+        }
         var o = await _orders.UpdateStatusAsync(id, req.Status, req.Note, CurrentUserId);
         return o != null ? Ok(o) : NotFound();
     }
@@ -658,5 +666,120 @@ public class OrderRiderMessageController : VyronController
             "message");
 
         return Ok(new { success = true, message = "Message sent to rider." });
+    }
+}
+
+// ─── COUPON ───────────────────────────────────────────────────────
+[Route("api/coupons"), Authorize]
+public class CouponsController : VyronController
+{
+    private readonly ICouponService _coupons;
+    private readonly IOrderService _orders;
+    public CouponsController(ICouponService coupons, IOrderService orders)
+    { _coupons = coupons; _orders = orders; }
+
+    /// <summary>Validates a coupon code for the current customer.
+    /// Returns discount info so CustomerApp can show discounted estimate before confirming order.</summary>
+    [HttpPost("validate")]
+    public async Task<IActionResult> Validate([FromBody] ValidateCouponRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.Code))
+            return BadRequest(new { error = "Coupon code is required." });
+        var result = await _coupons.ValidateAsync(req.Code.Trim(), CurrentUserId);
+        return Ok(result);
+    }
+
+    /// <summary>Validates coupon and applies it to a price estimate in one call.
+    /// CustomerApp should call this after getting a regular estimate to see the discounted total.</summary>
+    [HttpPost("estimate")]
+    public async Task<IActionResult> EstimateWithCoupon(
+        [FromBody] EstimateWithCouponRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.CouponCode))
+            return BadRequest(new { error = "Coupon code is required." });
+
+        var estimate = await _orders.EstimatePriceAsync(
+            new PriceEstimateRequest(req.ServiceOfferingId, req.Weight, req.Pieces));
+
+        var validation = await _coupons.ValidateAsync(req.CouponCode.Trim(), CurrentUserId);
+        if (!validation.IsValid)
+            return BadRequest(new { error = validation.Message });
+
+        var discount = validation.DiscountType == "Percentage"
+            ? Math.Round(estimate.LaundryCost * (validation.DiscountValue / 100m), 2)
+            : Math.Min(validation.DiscountValue, estimate.LaundryCost);
+
+        var discountedLaundry = estimate.LaundryCost - discount;
+        var discountedTotal = discountedLaundry + estimate.PickupFee + estimate.DeliveryFee;
+
+        return Ok(new CouponEstimateResponse(
+            OriginalTotal: estimate.TotalEstimate,
+            DiscountAmount: discount,
+            DiscountedTotal: discountedTotal,
+            CouponCode: req.CouponCode.ToUpperInvariant(),
+            DiscountType: validation.DiscountType!,
+            DiscountValue: validation.DiscountValue,
+            Message: $"Coupon applied! You save ₦{discount:N0}."));
+    }
+}
+
+// ─── REORDER ──────────────────────────────────────────────────────
+[Route("api/orders"), Authorize]
+public class ReorderController : VyronController
+{
+    private readonly IOrderService _orders;
+    public ReorderController(IOrderService orders) => _orders = orders;
+
+    /// <summary>
+    /// Returns a prefilled reorder draft based on a previous order.
+    /// CustomerApp uses this to pre-fill the order creation screen.
+    /// If the store or service is no longer available, CanReorder = false.
+    /// No order is created by this call — customer still confirms separately.
+    /// </summary>
+    [HttpGet("{id:guid}/reorder-draft")]
+    public async Task<IActionResult> ReorderDraft(Guid id)
+    {
+        var draft = await _orders.GetReorderDraftAsync(id, CurrentUserId);
+        return draft != null ? Ok(draft) : NotFound(new { error = "Order not found or does not belong to you." });
+    }
+}
+
+// ─── ADMIN COUPON MANAGEMENT ──────────────────────────────────────
+[Route("api/admin/coupons"), Authorize(Roles = "Admin,SuperAdmin")]
+public class AdminCouponsController : VyronController
+{
+    private readonly ICouponService _coupons;
+    public AdminCouponsController(ICouponService coupons) => _coupons = coupons;
+
+    [HttpGet]
+    public async Task<IActionResult> GetAll() => Ok(await _coupons.GetAllAsync());
+
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetOne(Guid id)
+    {
+        var c = await _coupons.GetByIdAsync(id);
+        return c != null ? Ok(c) : NotFound();
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] Coupon coupon)
+    {
+        var created = await _coupons.CreateAsync(coupon, CurrentUserId);
+        return Ok(created);
+    }
+
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] Coupon coupon)
+    {
+        coupon.Id = id;
+        var ok = await _coupons.UpdateAsync(coupon, CurrentUserId);
+        return ok ? Ok() : NotFound();
+    }
+
+    [HttpPost("{id:guid}/toggle")]
+    public async Task<IActionResult> Toggle(Guid id)
+    {
+        var ok = await _coupons.ToggleActiveAsync(id, CurrentUserId);
+        return ok ? Ok() : NotFound();
     }
 }

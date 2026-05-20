@@ -297,6 +297,16 @@ public class OrdersController : VyronAdminController
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> UpdateStatus(Guid id, OrderStatus newStatus, string? note)
     {
+        // PickUpRiderAssigned and DeliveryRiderAssigned must be set via the assignment actions only.
+        // Manual dropdown selection of these statuses is SuperAdmin-only.
+        if (newStatus is OrderStatus.PickUpRiderAssigned or OrderStatus.DeliveryRiderAssigned)
+        {
+            if (!User.IsInRole("SuperAdmin"))
+            {
+                TempData["Error"] = "Only SuperAdmin can manually set PickUpRiderAssigned or DeliveryRiderAssigned status. Use the rider assignment actions instead.";
+                return RedirectToAction("Detail", new { id });
+            }
+        }
         await _orders.UpdateStatusAsync(id, newStatus, note, CurrentUserId);
         TempData["Success"] = $"Status updated to {newStatus}.";
         return RedirectToAction("Detail", new { id });
@@ -1495,6 +1505,251 @@ public class StoreStaffController : VyronAdminController
     {
         await _staff.RevokeAsync(id, CurrentUserId);
         TempData["Success"] = "Staff assignment revoked.";
+        return RedirectToAction("Index");
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// REVENUE — Admin revenue/payment summary (MVP)
+// ═══════════════════════════════════════════════════════════════════
+[Authorize(Roles = "Admin,SuperAdmin")]
+public class RevenueController : VyronAdminController
+{
+    private readonly AdminDbContext _db;
+    public RevenueController(AdminDbContext db) => _db = db;
+
+    public async Task<IActionResult> Index(DateTime? from, DateTime? to)
+    {
+        var fromDate = from ?? DateTime.UtcNow.AddDays(-30);
+        var toDate   = (to ?? DateTime.UtcNow).Date.AddDays(1); // end-of-day inclusive
+
+        var orders = await _db.Orders
+            .AsNoTracking()
+            .Include(o => o.Store)
+            .Where(o => o.CreatedAt >= fromDate && o.CreatedAt < toDate)
+            .ToListAsync();
+
+        var payments = await _db.Payments
+            .AsNoTracking()
+            .Include(p => p.Order).ThenInclude(o => o.Store)
+            .Where(p => p.CreatedAt >= fromDate && p.CreatedAt < toDate && p.IsSuccessful)
+            .ToListAsync();
+
+        decimal Total(Order o) => o.ActualTotal > 0 ? o.ActualTotal : o.TotalEstimate;
+
+        var commissionPct = 10m; // default — ideally from SystemConfig
+        var cfg = await _db.SystemConfigs.AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Key == "PlatformCommissionPercent");
+        if (cfg != null && decimal.TryParse(cfg.Value, out var pct)) commissionPct = pct;
+
+        var completedOrders = orders.Where(o => o.Status == Vyron.Shared.Enums.OrderStatus.Completed ||
+                                                 o.PaymentState == Vyron.Shared.Enums.PaymentState.FullyPaid).ToList();
+        var pendingOrders   = orders.Where(o => o.PaymentState == Vyron.Shared.Enums.PaymentState.Unpaid ||
+                                                 o.PaymentState == Vyron.Shared.Enums.PaymentState.PickupFeePaid).ToList();
+
+        var totalOrderValue     = orders.Sum(Total);
+        var completedRevenue    = completedOrders.Sum(Total);
+        var pickupFeesCollected = payments.Where(p => p.Type == "pickup_fee").Sum(p => p.Amount);
+        var deliveryFees        = orders.Sum(o => o.DeliveryFee);
+        var commission          = Math.Round(completedRevenue * commissionPct / 100m, 2);
+        var storePayoutEstimate = completedRevenue - commission;
+
+        ViewBag.From            = fromDate.ToString("yyyy-MM-dd");
+        ViewBag.To              = (toDate.AddDays(-1)).ToString("yyyy-MM-dd");
+        ViewBag.TotalOrderValue      = totalOrderValue;
+        ViewBag.CompletedRevenue     = completedRevenue;
+        ViewBag.PickupFeesCollected  = pickupFeesCollected;
+        ViewBag.DeliveryFees         = deliveryFees;
+        ViewBag.CommissionPct        = commissionPct;
+        ViewBag.CommissionEstimate   = commission;
+        ViewBag.StorePayoutEstimate  = storePayoutEstimate;
+        ViewBag.PendingCount         = pendingOrders.Count;
+        ViewBag.CompletedCount       = completedOrders.Count;
+        ViewBag.CancelledCount       = orders.Count(o => o.Status == Vyron.Shared.Enums.OrderStatus.Cancelled);
+        ViewBag.TotalOrders          = orders.Count;
+        ViewBag.RecentPayments       = payments.OrderByDescending(p => p.CreatedAt).Take(20).ToList();
+
+        ViewData["Title"] = "Revenue Summary";
+        return View();
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// REPORTS — MVP admin reporting module
+// ═══════════════════════════════════════════════════════════════════
+[Authorize(Roles = "Admin,SuperAdmin")]
+public class ReportsController : VyronAdminController
+{
+    private readonly AdminDbContext _db;
+    public ReportsController(AdminDbContext db) => _db = db;
+
+    public IActionResult Index() { ViewData["Title"] = "Reports"; return View(); }
+
+    public async Task<IActionResult> Users(DateTime? from, DateTime? to, string? role, int page = 1)
+    {
+        const int size = 25;
+        var q = _db.Users.AsQueryable();
+        if (from.HasValue)  q = q.Where(u => u.CreatedAt >= from.Value.ToUniversalTime());
+        if (to.HasValue)    q = q.Where(u => u.CreatedAt <= to.Value.ToUniversalTime().AddDays(1));
+        if (!string.IsNullOrEmpty(role) && Enum.TryParse<UserRole>(role, out var r))
+            q = q.Where(u => u.Role == r);
+
+        ViewBag.Total   = await q.CountAsync();
+        ViewBag.Page    = page; ViewBag.From = from?.ToString("yyyy-MM-dd"); ViewBag.To = to?.ToString("yyyy-MM-dd"); ViewBag.Role = role;
+        ViewData["Title"] = "User Report";
+        return View(await q.OrderByDescending(u => u.CreatedAt).Skip((page - 1) * size).Take(size).AsNoTracking().ToListAsync());
+    }
+
+    public async Task<IActionResult> Orders(DateTime? from, DateTime? to, OrderStatus? status, Guid? storeId, int page = 1)
+    {
+        const int size = 25;
+        var q = _db.Orders.Include(o => o.Customer).Include(o => o.Store).AsQueryable();
+        if (from.HasValue)   q = q.Where(o => o.CreatedAt >= from.Value.ToUniversalTime());
+        if (to.HasValue)     q = q.Where(o => o.CreatedAt <= to.Value.ToUniversalTime().AddDays(1));
+        if (status.HasValue) q = q.Where(o => o.Status == status.Value);
+        if (storeId.HasValue) q = q.Where(o => o.StoreId == storeId.Value);
+
+        ViewBag.Total    = await q.CountAsync();
+        ViewBag.Page     = page; ViewBag.From = from?.ToString("yyyy-MM-dd"); ViewBag.To = to?.ToString("yyyy-MM-dd");
+        ViewBag.Status   = status; ViewBag.StoreId = storeId;
+        ViewBag.Stores   = await _db.Stores.AsNoTracking().Select(s => new { s.Id, s.Name }).ToListAsync();
+        ViewData["Title"] = "Order Report";
+        return View(await q.OrderByDescending(o => o.CreatedAt).Skip((page - 1) * size).Take(size).AsNoTracking().ToListAsync());
+    }
+
+    public async Task<IActionResult> Stores(int page = 1)
+    {
+        const int size = 25;
+        var q = _db.Stores.Include(s => s.Owner).AsQueryable();
+        ViewBag.Total = await q.CountAsync(); ViewBag.Page = page;
+        ViewData["Title"] = "Store Report";
+        return View(await q.OrderByDescending(s => s.CreatedAt).Skip((page - 1) * size).Take(size).AsNoTracking().ToListAsync());
+    }
+
+    public async Task<IActionResult> Payments(DateTime? from, DateTime? to, int page = 1)
+    {
+        const int size = 25;
+        var q = _db.Payments.Include(p => p.Order).ThenInclude(o => o.Customer).AsQueryable();
+        if (from.HasValue) q = q.Where(p => p.CreatedAt >= from.Value.ToUniversalTime());
+        if (to.HasValue)   q = q.Where(p => p.CreatedAt <= to.Value.ToUniversalTime().AddDays(1));
+        ViewBag.Total = await q.CountAsync(); ViewBag.Page = page; ViewBag.From = from?.ToString("yyyy-MM-dd"); ViewBag.To = to?.ToString("yyyy-MM-dd");
+        ViewData["Title"] = "Payment Report";
+        return View(await q.OrderByDescending(p => p.CreatedAt).Skip((page - 1) * size).Take(size).AsNoTracking().ToListAsync());
+    }
+
+    public async Task<IActionResult> AuditLogs(DateTime? from, DateTime? to, string? search, int page = 1)
+    {
+        const int size = 25;
+        var q = _db.AuditLogs.Include(a => a.User).AsQueryable();
+        if (from.HasValue) q = q.Where(a => a.CreatedAt >= from.Value.ToUniversalTime());
+        if (to.HasValue)   q = q.Where(a => a.CreatedAt <= to.Value.ToUniversalTime().AddDays(1));
+        if (!string.IsNullOrEmpty(search))
+            q = q.Where(a => a.Action.Contains(search) || a.Entity.Contains(search) ||
+                             (a.User != null && a.User.FullName.Contains(search)));
+        ViewBag.Total = await q.CountAsync(); ViewBag.Page = page; ViewBag.From = from?.ToString("yyyy-MM-dd"); ViewBag.To = to?.ToString("yyyy-MM-dd"); ViewBag.Search = search;
+        ViewData["Title"] = "Audit Log Report";
+        return View(await q.OrderByDescending(a => a.CreatedAt).Skip((page - 1) * size).Take(size).AsNoTracking().ToListAsync());
+    }
+
+    public async Task<IActionResult> Compliance(DateTime? from, DateTime? to)
+    {
+        var fromDate = from ?? DateTime.UtcNow.AddDays(-30);
+        var toDate   = (to ?? DateTime.UtcNow).Date.AddDays(1);
+
+        ViewBag.TotalOrders       = await _db.Orders.CountAsync(o => o.CreatedAt >= fromDate && o.CreatedAt < toDate);
+        ViewBag.CancelledOrders   = await _db.Orders.CountAsync(o => o.Status == OrderStatus.Cancelled && o.CreatedAt >= fromDate && o.CreatedAt < toDate);
+        ViewBag.DisputedOrders    = await _db.Orders.CountAsync(o => o.Status == OrderStatus.Disputed && o.CreatedAt >= fromDate && o.CreatedAt < toDate);
+        ViewBag.OpenDisputes      = await _db.Disputes.CountAsync(d => d.Status == DisputeStatus.Open);
+        ViewBag.ResolvedDisputes  = await _db.Disputes.CountAsync(d => d.Status == DisputeStatus.Resolved || d.Status == DisputeStatus.Refunded);
+        ViewBag.AuditEventCount   = await _db.AuditLogs.CountAsync(a => a.CreatedAt >= fromDate && a.CreatedAt < toDate);
+        ViewBag.CommLogs          = await _db.CommunicationLogs.CountAsync(l => l.CreatedAt >= fromDate && l.CreatedAt < toDate);
+        ViewBag.From              = fromDate.ToString("yyyy-MM-dd");
+        ViewBag.To                = (toDate.AddDays(-1)).ToString("yyyy-MM-dd");
+        ViewData["Title"]         = "Compliance Report";
+        return View();
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// COUPONS — Admin coupon/promo management
+// ═══════════════════════════════════════════════════════════════════
+[Authorize(Roles = "Admin,SuperAdmin")]
+public class CouponsController : VyronAdminController
+{
+    private readonly AdminDbContext _db;
+    public CouponsController(AdminDbContext db) => _db = db;
+
+    public async Task<IActionResult> Index()
+    {
+        ViewData["Title"] = "Coupons";
+        return View(await _db.Coupons.AsNoTracking().OrderByDescending(c => c.CreatedAt).ToListAsync());
+    }
+
+    public IActionResult Create()
+    {
+        ViewData["Title"] = "Create Coupon";
+        return View(new Vyron.API.Models.Coupon());
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(Vyron.API.Models.Coupon model)
+    {
+        if (!ModelState.IsValid) { ViewData["Title"] = "Create Coupon"; return View(model); }
+        if (await _db.Coupons.AnyAsync(c => c.Code == model.Code.ToUpperInvariant()))
+        {
+            ModelState.AddModelError("Code", "A coupon with this code already exists.");
+            ViewData["Title"] = "Create Coupon";
+            return View(model);
+        }
+        model.Id = Guid.NewGuid();
+        model.Code = model.Code.ToUpperInvariant().Trim();
+        model.CreatedAt = model.UpdatedAt = DateTime.UtcNow;
+        model.CreatedByUserId = CurrentUserId;
+        _db.Coupons.Add(model);
+        await _db.SaveChangesAsync();
+        TempData["Success"] = $"Coupon {model.Code} created.";
+        return RedirectToAction("Index");
+    }
+
+    public async Task<IActionResult> Edit(Guid id)
+    {
+        var c = await _db.Coupons.FindAsync(id);
+        if (c == null) return NotFound();
+        ViewData["Title"] = "Edit Coupon";
+        return View(c);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(Guid id, Vyron.API.Models.Coupon model)
+    {
+        if (!ModelState.IsValid) { ViewData["Title"] = "Edit Coupon"; return View(model); }
+        var c = await _db.Coupons.FindAsync(id);
+        if (c == null) return NotFound();
+        c.Code                  = model.Code.ToUpperInvariant().Trim();
+        c.Description           = model.Description;
+        c.DiscountType          = model.DiscountType;
+        c.DiscountValue         = model.DiscountValue;
+        c.MaxUsesPerCustomer    = model.MaxUsesPerCustomer;
+        c.GlobalMaxUses         = model.GlobalMaxUses;
+        c.StartDate             = model.StartDate;
+        c.EndDate               = model.EndDate;
+        c.IsActive              = model.IsActive;
+        c.AppliesToFirstNOrders = model.AppliesToFirstNOrders;
+        c.UpdatedAt             = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        TempData["Success"] = $"Coupon {c.Code} updated.";
+        return RedirectToAction("Index");
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Toggle(Guid id)
+    {
+        var c = await _db.Coupons.FindAsync(id);
+        if (c == null) return NotFound();
+        c.IsActive = !c.IsActive;
+        c.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        TempData["Success"] = c.IsActive ? $"{c.Code} activated." : $"{c.Code} deactivated.";
         return RedirectToAction("Index");
     }
 }

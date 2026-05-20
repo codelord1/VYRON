@@ -1,0 +1,59 @@
+@{
+    ViewData["Title"] = "Compliance Report";
+}
+
+<div class="filter-bar">
+    <form method="get" class="filter-form">
+        <div class="filter-group">
+            <label>From</label>
+            <input type="date" name="from" value="@ViewBag.From" class="form-control" />
+        </div>
+        <div class="filter-group">
+            <label>To</label>
+            <input type="date" name="to" value="@ViewBag.To" class="form-control" />
+        </div>
+        <button type="submit" class="btn btn-primary">Apply</button>
+    </form>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total Orders in Period</div>
+        <div class="stat-value">@ViewBag.TotalOrders</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Cancelled Orders</div>
+        <div class="stat-value text-danger">@ViewBag.CancelledOrders</div>
+        @if ((int)ViewBag.TotalOrders > 0)
+        {
+            <div class="stat-sub">@(((double)(int)ViewBag.CancelledOrders / (int)ViewBag.TotalOrders * 100).ToString("F1"))% rate</div>
+        }
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Disputed Orders</div>
+        <div class="stat-value text-warn">@ViewBag.DisputedOrders</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Open Disputes</div>
+        <div class="stat-value text-danger">@ViewBag.OpenDisputes</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Resolved Disputes</div>
+        <div class="stat-value text-success">@ViewBag.ResolvedDisputes</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Audit Events</div>
+        <div class="stat-value">@ViewBag.AuditEventCount</div>
+        <div class="stat-sub">In period</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Communications Sent</div>
+        <div class="stat-value">@ViewBag.CommLogs</div>
+        <div class="stat-sub">In period</div>
+    </div>
+</div>
+
+<div style="margin-top:1.5rem;">
+    <a href="/Reports/AuditLogs?from=@ViewBag.From&to=@ViewBag.To" class="btn btn-ghost">View Audit Logs →</a>
+    <a href="/Disputes" class="btn btn-ghost">Manage Disputes →</a>
+</div>

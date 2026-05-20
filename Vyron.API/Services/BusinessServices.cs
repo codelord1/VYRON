@@ -61,7 +61,11 @@ public class StoreService : IStoreService
             .Where(s => s.Status == StoreStatus.Active).AsQueryable();
 
         if (!string.IsNullOrEmpty(search))
-            query = query.Where(s => s.Name.Contains(search) || s.Area.Contains(search));
+            query = query.Where(s =>
+                s.Name.Contains(search) ||
+                s.Area.Contains(search) ||
+                s.Address.Contains(search) ||
+                s.Services.Any(svc => svc.IsActive && svc.Name.Contains(search)));
 
         if (filter == "verified") query = query.Where(s => s.IsVerified);
         else if (filter == "fast") query = query.Where(s => s.FastPickup);
@@ -283,6 +287,11 @@ public interface IOrderService
     /// <summary>Assigns a delivery rider (separate from the pickup rider) when the order is Ready.</summary>
     Task<OrderDto?> AssignDeliveryRiderAsync(Guid orderId, Guid riderId, Guid adminId);
     Task<OrderDto?> OverridePriceAsync(Guid orderId, OverridePriceRequest req, Guid adminId);
+    /// <summary>
+    /// Builds a reorder draft from a previous order: returns a prefilled estimate
+    /// so CustomerApp can confirm before creating the new order.
+    /// </summary>
+    Task<ReorderDraftDto?> GetReorderDraftAsync(Guid originalOrderId, Guid customerId);
 }
 
 public class OrderService : IOrderService
@@ -586,13 +595,14 @@ public class OrderService : IOrderService
         if (order == null || rider == null) return null;
 
         order.RiderId = riderId; order.RiderAssignedAt = DateTime.UtcNow;
-        if (order.Status == OrderStatus.PickupFeePaid) order.Status = OrderStatus.RiderAssigned;
+        if (order.Status == OrderStatus.PickupFeePaid || order.Status == OrderStatus.RiderAssigned)
+            order.Status = OrderStatus.PickUpRiderAssigned;
         order.UpdatedAt = DateTime.UtcNow;
 
         _db.OrderStatusHistories.Add(new OrderStatusHistory
         {
-            OrderId = orderId, Status = OrderStatus.RiderAssigned,
-            Note = $"Rider {rider.User.FullName} assigned", ChangedByUserId = adminId
+            OrderId = orderId, Status = OrderStatus.PickUpRiderAssigned,
+            Note = $"Pickup rider {rider.User.FullName} assigned", ChangedByUserId = adminId
         });
         await _db.SaveChangesAsync();
 
@@ -604,10 +614,10 @@ public class OrderService : IOrderService
             var notif = sp.GetRequiredService<INotificationService>();
             var audit = sp.GetRequiredService<IAuditService>();
             await notif.SendInAppAsync(capCustId,
-                "Rider Assigned",
-                $"A rider has been assigned to your order #{capOrderNum}. They will pick up your laundry soon.",
-                "order");
-            await audit.LogAsync(adminId, "RIDER_ASSIGN", "Order", capOrderId);
+                "Pickup Rider Assigned",
+                $"A pickup rider has been assigned to your order #{capOrderNum}. They will collect your laundry soon.",
+                "order", "Order", capOrderId);
+            await audit.LogAsync(adminId, "PICKUP_RIDER_ASSIGN", "Order", capOrderId);
         }, "AssignRider");
 
         return await GetOrderDtoAsync(orderId);
@@ -621,15 +631,14 @@ public class OrderService : IOrderService
 
         order.DeliveryRiderId = riderId; order.UpdatedAt = DateTime.UtcNow;
 
-        // Auto-transition to OutForDelivery when order is Ready and delivery rider is assigned
-        if (order.Status == OrderStatus.Ready)
+        // Set DeliveryRiderAssigned first; admin then promotes to OutForDelivery separately
+        if (order.Status == OrderStatus.Ready || order.Status == OrderStatus.DeliveryRiderAssigned)
         {
-            order.Status = OrderStatus.OutForDelivery;
-            order.OutForDeliveryAt = DateTime.UtcNow;
+            order.Status = OrderStatus.DeliveryRiderAssigned;
             _db.OrderStatusHistories.Add(new OrderStatusHistory
             {
-                OrderId = orderId, Status = OrderStatus.OutForDelivery,
-                Note = $"Delivery rider {rider.User.FullName} assigned — out for delivery",
+                OrderId = orderId, Status = OrderStatus.DeliveryRiderAssigned,
+                Note = $"Delivery rider {rider.User.FullName} assigned",
                 ChangedByUserId = adminId
             });
         }
@@ -645,9 +654,9 @@ public class OrderService : IOrderService
             var notif = sp.GetRequiredService<INotificationService>();
             var audit = sp.GetRequiredService<IAuditService>();
             await notif.SendInAppAsync(capCustId2,
-                "Out for Delivery",
-                $"Your clean laundry (#{capOrderNum2}) is on its way! Your delivery rider is {capRiderName}.",
-                "order");
+                "Delivery Rider Assigned",
+                $"A delivery rider ({capRiderName}) has been assigned for your order #{capOrderNum2}. Your laundry will be on its way soon!",
+                "order", "Order", capOrderId2);
             await audit.LogAsync(adminId, "DELIVERY_RIDER_ASSIGN", "Order", capOrderId2);
         }, "AssignDeliveryRider");
 
@@ -693,6 +702,8 @@ public class OrderService : IOrderService
         OrderStatus.Confirmed => "Order confirmed by store",
         OrderStatus.PickupFeePaid => "Pickup fee received",
         OrderStatus.RiderAssigned => "Rider assigned for pickup",
+        OrderStatus.PickUpRiderAssigned => "Pickup rider assigned",
+        OrderStatus.DeliveryRiderAssigned => "Delivery rider assigned",
         OrderStatus.PickedUp => "Laundry picked up",
         OrderStatus.Processing => "Laundry being processed",
         OrderStatus.Ready => "Laundry ready for delivery",
@@ -715,15 +726,17 @@ public class OrderService : IOrderService
 
     private static string GetStatusInAppTitle(OrderStatus s) => s switch
     {
-        OrderStatus.Confirmed      => "Order Confirmed",
-        OrderStatus.RiderAssigned  => "Rider Assigned",
-        OrderStatus.PickedUp       => "Laundry Picked Up",
-        OrderStatus.Processing     => "Laundry in Progress",
-        OrderStatus.Ready          => "Ready for Delivery",
-        OrderStatus.OutForDelivery => "On the Way!",
-        OrderStatus.Delivered      => "Order Delivered",
-        OrderStatus.Completed      => "Order Complete",
-        _                          => "Order Update"
+        OrderStatus.Confirmed           => "Order Confirmed",
+        OrderStatus.RiderAssigned       => "Rider Assigned",
+        OrderStatus.PickUpRiderAssigned => "Pickup Rider Assigned",
+        OrderStatus.DeliveryRiderAssigned => "Delivery Rider Assigned",
+        OrderStatus.PickedUp            => "Laundry Picked Up",
+        OrderStatus.Processing          => "Laundry in Progress",
+        OrderStatus.Ready               => "Ready for Delivery",
+        OrderStatus.OutForDelivery      => "On the Way!",
+        OrderStatus.Delivered           => "Order Delivered",
+        OrderStatus.Completed           => "Order Complete",
+        _                               => "Order Update"
     };
 
     /// <summary>Messages sent to store staff when order status changes. Returns null if store doesn't need notifying.</summary>
@@ -739,13 +752,15 @@ public class OrderService : IOrderService
 
     private static string? GetStatusInAppMessage(string orderNumber, OrderStatus s) => s switch
     {
-        OrderStatus.Confirmed      => $"Your order #{orderNumber} has been confirmed by the store.",
-        OrderStatus.PickedUp       => $"Your laundry for order #{orderNumber} has been picked up.",
-        OrderStatus.Processing     => $"Your laundry (#{orderNumber}) is being cleaned and processed.",
-        OrderStatus.Ready          => $"Your laundry (#{orderNumber}) is clean and ready for delivery!",
-        OrderStatus.OutForDelivery => $"Your clean laundry (#{orderNumber}) is on its way to you!",
-        OrderStatus.Delivered      => $"Order #{orderNumber} has been delivered. Please pay the balance to complete.",
-        OrderStatus.Completed      => $"Order #{orderNumber} is complete. Thank you for using VYRON!",
+        OrderStatus.Confirmed             => $"Your order #{orderNumber} has been confirmed by the store.",
+        OrderStatus.PickUpRiderAssigned   => $"A pickup rider has been assigned to order #{orderNumber}. They will collect your laundry soon.",
+        OrderStatus.DeliveryRiderAssigned => $"A delivery rider has been assigned for order #{orderNumber}. Your laundry will be dispatched soon.",
+        OrderStatus.PickedUp              => $"Your laundry for order #{orderNumber} has been picked up.",
+        OrderStatus.Processing            => $"Your laundry (#{orderNumber}) is being cleaned and processed.",
+        OrderStatus.Ready                 => $"Your laundry (#{orderNumber}) is clean and ready for delivery!",
+        OrderStatus.OutForDelivery        => $"Your clean laundry (#{orderNumber}) is on its way to you!",
+        OrderStatus.Delivered             => $"Order #{orderNumber} has been delivered. Please pay the balance to complete.",
+        OrderStatus.Completed             => $"Order #{orderNumber} is complete. Thank you for using VYRON!",
         _ => null
     };
 
@@ -855,6 +870,173 @@ public class OrderService : IOrderService
             i.Id, i.ServiceOfferingId, i.ServiceName,
             i.PricingMode, i.Weight, i.Pieces,
             i.UnitPrice, i.LineTotal)).ToList());
+
+    // ── Reorder ───────────────────────────────────────────────────
+    public async Task<ReorderDraftDto?> GetReorderDraftAsync(Guid originalOrderId, Guid customerId)
+    {
+        var original = await _db.Orders
+            .AsNoTracking()
+            .Include(o => o.Store)
+            .Include(o => o.Service)
+            .Include(o => o.Items)
+            .FirstOrDefaultAsync(o => o.Id == originalOrderId && o.CustomerId == customerId);
+        if (original == null) return null;
+
+        // Verify store is still active
+        var storeActive = original.Store.Status == StoreStatus.Active;
+        // Verify service is still active
+        var serviceActive = original.Service.IsActive;
+
+        // Build fresh estimate with current pricing
+        decimal laundry = original.Service.PricingMode == PricingMode.PerKg
+            ? Math.Max(original.EstimatedWeight * original.Service.BasePrice, original.Service.MinimumCharge)
+            : Math.Max(original.EstimatedPieces * original.Service.BasePrice, original.Service.MinimumCharge);
+        var total = laundry + original.Store.PickupFee + original.Store.DeliveryFee;
+
+        return new ReorderDraftDto(
+            OriginalOrderId: original.Id,
+            OriginalOrderNumber: original.OrderNumber,
+            StoreId: original.StoreId,
+            StoreName: original.Store.Name,
+            StoreActive: storeActive,
+            ServiceOfferingId: original.ServiceOfferingId,
+            ServiceName: original.Service.Name,
+            ServiceActive: serviceActive,
+            EstimatedWeight: original.EstimatedWeight,
+            EstimatedPieces: original.EstimatedPieces,
+            PickupAddress: original.PickupAddress,
+            DeliveryAddress: original.DeliveryAddress,
+            LaundryCost: laundry,
+            PickupFee: original.Store.PickupFee,
+            DeliveryFee: original.Store.DeliveryFee,
+            TotalEstimate: total,
+            PaymentMethod: original.PaymentMethod,
+            CanReorder: storeActive && serviceActive);
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// COUPON SERVICE
+// ═══════════════════════════════════════════════════════════════════
+public interface ICouponService
+{
+    /// <summary>Validates a coupon code for a specific customer and returns the discount info.</summary>
+    Task<CouponValidationResult> ValidateAsync(string code, Guid customerId);
+    /// <summary>Records a coupon usage against an order. Call after the order is committed.</summary>
+    Task<bool> RecordUsageAsync(Guid couponId, Guid customerId, Guid orderId, decimal discountApplied);
+    Task<List<Coupon>> GetAllAsync();
+    Task<Coupon?> GetByIdAsync(Guid id);
+    Task<Coupon> CreateAsync(Coupon coupon, Guid adminId);
+    Task<bool> UpdateAsync(Coupon coupon, Guid adminId);
+    Task<bool> ToggleActiveAsync(Guid id, Guid adminId);
+}
+
+public class CouponService : ICouponService
+{
+    private readonly VyronDbContext _db;
+    private readonly IAuditService _audit;
+
+    public CouponService(VyronDbContext db, IAuditService audit)
+    { _db = db; _audit = audit; }
+
+    public async Task<CouponValidationResult> ValidateAsync(string code, Guid customerId)
+    {
+        var now = DateTime.UtcNow;
+        var coupon = await _db.Coupons.AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Code == code.ToUpperInvariant());
+
+        if (coupon == null)
+            return new CouponValidationResult(false, "Coupon code not found.", null, null, 0);
+        if (!coupon.IsActive)
+            return new CouponValidationResult(false, "This coupon is no longer active.", null, null, 0);
+        if (coupon.StartDate.HasValue && now < coupon.StartDate.Value)
+            return new CouponValidationResult(false, "This coupon is not yet valid.", null, null, 0);
+        if (coupon.EndDate.HasValue && now > coupon.EndDate.Value)
+            return new CouponValidationResult(false, "This coupon has expired.", null, null, 0);
+        if (coupon.GlobalMaxUses > 0 && coupon.TotalUses >= coupon.GlobalMaxUses)
+            return new CouponValidationResult(false, "This coupon has reached its usage limit.", null, null, 0);
+
+        // Per-customer use count
+        var customerUses = await _db.CouponUsages.AsNoTracking()
+            .CountAsync(u => u.CouponId == coupon.Id && u.CustomerId == customerId);
+        if (coupon.MaxUsesPerCustomer > 0 && customerUses >= coupon.MaxUsesPerCustomer)
+            return new CouponValidationResult(false, "You have already used this coupon the maximum number of times.", null, null, 0);
+
+        // First-N-orders rule
+        if (coupon.AppliesToFirstNOrders > 0)
+        {
+            var completedOrders = await _db.Orders.AsNoTracking()
+                .CountAsync(o => o.CustomerId == customerId &&
+                    o.Status != OrderStatus.Cancelled && o.Status != OrderStatus.Disputed);
+            if (completedOrders >= coupon.AppliesToFirstNOrders)
+                return new CouponValidationResult(false,
+                    $"This coupon only applies to your first {coupon.AppliesToFirstNOrders} orders.", null, null, 0);
+        }
+
+        return new CouponValidationResult(true, "Coupon is valid!", coupon.Id, coupon.DiscountType, coupon.DiscountValue);
+    }
+
+    public async Task<bool> RecordUsageAsync(Guid couponId, Guid customerId, Guid orderId, decimal discountApplied)
+    {
+        var coupon = await _db.Coupons.FindAsync(couponId);
+        if (coupon == null) return false;
+        _db.CouponUsages.Add(new CouponUsage
+        {
+            CouponId = couponId, CustomerId = customerId,
+            OrderId = orderId, DiscountApplied = discountApplied
+        });
+        coupon.TotalUses++;
+        await _db.SaveChangesAsync();
+        return true;
+    }
+
+    public Task<List<Coupon>> GetAllAsync() =>
+        _db.Coupons.AsNoTracking().OrderByDescending(c => c.CreatedAt).ToListAsync();
+
+    public Task<Coupon?> GetByIdAsync(Guid id) =>
+        _db.Coupons.FirstOrDefaultAsync(c => c.Id == id);
+
+    public async Task<Coupon> CreateAsync(Coupon coupon, Guid adminId)
+    {
+        coupon.Code = coupon.Code.ToUpperInvariant().Trim();
+        coupon.CreatedByUserId = adminId;
+        coupon.CreatedAt = coupon.UpdatedAt = DateTime.UtcNow;
+        _db.Coupons.Add(coupon);
+        await _db.SaveChangesAsync();
+        await _audit.LogAsync(adminId, "COUPON_CREATE", "Coupon", coupon.Id);
+        return coupon;
+    }
+
+    public async Task<bool> UpdateAsync(Coupon coupon, Guid adminId)
+    {
+        var c = await _db.Coupons.FindAsync(coupon.Id);
+        if (c == null) return false;
+        c.Code = coupon.Code.ToUpperInvariant().Trim();
+        c.Description = coupon.Description;
+        c.DiscountType = coupon.DiscountType;
+        c.DiscountValue = coupon.DiscountValue;
+        c.MaxUsesPerCustomer = coupon.MaxUsesPerCustomer;
+        c.GlobalMaxUses = coupon.GlobalMaxUses;
+        c.StartDate = coupon.StartDate;
+        c.EndDate = coupon.EndDate;
+        c.IsActive = coupon.IsActive;
+        c.AppliesToFirstNOrders = coupon.AppliesToFirstNOrders;
+        c.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        await _audit.LogAsync(adminId, "COUPON_UPDATE", "Coupon", coupon.Id);
+        return true;
+    }
+
+    public async Task<bool> ToggleActiveAsync(Guid id, Guid adminId)
+    {
+        var c = await _db.Coupons.FindAsync(id);
+        if (c == null) return false;
+        c.IsActive = !c.IsActive;
+        c.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        await _audit.LogAsync(adminId, c.IsActive ? "COUPON_ACTIVATE" : "COUPON_DEACTIVATE", "Coupon", id);
+        return true;
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════

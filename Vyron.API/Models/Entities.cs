@@ -541,6 +541,57 @@ public class CommunicationLog
     public User? SentByAdmin  { get; set; }
 }
 
+// ─── COUPON / PROMO CODE ──────────────────────────────────────────
+/// <summary>
+/// Discount coupon that CustomerApp can apply at order estimate / creation.
+/// Example: VYRON20 — 20% off first 3 orders.
+/// </summary>
+public class Coupon
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    /// <summary>Human-readable promo code, e.g. "VYRON20". Always stored upper-case.</summary>
+    public string Code { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    /// <summary>"Percentage" | "Fixed"</summary>
+    public string DiscountType { get; set; } = "Percentage";
+    /// <summary>Percentage (0–100) or fixed NGN amount.</summary>
+    public decimal DiscountValue { get; set; }
+    /// <summary>Max times one customer can use this coupon. 0 = unlimited.</summary>
+    public int MaxUsesPerCustomer { get; set; } = 1;
+    /// <summary>Global cap across all customers. 0 = unlimited.</summary>
+    public int GlobalMaxUses { get; set; }
+    /// <summary>Total redemptions so far.</summary>
+    public int TotalUses { get; set; }
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
+    public bool IsActive { get; set; } = true;
+    /// <summary>
+    /// Coupon only applies to a customer's first N orders.
+    /// 0 = no restriction. 3 = first 3 orders only.
+    /// </summary>
+    public int AppliesToFirstNOrders { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public Guid? CreatedByUserId { get; set; }
+
+    public ICollection<CouponUsage> Usages { get; set; } = new List<CouponUsage>();
+}
+
+/// <summary>Per-customer coupon redemption record.</summary>
+public class CouponUsage
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid CouponId { get; set; }
+    public Guid CustomerId { get; set; }
+    public Guid? OrderId { get; set; }
+    public decimal DiscountApplied { get; set; }
+    public DateTime UsedAt { get; set; } = DateTime.UtcNow;
+
+    public Coupon Coupon { get; set; } = null!;
+    public User Customer { get; set; } = null!;
+    public Order? Order { get; set; }
+}
+
 // ─── USER-ROLE MAPPING ─────────────────────────────────────────────
 /// <summary>
 /// Many-to-many join table between Users and Roles.

@@ -1,0 +1,45 @@
+@{
+    ViewData["Title"] = "Reports";
+}
+
+<div class="report-grid">
+    <a href="/Reports/Users" class="report-card">
+        <span class="report-icon">◉</span>
+        <strong>User Report</strong>
+        <p>All registered users with role and date filters.</p>
+    </a>
+    <a href="/Reports/Orders" class="report-card">
+        <span class="report-icon">◧</span>
+        <strong>Order Report</strong>
+        <p>Orders with status, store, and date filters.</p>
+    </a>
+    <a href="/Reports/Stores" class="report-card">
+        <span class="report-icon">▣</span>
+        <strong>Store Report</strong>
+        <p>All onboarded stores with owner info.</p>
+    </a>
+    <a href="/Reports/Payments" class="report-card">
+        <span class="report-icon">▰</span>
+        <strong>Payment Report</strong>
+        <p>All payments with date range filter.</p>
+    </a>
+    <a href="/Reports/AuditLogs" class="report-card">
+        <span class="report-icon">◕</span>
+        <strong>Audit Log Report</strong>
+        <p>Admin actions and entity change history.</p>
+    </a>
+    <a href="/Reports/Compliance" class="report-card">
+        <span class="report-icon">✓</span>
+        <strong>Compliance Summary</strong>
+        <p>Dispute rates, cancellations, comms volume.</p>
+    </a>
+</div>
+
+<style>
+.report-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:1rem; margin-top:1rem; }
+.report-card { display:flex; flex-direction:column; gap:.4rem; padding:1.25rem; border:1px solid var(--border,#e0e0e0); border-radius:8px; text-decoration:none; color:inherit; transition:box-shadow .15s; }
+.report-card:hover { box-shadow:0 4px 12px rgba(0,0,0,.1); }
+.report-icon { font-size:1.5rem; }
+.report-card strong { font-size:1rem; }
+.report-card p { margin:0; font-size:.85rem; color:var(--muted,#666); }
+</style>

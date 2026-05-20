@@ -189,14 +189,16 @@ public class OrderRepo : IOrderRepo
     public async Task<bool> AssignRiderAsync(Guid orderId, Guid riderId, Guid adminId)
     {
         var o = await _db.Orders.FindAsync(orderId);
-        if (o == null) return false;
+        var rider = await _db.Riders.Include(r => r.User).FirstOrDefaultAsync(r => r.Id == riderId);
+        if (o == null || rider == null) return false;
         o.RiderId = riderId; o.RiderAssignedAt = DateTime.UtcNow;
-        if (o.Status == OrderStatus.PickupFeePaid) o.Status = OrderStatus.RiderAssigned;
+        if (o.Status == OrderStatus.PickupFeePaid || o.Status == OrderStatus.RiderAssigned)
+            o.Status = OrderStatus.PickUpRiderAssigned;
         o.UpdatedAt = DateTime.UtcNow;
         _db.OrderStatusHistories.Add(new OrderStatusHistory
         {
-            OrderId = orderId, Status = OrderStatus.RiderAssigned,
-            Note = "Rider assigned by admin", ChangedByUserId = adminId
+            OrderId = orderId, Status = OrderStatus.PickUpRiderAssigned,
+            Note = $"Pickup rider {rider.User.FullName} assigned by admin", ChangedByUserId = adminId
         });
         await _db.SaveChangesAsync();
         return true;
@@ -208,14 +210,13 @@ public class OrderRepo : IOrderRepo
         var rider = await _db.Riders.Include(r => r.User).FirstOrDefaultAsync(r => r.Id == riderId);
         if (o == null || rider == null) return false;
         o.DeliveryRiderId = riderId; o.UpdatedAt = DateTime.UtcNow;
-        if (o.Status == OrderStatus.Ready)
+        if (o.Status == OrderStatus.Ready || o.Status == OrderStatus.DeliveryRiderAssigned)
         {
-            o.Status = OrderStatus.OutForDelivery;
-            o.OutForDeliveryAt = DateTime.UtcNow;
+            o.Status = OrderStatus.DeliveryRiderAssigned;
             _db.OrderStatusHistories.Add(new OrderStatusHistory
             {
-                OrderId = orderId, Status = OrderStatus.OutForDelivery,
-                Note = $"Delivery rider {rider.User.FullName} assigned — out for delivery",
+                OrderId = orderId, Status = OrderStatus.DeliveryRiderAssigned,
+                Note = $"Delivery rider {rider.User.FullName} assigned by admin",
                 ChangedByUserId = adminId
             });
         }
@@ -695,7 +696,17 @@ public class StoreImageRepo : IStoreImageRepo
     public async Task<Guid> AddAsync(API.Models.StoreImage image)
     {
         var hasPrimary = await _db.StoreImages.AnyAsync(i => i.StoreId == image.StoreId);
-        if (!hasPrimary) image.IsPrimary = true;
+        if (!hasPrimary)
+        {
+            image.IsPrimary = true;
+            // First image for this store → also set as LogoUrl on the store entity
+            var store = await _db.Stores.FindAsync(image.StoreId);
+            if (store != null && string.IsNullOrEmpty(store.LogoUrl))
+            {
+                store.LogoUrl = image.ImagePath;
+                store.UpdatedAt = DateTime.UtcNow;
+            }
+        }
         _db.StoreImages.Add(image);
         await _db.SaveChangesAsync();
         return image.Id;
@@ -705,6 +716,18 @@ public class StoreImageRepo : IStoreImageRepo
     {
         var images = await _db.StoreImages.Where(i => i.StoreId == storeId).ToListAsync();
         foreach (var img in images) img.IsPrimary = img.Id == imageId;
+
+        // Sync LogoUrl on the store to the newly-selected primary image
+        var primary = images.FirstOrDefault(i => i.Id == imageId);
+        if (primary != null)
+        {
+            var store = await _db.Stores.FindAsync(storeId);
+            if (store != null)
+            {
+                store.LogoUrl = primary.ImagePath;
+                store.UpdatedAt = DateTime.UtcNow;
+            }
+        }
         await _db.SaveChangesAsync();
         return true;
     }

@@ -219,6 +219,27 @@ public record ProfileDto(Guid Id, string FullName, string Phone, string? Email,
     UserRole Role, string? ProfilePhoto, DateTime CreatedAt);
 public record UpdateProfileRequest(string? FullName, string? Email);
 
+// ─── COUPON ───────────────────────────────────────────────────────
+public record ValidateCouponRequest(string Code);
+public record EstimateWithCouponRequest(Guid ServiceOfferingId, decimal Weight, int Pieces, string CouponCode);
+
+public record CouponValidationResult(
+    bool IsValid, string Message, Guid? CouponId, string? DiscountType, decimal DiscountValue);
+
+public record CouponEstimateResponse(
+    decimal OriginalTotal, decimal DiscountAmount, decimal DiscountedTotal,
+    string CouponCode, string DiscountType, decimal DiscountValue, string Message);
+
+// ─── REORDER ──────────────────────────────────────────────────────
+public record ReorderDraftDto(
+    Guid OriginalOrderId, string OriginalOrderNumber,
+    Guid StoreId, string StoreName, bool StoreActive,
+    Guid ServiceOfferingId, string ServiceName, bool ServiceActive,
+    decimal EstimatedWeight, int EstimatedPieces,
+    string PickupAddress, string DeliveryAddress,
+    decimal LaundryCost, decimal PickupFee, decimal DeliveryFee, decimal TotalEstimate,
+    PaymentMethod PaymentMethod, bool CanReorder);
+
 // ─── ADDRESS ──────────────────────────────────────────────────────
 public record CreateAddressRequest(
     string Label, string Street, string Area,

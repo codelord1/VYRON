@@ -1,0 +1,61 @@
+@using Vyron.API.Models
+@model IEnumerable<LaundryStore>
+@{
+    ViewData["Title"] = "Store Report";
+    int page = ViewBag.Page ?? 1;
+    int total = ViewBag.Total ?? 0;
+    const int size = 25;
+    int pages = (int)Math.Ceiling(total / (double)size);
+}
+
+<div class="filter-bar">
+    <span class="badge">@total stores</span>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Store Name</th>
+                    <th>Owner</th>
+                    <th>Area</th>
+                    <th>Status</th>
+                    <th>Verified</th>
+                    <th>Rating</th>
+                    <th>Orders</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in Model)
+                {
+                    <tr>
+                        <td><a href="/Stores/Detail/@s.Id">@s.Name</a></td>
+                        <td>@s.Owner?.FullName</td>
+                        <td>@s.Area</td>
+                        <td><span class="badge">@s.Status</span></td>
+                        <td>@(s.IsVerified ? "✓" : "—")</td>
+                        <td>@s.AverageRating.ToString("F1")</td>
+                        <td>@s.TotalOrders</td>
+                        <td>@s.CreatedAt.ToString("dd MMM yyyy")</td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="8" class="text-center muted">No stores found.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (pages > 1)
+{
+    <div class="pagination">
+        @for (int i = 1; i <= pages; i++)
+        {
+            <a href="?page=@i" class="page-btn @(i == page ? "active" : "")">@i</a>
+        }
+    </div>
+}

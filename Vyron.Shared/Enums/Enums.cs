@@ -14,7 +14,11 @@ public enum OrderStatus
     BalancePaid = 9,
     Completed = 10,
     Disputed = 11,
-    Cancelled = 12
+    Cancelled = 12,
+    /// <summary>Pickup rider explicitly assigned; distinct from generic RiderAssigned.</summary>
+    PickUpRiderAssigned = 13,
+    /// <summary>Delivery rider explicitly assigned; order not yet OutForDelivery.</summary>
+    DeliveryRiderAssigned = 14
 }
 
 public enum PaymentState

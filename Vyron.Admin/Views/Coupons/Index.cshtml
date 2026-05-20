@@ -1,0 +1,75 @@
+@using Vyron.API.Models
+@model IEnumerable<Coupon>
+@{
+    ViewData["Title"] = "Coupons";
+}
+
+<div class="toolbar">
+    <a href="/Coupons/Create" class="btn btn-primary">+ New Coupon</a>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Description</th>
+                    <th>Type</th>
+                    <th>Value</th>
+                    <th>First N Orders</th>
+                    <th>Uses / Max</th>
+                    <th>Expires</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in Model)
+                {
+                    <tr>
+                        <td><strong>@c.Code</strong></td>
+                        <td>@c.Description</td>
+                        <td>@c.DiscountType</td>
+                        <td>
+                            @if (c.DiscountType == "Percent")
+                            {
+                                <span>@c.DiscountValue%</span>
+                            }
+                            else
+                            {
+                                <span>₦@c.DiscountValue.ToString("N2")</span>
+                            }
+                        </td>
+                        <td>@(c.AppliesToFirstNOrders > 0 ? c.AppliesToFirstNOrders.ToString() : "—")</td>
+                        <td>@c.TotalUses / @(c.GlobalMaxUses > 0 ? c.GlobalMaxUses.ToString() : "∞")</td>
+                        <td>@(c.EndDate.HasValue ? c.EndDate.Value.ToString("dd MMM yyyy") : "No expiry")</td>
+                        <td>
+                            @if (c.IsActive)
+                            {
+                                <span class="badge badge-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-muted">Inactive</span>
+                            }
+                        </td>
+                        <td class="actions">
+                            <a href="/Coupons/Edit/@c.Id" class="btn btn-sm btn-ghost">Edit</a>
+                            <form method="post" action="/Coupons/Toggle/@c.Id" style="display:inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm @(c.IsActive ? "btn-warn" : "btn-success")">
+                                    @(c.IsActive ? "Deactivate" : "Activate")
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                @if (!Model.Any())
+                {
+                    <tr><td colspan="9" class="text-center muted">No coupons yet. <a href="/Coupons/Create">Create one</a>.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

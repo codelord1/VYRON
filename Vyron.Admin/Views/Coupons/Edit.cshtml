@@ -1,0 +1,72 @@
+@using Vyron.API.Models
+@model Coupon
+@{
+    ViewData["Title"] = "Edit Coupon";
+}
+
+<div class="card" style="max-width:640px;">
+    <div class="card-header">Edit @Model.Code</div>
+    <div class="card-body">
+        <form method="post" asp-action="Edit" asp-route-id="@Model.Id">
+            @Html.AntiForgeryToken()
+            @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+
+            <div class="form-group">
+                <label asp-for="Code">Code <span class="text-danger">*</span></label>
+                <input asp-for="Code" class="form-control" style="text-transform:uppercase" />
+                <span asp-validation-for="Code" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Description">Description</label>
+                <input asp-for="Description" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label asp-for="DiscountType">Discount Type <span class="text-danger">*</span></label>
+                <select asp-for="DiscountType" class="form-control">
+                    <option value="Percent">Percent (%)</option>
+                    <option value="Fixed">Fixed Amount (₦)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label asp-for="DiscountValue">Discount Value <span class="text-danger">*</span></label>
+                <input asp-for="DiscountValue" type="number" step="0.01" min="0" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label asp-for="MaxUsesPerCustomer">Max Uses Per Customer</label>
+                <input asp-for="MaxUsesPerCustomer" type="number" min="1" class="form-control" placeholder="Blank = unlimited" />
+            </div>
+            <div class="form-group">
+                <label asp-for="GlobalMaxUses">Global Max Uses</label>
+                <input asp-for="GlobalMaxUses" type="number" min="1" class="form-control" placeholder="Blank = unlimited" />
+            </div>
+            <div class="form-group">
+                <label asp-for="AppliesToFirstNOrders">Applies To First N Orders</label>
+                <input asp-for="AppliesToFirstNOrders" type="number" min="1" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label asp-for="StartDate">Start Date</label>
+                <input asp-for="StartDate" type="date" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label asp-for="EndDate">End Date (Expiry)</label>
+                <input asp-for="EndDate" type="date" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input asp-for="IsActive" type="checkbox" /> Active
+                </label>
+            </div>
+
+            <div class="form-group muted small">
+                <span>Total uses so far: <strong>@Model.TotalUses</strong></span>
+                &nbsp;|&nbsp;
+                <span>Created: @Model.CreatedAt.ToString("dd MMM yyyy")</span>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <a href="/Coupons" class="btn btn-ghost">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
