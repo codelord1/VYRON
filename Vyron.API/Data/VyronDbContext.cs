@@ -126,6 +126,11 @@ public class VyronDbContext : DbContext
             e.HasIndex(x => x.RiderId);
             e.HasIndex(x => x.Status);
             e.HasIndex(x => x.CreatedAt);
+            // Composite indexes for CustomerApp list queries: avoid sort pass after seek
+            e.HasIndex(x => new { x.CustomerId, x.CreatedAt })
+             .HasDatabaseName("IX_Orders_CustomerId_CreatedAt");
+            e.HasIndex(x => new { x.StoreId, x.CreatedAt })
+             .HasDatabaseName("IX_Orders_StoreId_CreatedAt");
             e.Property(x => x.OrderNumber).HasMaxLength(20).IsRequired();
             e.Property(x => x.PickupAddress).HasMaxLength(500);
             e.Property(x => x.DeliveryAddress).HasMaxLength(500);
@@ -346,6 +351,11 @@ public class VyronDbContext : DbContext
             e.HasIndex(x => x.UserId);
             e.HasIndex(x => x.IsRead);
             e.HasIndex(x => x.CreatedAt);
+            // Composite indexes for mobile notification queries
+            e.HasIndex(x => new { x.UserId, x.CreatedAt })
+             .HasDatabaseName("IX_Notifications_UserId_CreatedAt");
+            e.HasIndex(x => new { x.UserId, x.IsRead })
+             .HasDatabaseName("IX_Notifications_UserId_IsRead");
             e.Property(x => x.Title).HasMaxLength(200).IsRequired();
             e.Property(x => x.Message).HasMaxLength(2000).IsRequired();
             e.Property(x => x.Type).HasMaxLength(20).IsRequired();

@@ -1,7 +1,9 @@
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using MimeKit;
+using System.Net.Http;
 using Vyron.API.Data;
 using Vyron.API.DTOs;
 using Vyron.API.Models;
@@ -26,9 +28,11 @@ public class NotificationService : INotificationService
     private readonly IConfiguration _config;
     private readonly ILogger<NotificationService> _logger;
     private readonly VyronDbContext _db;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public NotificationService(IConfiguration config, ILogger<NotificationService> logger, VyronDbContext db)
-    { _config = config; _logger = logger; _db = db; }
+    public NotificationService(IConfiguration config, ILogger<NotificationService> logger,
+        VyronDbContext db, IHttpClientFactory httpClientFactory)
+    { _config = config; _logger = logger; _db = db; _httpClientFactory = httpClientFactory; }
 
     public async Task SendSmsAsync(string phone, string message, Guid? userId = null,
         string? entityType = null, Guid? entityId = null)
@@ -47,7 +51,8 @@ public class NotificationService : INotificationService
         {
             try
             {
-                using var client = new HttpClient();
+                // Use named client from IHttpClientFactory — reuses TCP connections, 8s timeout
+                var client = _httpClientFactory.CreateClient("sms");
                 var payload = new {
                     to = phone, from = _config["Sms:TermiiSenderId"] ?? "VYRON",
                     sms = message, type = "plain", channel = "generic", api_key = apiKey
@@ -158,20 +163,37 @@ public interface IAuditService
         string? oldValue = null, string? newValue = null, string? ip = null);
 }
 
+/// <summary>
+/// Fire-and-forget audit logger. Returns Task.CompletedTask immediately so callers
+/// are never blocked by an audit write. Exceptions are caught and logged.
+/// </summary>
 public class AuditService : IAuditService
 {
-    private readonly VyronDbContext _db;
-    public AuditService(VyronDbContext db) => _db = db;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly ILogger<AuditService> _logger;
 
-    public async Task LogAsync(Guid? userId, string action, string entity, Guid? entityId,
+    public AuditService(IServiceScopeFactory scopeFactory, ILogger<AuditService> logger)
+    { _scopeFactory = scopeFactory; _logger = logger; }
+
+    public Task LogAsync(Guid? userId, string action, string entity, Guid? entityId,
         string? oldValue = null, string? newValue = null, string? ip = null)
     {
-        _db.AuditLogs.Add(new AuditLog
+        _ = Task.Run(async () =>
         {
-            UserId = userId, Action = action, Entity = entity, EntityId = entityId,
-            OldValue = oldValue, NewValue = newValue, IpAddress = ip
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<VyronDbContext>();
+                db.AuditLogs.Add(new AuditLog
+                {
+                    UserId = userId, Action = action, Entity = entity, EntityId = entityId,
+                    OldValue = oldValue, NewValue = newValue, IpAddress = ip
+                });
+                await db.SaveChangesAsync();
+            }
+            catch (Exception ex) { _logger.LogError(ex, "AuditLog failed: {Action} on {Entity}", action, entity); }
         });
-        await _db.SaveChangesAsync();
+        return Task.CompletedTask;
     }
 }
 
@@ -182,30 +204,35 @@ public interface IActivityLogService
         string? entityType = null, Guid? entityId = null, string? ip = null, string? ua = null);
 }
 
+/// <summary>Fire-and-forget activity logger — never blocks the request thread.</summary>
 public class ActivityLogService : IActivityLogService
 {
-    private readonly VyronDbContext _db;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<ActivityLogService> _logger;
-    public ActivityLogService(VyronDbContext db, ILogger<ActivityLogService> logger)
-    { _db = db; _logger = logger; }
 
-    public async Task LogAsync(Guid? userId, string activityType, string? description = null,
+    public ActivityLogService(IServiceScopeFactory scopeFactory, ILogger<ActivityLogService> logger)
+    { _scopeFactory = scopeFactory; _logger = logger; }
+
+    public Task LogAsync(Guid? userId, string activityType, string? description = null,
         string? entityType = null, Guid? entityId = null, string? ip = null, string? ua = null)
     {
-        try
+        _ = Task.Run(async () =>
         {
-            _db.ActivityLogs.Add(new ActivityLog
+            try
             {
-                UserId = userId, ActivityType = activityType, Description = description,
-                EntityType = entityType, EntityId = entityId,
-                IpAddress = ip, UserAgent = ua
-            });
-            await _db.SaveChangesAsync();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "ActivityLog failed for {Type}", activityType);
-        }
+                using var scope = _scopeFactory.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<VyronDbContext>();
+                db.ActivityLogs.Add(new ActivityLog
+                {
+                    UserId = userId, ActivityType = activityType, Description = description,
+                    EntityType = entityType, EntityId = entityId,
+                    IpAddress = ip, UserAgent = ua
+                });
+                await db.SaveChangesAsync();
+            }
+            catch (Exception ex) { _logger.LogError(ex, "ActivityLog failed for {Type}", activityType); }
+        });
+        return Task.CompletedTask;
     }
 }
 

@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Vyron.API.Data;
 using Vyron.API.DTOs;
 using Vyron.API.Hubs;
@@ -29,9 +31,27 @@ public class StoreService : IStoreService
 {
     private readonly VyronDbContext _db;
     private readonly IAuditService _audit;
+    private readonly IHttpContextAccessor _httpCtx;
 
-    public StoreService(VyronDbContext db, IAuditService audit)
-    { _db = db; _audit = audit; }
+    public StoreService(VyronDbContext db, IAuditService audit, IHttpContextAccessor httpCtx)
+    { _db = db; _audit = audit; _httpCtx = httpCtx; }
+
+    /// <summary>
+    /// Converts a stored relative URL (e.g. /uploads/stores/x.jpg) to an absolute URL
+    /// using the current request's scheme and host so the Android phone can load the image.
+    /// Absolute URLs (http/https) are returned as-is. Null/empty returns null.
+    /// </summary>
+    private string? ResolveImageUrl(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return null;
+        if (path.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            return path;
+        var req = _httpCtx.HttpContext?.Request;
+        if (req == null) return path; // fallback: return as-is if no context
+        var baseUrl = $"{req.Scheme}://{req.Host}";
+        return $"{baseUrl}{(path.StartsWith('/') ? path : '/' + path)}";
+    }
 
     public async Task<List<StoreListItemDto>> GetStoresAsync(string? search, string? sort,
         string? filter, double? lat, double? lng)
@@ -64,7 +84,7 @@ public class StoreService : IStoreService
             ? stores.OrderBy(s => Haversine(lat.Value, lng.Value, s.Latitude, s.Longitude))
             : stores;
 
-        return sorted.Select(MapToListItem).ToList();
+        return sorted.Select(s => MapToListItem(s, ResolveImageUrl(s.LogoUrl))).ToList();
     }
 
     public async Task<StoreDetailDto?> GetStoreAsync(Guid id)
@@ -83,7 +103,8 @@ public class StoreService : IStoreService
             store.AverageRating, store.TotalReviews, store.TotalOrders,
             store.PickupFee, store.DeliveryFee, store.EstimatedPickupMinutes,
             store.IsVerified, store.IsTopRated, store.FastPickup,
-            store.OpeningHours, store.LogoUrl, store.BannerUrl, store.Status, store.CreatedAt,
+            store.OpeningHours, ResolveImageUrl(store.LogoUrl), ResolveImageUrl(store.BannerUrl),
+            store.Status, store.CreatedAt,
             store.Services.Where(s => s.IsActive).Select(MapService).ToList(),
             store.Reviews.Select(MapReview).ToList(),
             ComputeIsOpen(store));
@@ -167,12 +188,16 @@ public class StoreService : IStoreService
 
     public async Task RecalculateRatingAsync(Guid storeId)
     {
-        var reviews = await _db.Reviews.Where(r => r.StoreId == storeId && r.IsVisible).ToListAsync();
+        // Server-side aggregation — no full review load into memory
+        var count = await _db.Reviews.CountAsync(r => r.StoreId == storeId && r.IsVisible);
+        var avg   = count > 0
+            ? await _db.Reviews.Where(r => r.StoreId == storeId && r.IsVisible)
+                                .AverageAsync(r => (double)r.Rating)
+            : 0.0;
         var store = await _db.Stores.FindAsync(storeId);
         if (store == null) return;
-        store.TotalReviews = reviews.Count;
-        store.AverageRating = reviews.Any()
-            ? Math.Round((decimal)reviews.Average(r => r.Rating), 1) : 0;
+        store.TotalReviews  = count;
+        store.AverageRating = Math.Round((decimal)avg, 1);
         await _db.SaveChangesAsync();
     }
 
@@ -222,11 +247,11 @@ public class StoreService : IStoreService
         return 6371 * 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
     }
 
-    private static StoreListItemDto MapToListItem(LaundryStore s) => new(
+    private static StoreListItemDto MapToListItem(LaundryStore s, string? resolvedLogoUrl) => new(
         s.Id, s.Name, s.Description, s.Address, s.Area,
         s.AverageRating, s.TotalReviews, s.TotalOrders,
         s.PickupFee, s.DeliveryFee, s.EstimatedPickupMinutes,
-        s.IsVerified, s.IsTopRated, s.FastPickup, s.Status, s.LogoUrl,
+        s.IsVerified, s.IsTopRated, s.FastPickup, s.Status, resolvedLogoUrl,
         s.Latitude, s.Longitude,
         s.Services.Where(x => x.IsActive).Select(MapService).ToList(),
         ComputeIsOpen(s));
@@ -267,17 +292,35 @@ public class OrderService : IOrderService
     private readonly IAuditService _audit;
     private readonly IHubContext<OrderTrackingHub> _hub;
     private readonly ILogger<OrderService> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
 
     public OrderService(VyronDbContext db, INotificationService notifications,
-        IAuditService audit, IHubContext<OrderTrackingHub> hub, ILogger<OrderService> logger)
+        IAuditService audit, IHubContext<OrderTrackingHub> hub,
+        ILogger<OrderService> logger, IServiceScopeFactory scopeFactory)
     {
         _db = db; _notifications = notifications; _audit = audit;
-        _hub = hub; _logger = logger;
+        _hub = hub; _logger = logger; _scopeFactory = scopeFactory;
+    }
+
+    /// <summary>
+    /// Runs post-save side effects (notifications, audit) on a background thread with a
+    /// fresh DI scope. The HTTP response is returned to the phone immediately.
+    /// Exceptions are swallowed and logged — they must not bubble back to the caller.
+    /// </summary>
+    private void RunPostSave(Func<IServiceProvider, Task> work, string label)
+    {
+        _ = Task.Run(async () =>
+        {
+            using var scope = _scopeFactory.CreateScope();
+            try   { await work(scope.ServiceProvider); }
+            catch (Exception ex)
+            { _logger.LogError(ex, "[PostSave] Background task '{Label}' failed", label); }
+        });
     }
 
     public async Task<PriceEstimateResponse> EstimatePriceAsync(PriceEstimateRequest req)
     {
-        var svc = await _db.ServiceOfferings.Include(s => s.Store)
+        var svc = await _db.ServiceOfferings.AsNoTracking().Include(s => s.Store)
             .FirstOrDefaultAsync(s => s.Id == req.ServiceOfferingId && s.IsActive)
             ?? throw new InvalidOperationException("Service not found.");
 
@@ -305,8 +348,8 @@ public class OrderService : IOrderService
             throw new InvalidOperationException("This store is currently closed. Please try again later.");
 
         var estimate = await EstimatePriceAsync(new PriceEstimateRequest(req.ServiceOfferingId, req.EstimatedWeight, req.EstimatedPieces));
-        var count = await _db.Orders.CountAsync();
-        var orderNumber = $"#VY{DateTime.UtcNow:yyMM}{(count + 1001):D4}";
+        // Use timestamp + random suffix instead of full-table CountAsync to avoid table scan
+        var orderNumber = $"#VY{DateTime.UtcNow:yyMMddHHmm}{Random.Shared.Next(10, 99)}";
 
         var order = new Order
         {
@@ -382,25 +425,39 @@ public class OrderService : IOrderService
         svc.Store.TotalOrders++;
         await _db.SaveChangesAsync();
 
-        var customer = await _db.Users.FindAsync(customerId);
-        if (customer != null)
+        // ── Fire-and-forget post-save side effects ────────────────
+        // The order is already committed. Customer gets the response immediately.
+        // Notifications and audit run on a background thread with a fresh DI scope.
+        var capturedOrderId     = order.Id;
+        var capturedOrderNumber = orderNumber;
+        var capturedStoreId     = order.StoreId;
+        var capturedPickupFee   = estimate.PickupFeePayNow;
+        var capturedCustomerId  = customerId;
+
+        RunPostSave(async sp =>
         {
-            await _notifications.SendSmsAsync(customer.Phone,
-                $"Hi {customer.FullName.Split(' ')[0]}, your VYRON order {orderNumber} is confirmed! " +
-                $"Pay ₦{estimate.PickupFeePayNow:N0} pickup fee to proceed.");
-            await _notifications.SendInAppAsync(customerId,
-                "Order Placed",
-                $"Your order #{orderNumber} has been placed. Pay ₦{estimate.PickupFeePayNow:N0} pickup fee to get started.",
-                "order", "Order", order.Id);
-        }
+            var db    = sp.GetRequiredService<VyronDbContext>();
+            var notif = sp.GetRequiredService<INotificationService>();
+            var audit = sp.GetRequiredService<IAuditService>();
 
-        // Notify store owner + staff about the new order
-        await NotifyStoreUsersAsync(order.StoreId,
-            "New Order Received",
-            $"Order #{orderNumber} has been placed by a customer. Please review and confirm.",
-            "order", order.Id);
+            var customer = await db.Users.FindAsync(capturedCustomerId);
+            if (customer != null)
+            {
+                await notif.SendSmsAsync(customer.Phone,
+                    $"Hi {customer.FullName.Split(' ')[0]}, your VYRON order {capturedOrderNumber} is confirmed! " +
+                    $"Pay ₦{capturedPickupFee:N0} pickup fee to proceed.");
+                await notif.SendInAppAsync(capturedCustomerId,
+                    "Order Placed",
+                    $"Your order #{capturedOrderNumber} has been placed. Pay ₦{capturedPickupFee:N0} pickup fee to get started.",
+                    "order", "Order", capturedOrderId);
+            }
+            await NotifyStoreUsersInternalAsync(db, notif, capturedStoreId,
+                "New Order Received",
+                $"Order #{capturedOrderNumber} has been placed by a customer. Please review and confirm.",
+                "order", capturedOrderId, _logger);
+            await audit.LogAsync(capturedCustomerId, "ORDER_CREATE", "Order", capturedOrderId);
+        }, "CreateOrder");
 
-        await _audit.LogAsync(customerId, "ORDER_CREATE", "Order", order.Id);
         return (await GetOrderDtoAsync(order.Id))!;
     }
 
@@ -473,6 +530,7 @@ public class OrderService : IOrderService
         });
         await _db.SaveChangesAsync();
 
+        // SignalR push is instant and in-process — await it directly (no network call)
         await _hub.Clients.Group($"order-{order.OrderNumber}")
             .SendAsync("OrderStatusUpdated", new
             {
@@ -482,23 +540,42 @@ public class OrderService : IOrderService
                 updatedAt = DateTime.UtcNow
             });
 
-        var sms = GetStatusSms(order.Customer.FullName.Split(' ')[0],
-            order.OrderNumber, order.Store.Name, newStatus);
-        if (sms != null) await _notifications.SendSmsAsync(order.Customer.Phone, sms);
+        // ── Fire-and-forget: SMS + in-app + store notify + audit ──
+        var capturedOrderId     = orderId;
+        var capturedOrderNumber = order.OrderNumber;
+        var capturedCustomerId  = order.CustomerId;
+        var capturedStoreId     = order.StoreId;
+        var capturedPhone       = order.Customer.Phone;
+        var capturedName        = order.Customer.FullName;
+        var capturedStoreName   = order.Store.Name;
+        var capturedOldStatus   = oldStatus;
+        var capturedNewStatus   = newStatus;
+        var capturedChangedBy   = changedBy;
 
-        var inApp = GetStatusInAppMessage(order.OrderNumber, newStatus);
-        if (inApp != null)
-            await _notifications.SendInAppAsync(order.CustomerId,
-                GetStatusInAppTitle(newStatus), inApp, "order", "Order", orderId);
+        RunPostSave(async sp =>
+        {
+            var notif = sp.GetRequiredService<INotificationService>();
+            var audit = sp.GetRequiredService<IAuditService>();
+            var db    = sp.GetRequiredService<VyronDbContext>();
 
-        // Notify store users on events they need to act on
-        var storeMsg = GetStoreStatusMessage(order.OrderNumber, newStatus);
-        if (storeMsg != null)
-            await NotifyStoreUsersAsync(order.StoreId,
-                GetStatusInAppTitle(newStatus), storeMsg, "order", orderId);
+            var sms = GetStatusSms(capturedName.Split(' ')[0],
+                capturedOrderNumber, capturedStoreName, capturedNewStatus);
+            if (sms != null) await notif.SendSmsAsync(capturedPhone, sms);
 
-        await _audit.LogAsync(changedBy, "ORDER_STATUS_UPDATE", "Order", orderId,
-            oldStatus.ToString(), newStatus.ToString());
+            var inApp = GetStatusInAppMessage(capturedOrderNumber, capturedNewStatus);
+            if (inApp != null)
+                await notif.SendInAppAsync(capturedCustomerId,
+                    GetStatusInAppTitle(capturedNewStatus), inApp, "order", "Order", capturedOrderId);
+
+            var storeMsg = GetStoreStatusMessage(capturedOrderNumber, capturedNewStatus);
+            if (storeMsg != null)
+                await NotifyStoreUsersInternalAsync(db, notif, capturedStoreId,
+                    GetStatusInAppTitle(capturedNewStatus), storeMsg, "order", capturedOrderId, _logger);
+
+            await audit.LogAsync(capturedChangedBy, "ORDER_STATUS_UPDATE", "Order", capturedOrderId,
+                capturedOldStatus.ToString(), capturedNewStatus.ToString());
+        }, "UpdateStatus");
+
         return await GetOrderDtoAsync(orderId);
     }
 
@@ -518,12 +595,21 @@ public class OrderService : IOrderService
             Note = $"Rider {rider.User.FullName} assigned", ChangedByUserId = adminId
         });
         await _db.SaveChangesAsync();
-        // In-app notification for the customer whose order got a rider
-        await _notifications.SendInAppAsync(order.CustomerId,
-            "Rider Assigned",
-            $"A rider has been assigned to your order #{order.OrderNumber}. They will pick up your laundry soon.",
-            "order");
-        await _audit.LogAsync(adminId, "RIDER_ASSIGN", "Order", orderId);
+
+        var capCustId   = order.CustomerId;
+        var capOrderNum = order.OrderNumber;
+        var capOrderId  = orderId;
+        RunPostSave(async sp =>
+        {
+            var notif = sp.GetRequiredService<INotificationService>();
+            var audit = sp.GetRequiredService<IAuditService>();
+            await notif.SendInAppAsync(capCustId,
+                "Rider Assigned",
+                $"A rider has been assigned to your order #{capOrderNum}. They will pick up your laundry soon.",
+                "order");
+            await audit.LogAsync(adminId, "RIDER_ASSIGN", "Order", capOrderId);
+        }, "AssignRider");
+
         return await GetOrderDtoAsync(orderId);
     }
 
@@ -550,12 +636,21 @@ public class OrderService : IOrderService
 
         await _db.SaveChangesAsync();
 
-        await _notifications.SendInAppAsync(order.CustomerId,
-            "Out for Delivery",
-            $"Your clean laundry (#{order.OrderNumber}) is on its way! Your delivery rider is {rider.User.FullName}.",
-            "order");
+        var capCustId2   = order.CustomerId;
+        var capOrderNum2 = order.OrderNumber;
+        var capRiderName = rider.User.FullName;
+        var capOrderId2  = orderId;
+        RunPostSave(async sp =>
+        {
+            var notif = sp.GetRequiredService<INotificationService>();
+            var audit = sp.GetRequiredService<IAuditService>();
+            await notif.SendInAppAsync(capCustId2,
+                "Out for Delivery",
+                $"Your clean laundry (#{capOrderNum2}) is on its way! Your delivery rider is {capRiderName}.",
+                "order");
+            await audit.LogAsync(adminId, "DELIVERY_RIDER_ASSIGN", "Order", capOrderId2);
+        }, "AssignDeliveryRider");
 
-        await _audit.LogAsync(adminId, "DELIVERY_RIDER_ASSIGN", "Order", orderId);
         return await GetOrderDtoAsync(orderId);
     }
 
@@ -655,34 +750,35 @@ public class OrderService : IOrderService
     };
 
     /// <summary>
-    /// Sends an in-app notification to the store owner plus all active StoreManagers and StoreStaff
-    /// assigned to the given store.
+    /// Sends in-app notifications to the store owner + active assigned staff.
+    /// Static so it can be safely called from fire-and-forget background scopes
+    /// without capturing the request-scoped _db or _notifications fields.
     /// </summary>
-    private async Task NotifyStoreUsersAsync(Guid storeId, string title, string message,
-        string entityType = "order", Guid? entityId = null)
+    private static async Task NotifyStoreUsersInternalAsync(
+        VyronDbContext db, INotificationService notif,
+        Guid storeId, string title, string message,
+        string entityType, Guid? entityId, ILogger logger)
     {
         try
         {
-            // StoreOwner (owns the store)
-            var store = await _db.Stores.AsNoTracking()
-                .FirstOrDefaultAsync(s => s.Id == storeId);
-            if (store != null)
-                await _notifications.SendInAppAsync(store.OwnerId, title, message,
-                    entityType, entityType, entityId);
+            var ownerId = await db.Stores.AsNoTracking()
+                .Where(s => s.Id == storeId)
+                .Select(s => (Guid?)s.OwnerId)
+                .FirstOrDefaultAsync();
+            if (ownerId.HasValue)
+                await notif.SendInAppAsync(ownerId.Value, title, message, entityType, entityType, entityId);
 
-            // Active StoreManagers and StoreStaff assigned to this store
-            var staffUserIds = await _db.StoreUserAssignments
+            var staffUserIds = await db.StoreUserAssignments
                 .Where(a => a.StoreId == storeId && a.IsActive)
                 .Select(a => a.UserId)
                 .ToListAsync();
 
             foreach (var uid in staffUserIds)
-                await _notifications.SendInAppAsync(uid, title, message,
-                    entityType, entityType, entityId);
+                await notif.SendInAppAsync(uid, title, message, entityType, entityType, entityId);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "NotifyStoreUsersAsync failed for store {StoreId}", storeId);
+            logger.LogWarning(ex, "NotifyStoreUsersInternalAsync failed for store {StoreId}", storeId);
         }
     }
 
@@ -810,25 +906,30 @@ public class DisputeService : IDisputeService
 
     public async Task<List<DisputeDetailDto>> GetMyDisputesAsync(Guid userId)
     {
-        var ids = await _db.Disputes
+        // Single batch query — no N+1 loop
+        var disputes = await _db.Disputes
+            .AsNoTracking()
+            .Include(x => x.RaisedBy)
+            .Include(x => x.Order)
+            .Include(x => x.Messages).ThenInclude(m => m.Sender)
             .Where(d => d.RaisedByUserId == userId)
             .OrderByDescending(d => d.CreatedAt)
-            .Select(d => d.Id)
             .ToListAsync();
-        var list = new List<DisputeDetailDto>();
-        foreach (var id in ids) { var dto = await LoadDisputeDto(id); if (dto != null) list.Add(dto); }
-        return list;
+        return disputes.Select(MapDisputeDto).ToList();
     }
 
     public async Task<List<DisputeDetailDto>> GetAllDisputesAsync(DisputeStatus? status, int page)
     {
-        var q = _db.Disputes.AsQueryable();
+        // Single batch query — no N+1 loop
+        var q = _db.Disputes.AsNoTracking()
+            .Include(x => x.RaisedBy)
+            .Include(x => x.Order)
+            .Include(x => x.Messages).ThenInclude(m => m.Sender)
+            .AsQueryable();
         if (status.HasValue) q = q.Where(d => d.Status == status.Value);
-        var ids = await q.OrderByDescending(d => d.CreatedAt).Skip((page - 1) * 25).Take(25)
-            .Select(d => d.Id).ToListAsync();
-        var list = new List<DisputeDetailDto>();
-        foreach (var id in ids) { var dto = await LoadDisputeDto(id); if (dto != null) list.Add(dto); }
-        return list;
+        var disputes = await q.OrderByDescending(d => d.CreatedAt)
+            .Skip((page - 1) * 25).Take(25).ToListAsync();
+        return disputes.Select(MapDisputeDto).ToList();
     }
 
     public async Task<DisputeDetailDto?> UpdateStatusAsync(Guid id, DisputeStatus status, string? note, Guid adminId)
@@ -879,11 +980,15 @@ public class DisputeService : IDisputeService
 
     private async Task<DisputeDetailDto?> LoadDisputeDto(Guid id)
     {
-        var d = await _db.Disputes.Include(x => x.RaisedBy).Include(x => x.Order)
+        var d = await _db.Disputes
+            .Include(x => x.RaisedBy).Include(x => x.Order)
             .Include(x => x.Messages).ThenInclude(m => m.Sender)
             .FirstOrDefaultAsync(x => x.Id == id);
-        if (d == null) return null;
-        return new DisputeDetailDto(d.Id, d.OrderId, d.Order.OrderNumber,
+        return d == null ? null : MapDisputeDto(d);
+    }
+
+    private static DisputeDetailDto MapDisputeDto(Dispute d) =>
+        new(d.Id, d.OrderId, d.Order.OrderNumber,
             d.RaisedBy.FullName, d.RaisedBy.Phone,
             d.Type, d.Type.ToString(), d.Status, d.Status.ToString(),
             d.Description, d.EvidenceUrl, d.Resolution, d.ResolutionNote,
@@ -891,7 +996,6 @@ public class DisputeService : IDisputeService
             d.Messages.OrderBy(m => m.SentAt)
                 .Select(m => new DisputeMessageDto(m.Id, m.Sender.FullName,
                     m.IsAdminMessage, m.Message, m.SentAt)).ToList());
-    }
 }
 
 // ═══════════════════════════════════════════════════════════════════

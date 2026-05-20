@@ -217,7 +217,7 @@ public class StoreOwnerController : VyronController
     [HttpGet("my-stores")]
     public async Task<IActionResult> MyStores()
     {
-        var stores = await _db.Stores.Include(s => s.Services)
+        var stores = await _db.Stores.AsNoTracking().Include(s => s.Services)
             .Where(s => s.OwnerId == CurrentUserId).ToListAsync();
         return Ok(stores.Select(s => new { s.Id, s.Name, s.Area, s.Status,
             s.AverageRating, s.TotalOrders, s.TotalReviews,
@@ -593,6 +593,19 @@ public class NotificationsController : VyronController
             .Where(n => n.UserId == CurrentUserId && !n.IsRead)
             .ExecuteUpdateAsync(setters => setters.SetProperty(n => n.IsRead, true));
         return NoContent();
+    }
+
+    /// <summary>
+    /// Returns the count of unread notifications for the badge.
+    /// Cheap scalar query — avoids loading the full notification list just for the badge count.
+    /// </summary>
+    [HttpGet("unread-count")]
+    public async Task<IActionResult> UnreadCount()
+    {
+        var count = await _db.Notifications
+            .AsNoTracking()
+            .CountAsync(n => n.UserId == CurrentUserId && !n.IsRead);
+        return Ok(new { count });
     }
 }
 

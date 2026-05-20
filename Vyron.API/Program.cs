@@ -1,10 +1,14 @@
 using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
+using System.Diagnostics;
+using System.IO.Compression;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
 using Vyron.API.Data;
@@ -33,6 +37,28 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.File("logs/vyron-api-.log", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 30)
     .CreateLogger();
 builder.Host.UseSerilog();
+
+// ─── RESPONSE COMPRESSION ─────────────────────────────────────────
+// Shrinks JSON payloads by 60-70% over mobile networks (Brotli preferred, Gzip fallback).
+builder.Services.AddResponseCompression(opts =>
+{
+    opts.EnableForHttps = true;
+    opts.Providers.Add<BrotliCompressionProvider>();
+    opts.Providers.Add<GzipCompressionProvider>();
+    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+        new[] { "application/json" });
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(opts => opts.Level = CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(opts => opts.Level = CompressionLevel.Fastest);
+
+// ─── HTTP CLIENT FACTORY ──────────────────────────────────────────
+// Reuses TCP connections; prevents socket exhaustion from per-send HttpClient.
+builder.Services.AddHttpClient("sms").ConfigureHttpClient(c =>
+    c.Timeout = TimeSpan.FromSeconds(8));
+
+// ─── HTTP CONTEXT ACCESSOR ────────────────────────────────────────
+// Used by StoreService to build absolute image URLs from the inbound request host.
+builder.Services.AddHttpContextAccessor();
 
 // ─── DATABASE (provider switch via config) ────────────────────────
 builder.Services.AddVyronDatabase(builder.Configuration);
@@ -133,6 +159,24 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+// ─── REQUEST TIMING MIDDLEWARE ────────────────────────────────────
+// Logs path, elapsed ms, HTTP status, and user ID for every CustomerApp request.
+// NEVER logs passwords, OTPs, tokens, or PII body fields.
+app.Use(async (ctx, next) =>
+{
+    var sw = Stopwatch.StartNew();
+    await next();
+    sw.Stop();
+    // Only log API calls (skip Hangfire, Swagger, static files)
+    if (ctx.Request.Path.StartsWithSegments("/api") || ctx.Request.Path.StartsWithSegments("/hubs"))
+    {
+        var userId = ctx.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "anon";
+        Log.Information("[PERF] {Method} {Path} → {Status} in {Ms}ms | uid={UserId}",
+            ctx.Request.Method, ctx.Request.Path.Value, ctx.Response.StatusCode,
+            sw.ElapsedMilliseconds, userId);
+    }
+});
+
 // ─── HANGFIRE DB AUTO-CREATE (Development, SQL Server only) ──────
 // Prevents "Cannot open database VYRONDB_Hangfire" on first run.
 // Only runs in Development — never touches Production databases.
@@ -210,6 +254,8 @@ app.UseExceptionHandler(errApp => errApp.Run(async ctx =>
 }));
 
 // ─── PIPELINE ─────────────────────────────────────────────────────
+// Response compression first — compresses all downstream responses.
+app.UseResponseCompression();
 app.UseSwagger();
 app.UseSwaggerUI(c => { c.SwaggerEndpoint("/swagger/v3/swagger.json", "VYRON API v3"); c.RoutePrefix = "swagger"; });
 app.UseCors("VyronV3");
