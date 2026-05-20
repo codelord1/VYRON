@@ -1,5 +1,6 @@
 using Hangfire;
 using Hangfire.PostgreSql;
+using Hangfire.SqlServer;
 using Microsoft.EntityFrameworkCore;
 using Vyron.API.Data;
 using Vyron.Shared.Enums;
@@ -58,6 +59,11 @@ public static class DatabaseConfiguration
             ?? config.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Hangfire connection missing.");
 
+        // Read poll interval from config — default 15 s. TimeSpan.Zero causes
+        // aggressive SQL polling that floods the console while idle.
+        var pollSeconds = config.GetValue<int>("Hangfire:QueuePollIntervalSeconds", 15);
+        if (pollSeconds < 5) pollSeconds = 5; // hard floor — never below 5 s
+
         switch (provider)
         {
             case DatabaseProvider.PostgreSQL:
@@ -65,7 +71,14 @@ public static class DatabaseConfiguration
                 break;
             case DatabaseProvider.SqlServer:
             default:
-                global.UseSqlServerStorage(hangfireConn);
+                global.UseSqlServerStorage(hangfireConn, new SqlServerStorageOptions
+                {
+                    QueuePollInterval         = TimeSpan.FromSeconds(pollSeconds),
+                    SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+                    JobExpirationCheckInterval = TimeSpan.FromHours(1),
+                    CountersAggregateInterval  = TimeSpan.FromMinutes(5),
+                    PrepareSchemaIfNecessary   = true
+                });
                 break;
         }
     }

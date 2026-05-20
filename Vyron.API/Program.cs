@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
+using Serilog.Events;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Security.Claims;
@@ -31,8 +32,19 @@ if (builder.Environment.IsDevelopment())
 }
 
 // ─── LOGGING ──────────────────────────────────────────────────────
+// MinimumLevel.Override suppresses chatty sub-systems regardless of the
+// appsettings.json Logging.LogLevel block (Serilog reads its own config,
+// not the Microsoft.Extensions.Logging defaults).
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
+    // Silence EF Core SQL query spam — only surfaces warnings/errors
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore",                  LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Database.Command", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.EntityFrameworkCore.Infrastructure",   LogEventLevel.Warning)
+    // Silence ASP.NET Core internal route/middleware chatter
+    .MinimumLevel.Override("Microsoft.AspNetCore",                           LogEventLevel.Warning)
+    // Silence Hangfire scheduler heartbeat and worker noise while idle
+    .MinimumLevel.Override("Hangfire",                                       LogEventLevel.Warning)
     .WriteTo.Console()
     .WriteTo.File("logs/vyron-api-.log", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 30)
     .CreateLogger();
@@ -64,6 +76,10 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddVyronDatabase(builder.Configuration);
 
 // ─── HANGFIRE (matching provider) ─────────────────────────────────
+// RunServer=false: disables background job processing on this instance —
+// useful for local mobile testing where Hangfire SQL polling is not needed.
+var hangfireRunServer = builder.Configuration.GetValue<bool>("Hangfire:RunServer", true);
+
 builder.Services.AddHangfire(cfg =>
 {
     cfg.SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
@@ -71,7 +87,9 @@ builder.Services.AddHangfire(cfg =>
        .UseRecommendedSerializerSettings();
     DatabaseConfiguration.ConfigureHangfire(cfg, builder.Configuration);
 });
-builder.Services.AddHangfireServer();
+
+if (hangfireRunServer)
+    builder.Services.AddHangfireServer();
 
 // ─── AUTH ─────────────────────────────────────────────────────────
 var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("Jwt:Key missing");
@@ -161,22 +179,43 @@ builder.Services.AddSwaggerGen(c =>
 var app = builder.Build();
 
 // ─── REQUEST TIMING MIDDLEWARE ────────────────────────────────────
-// Logs path, elapsed ms, HTTP status, and user ID for every CustomerApp request.
+// Logs path, elapsed ms, HTTP status, and user ID for CustomerApp requests.
+// Controlled by PerformanceLogging config:
+//   LogAllApiRequests=false → only log slow requests (>= SlowRequestThresholdMs)
+//                             and any 4xx/5xx response regardless of duration.
+//   LogAllApiRequests=true  → log every /api and /hubs request (useful when debugging).
 // NEVER logs passwords, OTPs, tokens, or PII body fields.
-app.Use(async (ctx, next) =>
 {
-    var sw = Stopwatch.StartNew();
-    await next();
-    sw.Stop();
-    // Only log API calls (skip Hangfire, Swagger, static files)
-    if (ctx.Request.Path.StartsWithSegments("/api") || ctx.Request.Path.StartsWithSegments("/hubs"))
+    var perfSection  = app.Configuration.GetSection("PerformanceLogging");
+    var perfEnabled  = perfSection.GetValue<bool>("Enabled", true);
+    var logAll       = perfSection.GetValue<bool>("LogAllApiRequests", false);
+    var slowMs       = perfSection.GetValue<int>("SlowRequestThresholdMs", 250);
+
+    app.Use(async (ctx, next) =>
     {
+        var sw = Stopwatch.StartNew();
+        await next();
+        sw.Stop();
+
+        if (!perfEnabled) return;
+
+        var path = ctx.Request.Path;
+
+        // Only instrument /api and /hubs — skip Swagger, Hangfire, favicon, static
+        if (!path.StartsWithSegments("/api") && !path.StartsWithSegments("/hubs"))
+            return;
+
+        var isError = ctx.Response.StatusCode >= 400;
+        var isSlow  = sw.ElapsedMilliseconds >= slowMs;
+
+        if (!logAll && !isError && !isSlow) return;
+
         var userId = ctx.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "anon";
         Log.Information("[PERF] {Method} {Path} → {Status} in {Ms}ms | uid={UserId}",
-            ctx.Request.Method, ctx.Request.Path.Value, ctx.Response.StatusCode,
+            ctx.Request.Method, path.Value, ctx.Response.StatusCode,
             sw.ElapsedMilliseconds, userId);
-    }
-});
+    });
+}
 
 // ─── HANGFIRE DB AUTO-CREATE (Development, SQL Server only) ──────
 // Prevents "Cannot open database VYRONDB_Hangfire" on first run.
@@ -262,10 +301,13 @@ app.UseSwaggerUI(c => { c.SwaggerEndpoint("/swagger/v3/swagger.json", "VYRON API
 app.UseCors("VyronV3");
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseHangfireDashboard("/hangfire", new DashboardOptions
+if (hangfireRunServer)
 {
-    Authorization = new[] { new Hangfire.Dashboard.LocalRequestsOnlyAuthorizationFilter() }
-});
+    app.UseHangfireDashboard("/hangfire", new DashboardOptions
+    {
+        Authorization = new[] { new Hangfire.Dashboard.LocalRequestsOnlyAuthorizationFilter() }
+    });
+}
 
 app.UseStaticFiles();  // serves API's own wwwroot/uploads/** for store/rider images
 
