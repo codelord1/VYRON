@@ -5,7 +5,7 @@
              x:Class="Vyron.CustomerApp.Views.Orders.BalancePaymentPage"
              x:DataType="vm:BalancePaymentViewModel"
              Title="Pay Balance"
-             BackgroundColor="{StaticResource Bg}">
+             BackgroundColor="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}">
 
     <ScrollView>
         <VerticalStackLayout Padding="20" Spacing="16">
@@ -17,7 +17,7 @@
                        FontFamily="OpenSansSemibold" FontSize="24"
                        HorizontalOptions="Center" />
                 <Label Text="{Binding SuccessMessage}" FontSize="13"
-                       TextColor="{StaticResource Gray3}"
+                       TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}"
                        HorizontalOptions="Center" HorizontalTextAlignment="Center" />
                 <Button Text="← Back to Orders"
                         Clicked="OnBackToOrders" />
@@ -32,13 +32,13 @@
                         StrokeShape="RoundRectangle 16" Padding="24,20">
                     <VerticalStackLayout Spacing="4">
                         <Label Text="Balance Due"
-                               TextColor="{StaticResource Gray3}" FontSize="13"
+                               TextColor="#B8D7D2" FontSize="13"
                                HorizontalOptions="Center" />
                         <Label Text="{Binding Order.BalanceAmount, StringFormat='₦{0:N0}'}"
                                TextColor="White" FontFamily="OpenSansSemibold"
                                FontSize="38" HorizontalOptions="Center" />
                         <Label Text="Final payment after delivery"
-                               TextColor="{StaticResource Gray3}" FontSize="12"
+                               TextColor="#B8D7D2" FontSize="12"
                                HorizontalOptions="Center" />
                     </VerticalStackLayout>
                 </Border>
@@ -50,7 +50,7 @@
                 </Border>
 
                 <Label Text="Payment Method" FontFamily="OpenSansSemibold" FontSize="14" />
-                <Border BackgroundColor="White" Stroke="#D0D0C8"
+                <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}" Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
                         StrokeShape="RoundRectangle 12" Padding="0">
                     <Picker ItemsSource="{Binding PaymentMethods}"
                             SelectedItem="{Binding SelectedMethod}"

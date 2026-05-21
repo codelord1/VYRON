@@ -5,7 +5,7 @@
              x:Class="Vyron.CustomerApp.Views.Profile.ProfilePage"
              x:DataType="vm:ProfileViewModel"
              Title="My Profile"
-             BackgroundColor="{StaticResource Bg}">
+             BackgroundColor="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}">
 
     <ScrollView>
         <VerticalStackLayout Padding="22,24,22,30" Spacing="16">
@@ -60,8 +60,8 @@
                            FontSize="18" />
 
                     <VerticalStackLayout Spacing="8">
-                        <Label Text="Full name" FontSize="13" TextColor="{StaticResource Gray3}" />
-                        <Border BackgroundColor="White" Stroke="{StaticResource CardStroke}" StrokeShape="RoundRectangle 22" HeightRequest="52">
+                        <Label Text="Full name" FontSize="13" TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
+                        <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}" Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" StrokeShape="RoundRectangle 22" HeightRequest="52">
                             <Entry Text="{Binding FullName}"
                                    IsReadOnly="{Binding EditMode, Converter={StaticResource InvertBool}}"
                                    Margin="16,0" />
@@ -69,8 +69,8 @@
                     </VerticalStackLayout>
 
                     <VerticalStackLayout Spacing="8">
-                        <Label Text="Email" FontSize="13" TextColor="{StaticResource Gray3}" />
-                        <Border BackgroundColor="White" Stroke="{StaticResource CardStroke}" StrokeShape="RoundRectangle 22" HeightRequest="52">
+                        <Label Text="Email" FontSize="13" TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
+                        <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}" Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" StrokeShape="RoundRectangle 22" HeightRequest="52">
                             <Entry Text="{Binding Email}"
                                    Placeholder="your@email.com"
                                    Keyboard="Email"
@@ -82,7 +82,7 @@
             </Border>
 
             <Button Text="Edit Profile"
-                    BackgroundColor="White"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
                     TextColor="{StaticResource TealDark}"
                     BorderColor="{StaticResource Teal}"
                     BorderWidth="1"

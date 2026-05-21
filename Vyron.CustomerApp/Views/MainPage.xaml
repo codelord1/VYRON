@@ -5,19 +5,19 @@
              x:Class="Vyron.CustomerApp.Views.MainPage"
              Shell.NavBarIsVisible="False"
              Shell.TabBarIsVisible="False"
-             BackgroundColor="{StaticResource Bg}">
+             BackgroundColor="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}">
 
     <Grid RowDefinitions="Auto,*,Auto" Padding="24,30,24,34">
         <Grid ColumnDefinitions="*,Auto">
             <HorizontalStackLayout x:Name="DotsHost" Spacing="6" VerticalOptions="Center">
                 <BoxView x:Name="Dot0" WidthRequest="24" HeightRequest="5" CornerRadius="3" Color="{StaticResource TealDark}" />
-                <BoxView x:Name="Dot1" WidthRequest="5" HeightRequest="5" CornerRadius="3" Color="{StaticResource CardStroke}" />
-                <BoxView x:Name="Dot2" WidthRequest="5" HeightRequest="5" CornerRadius="3" Color="{StaticResource CardStroke}" />
-                <BoxView x:Name="Dot3" WidthRequest="5" HeightRequest="5" CornerRadius="3" Color="{StaticResource CardStroke}" />
+                <BoxView x:Name="Dot1" WidthRequest="5" HeightRequest="5" CornerRadius="3" Color="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" />
+                <BoxView x:Name="Dot2" WidthRequest="5" HeightRequest="5" CornerRadius="3" Color="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" />
+                <BoxView x:Name="Dot3" WidthRequest="5" HeightRequest="5" CornerRadius="3" Color="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" />
             </HorizontalStackLayout>
             <Label Grid.Column="1"
                    Text="Skip"
-                   TextColor="{StaticResource Gray5}"
+                   TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}"
                    FontSize="14"
                    VerticalOptions="Center">
                 <Label.Behaviors>
@@ -45,7 +45,7 @@
                         StrokeShape="RoundRectangle 42"
                         HorizontalOptions="Center"
                         VerticalOptions="Center">
-                    <Border BackgroundColor="White"
+                    <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
                             WidthRequest="112"
                             HeightRequest="112"
                             Stroke="Transparent"
@@ -67,12 +67,12 @@
                        Text="Book laundry pickup from your phone"
                        FontFamily="OpenSansSemibold"
                        FontSize="24"
-                       TextColor="{StaticResource Gray5}"
+                       TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}"
                        HorizontalTextAlignment="Center" />
                 <Label x:Name="SubtitleLabel"
                        Text="Schedule pickup in under a minute. No more hauling baskets across town."
                        FontSize="15"
-                       TextColor="{StaticResource Gray3}"
+                       TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}"
                        HorizontalTextAlignment="Center"
                        Margin="8,0" />
             </VerticalStackLayout>
@@ -83,7 +83,7 @@
                     Text="‹"
                     Clicked="OnBackClicked"
                     BackgroundColor="Transparent"
-                    TextColor="{StaticResource Gray5}"
+                    TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}"
                     FontSize="28"
                     WidthRequest="62"
                     IsVisible="False">

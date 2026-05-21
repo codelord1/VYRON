@@ -234,7 +234,7 @@
                                     <BoxView Grid.Column="1" HeightRequest="5" CornerRadius="3" Color="{StaticResource TealDark}" />
                                     <BoxView Grid.Column="2" HeightRequest="5" CornerRadius="3" Color="{StaticResource TealDark}" />
                                     <BoxView Grid.Column="3" HeightRequest="5" CornerRadius="3" Color="{StaticResource TealDark}" />
-                                    <BoxView Grid.Column="4" HeightRequest="5" CornerRadius="3" Color="{StaticResource CardStroke}" />
+                                    <BoxView Grid.Column="4" HeightRequest="5" CornerRadius="3" Color="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" />
                                 </Grid>
                             </VerticalStackLayout>
                         </Grid>

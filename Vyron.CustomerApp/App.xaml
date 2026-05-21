@@ -108,8 +108,9 @@
 
             <Style TargetType="Editor">
                 <Setter Property="FontFamily" Value="OpenSansRegular" />
-                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#FFFFFF, Dark=#102022}" />
+                <Setter Property="BackgroundColor" Value="Transparent" />
                 <Setter Property="TextColor" Value="{AppThemeBinding Light=#071A1F, Dark=#F4FAF7}" />
+                <Setter Property="PlaceholderColor" Value="{AppThemeBinding Light={StaticResource LightTextMuted}, Dark={StaticResource DarkTextMuted}}" />
             </Style>
 
             <Style TargetType="Picker">

@@ -6,7 +6,7 @@
              x:DataType="vm:VerifyOtpViewModel"
              Shell.NavBarIsVisible="False"
              Shell.TabBarIsVisible="False"
-             BackgroundColor="{StaticResource Bg}">
+             BackgroundColor="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}">
 
     <ScrollView>
         <VerticalStackLayout Padding="28,64,28,48" Spacing="0">
@@ -19,13 +19,13 @@
                    HorizontalOptions="Center" />
             <Label Text="Laundry, simplified."
                    FontSize="13"
-                   TextColor="{StaticResource Gray3}"
+                   TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}"
                    HorizontalOptions="Center"
                    Margin="0,4,0,48" />
 
             <!-- ── Card ────────────────────────────────────────────── -->
-            <Border BackgroundColor="White"
-                    Stroke="#E8E8E2"
+            <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
+                    Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
                     StrokeShape="RoundRectangle 20"
                     Padding="24,28">
                 <VerticalStackLayout Spacing="0">
@@ -36,7 +36,7 @@
                            Margin="0,0,0,6" />
                     <Label Text="Enter the 6-digit code sent to your phone."
                            FontSize="13"
-                           TextColor="{StaticResource Gray3}"
+                           TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}"
                            Margin="0,0,0,20" />
 
                     <!-- Error banner -->
@@ -64,7 +64,7 @@
                     </Border>
 
                     <!-- Phone display -->
-                    <Border BackgroundColor="{StaticResource Bg}"
+                    <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}"
                             StrokeShape="RoundRectangle 10"
                             Padding="14,12"
                             Margin="0,0,0,14">
@@ -72,7 +72,7 @@
                             <Label.FormattedText>
                                 <FormattedString>
                                     <Span Text="Code sent to "
-                                          TextColor="{StaticResource Gray3}" />
+                                          TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
                                     <Span Text="{Binding Phone}"
                                           FontFamily="OpenSansSemibold" />
                                 </FormattedString>
@@ -115,8 +115,8 @@
                            FontSize="13"
                            FontFamily="OpenSansSemibold"
                            Margin="0,0,0,8" />
-                    <Border BackgroundColor="White"
-                            Stroke="#D0D0C8"
+                    <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
+                            Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
                             StrokeShape="RoundRectangle 12">
                         <Entry Placeholder="000000"
                                Text="{Binding OtpCode}"
@@ -155,7 +155,7 @@
                     <Button Text="← Change number"
                             Command="{Binding EditPhoneCommand}"
                             BackgroundColor="Transparent"
-                            TextColor="{StaticResource Gray3}"
+                            TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}"
                             FontSize="13" />
 
                 </VerticalStackLayout>

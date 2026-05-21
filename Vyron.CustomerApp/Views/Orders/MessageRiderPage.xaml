@@ -5,7 +5,7 @@
              x:Class="Vyron.CustomerApp.Views.Orders.MessageRiderPage"
              x:DataType="vm:MessageRiderViewModel"
              Title="Message Rider"
-             BackgroundColor="{StaticResource Bg}">
+             BackgroundColor="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}">
 
     <ScrollView>
         <VerticalStackLayout Padding="20,24" Spacing="0">
@@ -23,14 +23,14 @@
                    Margin="0,0,0,8" />
             <Label Text="Your rider will receive this message for your active order."
                    FontSize="13"
-                   TextColor="{StaticResource Gray3}"
+                   TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}"
                    HorizontalOptions="Center"
                    HorizontalTextAlignment="Center"
                    Margin="0,0,0,32" />
 
             <!-- Card -->
-            <Border BackgroundColor="White"
-                    Stroke="#E8E8E2"
+            <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
+                    Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
                     StrokeShape="RoundRectangle 16"
                     Padding="20,24">
                 <VerticalStackLayout Spacing="0">
@@ -63,8 +63,8 @@
                            FontSize="13"
                            FontFamily="OpenSansSemibold"
                            Margin="0,0,0,8" />
-                    <Border BackgroundColor="White"
-                            Stroke="#D0D0C8"
+                    <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
+                            Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
                             StrokeShape="RoundRectangle 12"
                             Margin="0,0,0,20">
                         <Editor Placeholder="e.g. Please call when you arrive…"
