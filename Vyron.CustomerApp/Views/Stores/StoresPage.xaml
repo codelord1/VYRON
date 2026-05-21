@@ -198,11 +198,21 @@
                                          Spacing="14"
                                          Padding="38,82"
                                          IsVisible="{Binding IsNotBusy}">
-                        <Image Source="vyron_icon_only.png"
-                               WidthRequest="72"
-                               HeightRequest="72"
-                               HorizontalOptions="Center"
-                               Opacity="0.4" />
+                        <!-- Mint/soft-teal circle hides the icon's white background
+                             in dark mode (same pattern as OrdersPage empty state). -->
+                        <Border BackgroundColor="{AppThemeBinding Light={StaticResource Mint}, Dark={StaticResource DarkSoftTeal}}"
+                                WidthRequest="82"
+                                HeightRequest="82"
+                                Stroke="Transparent"
+                                StrokeShape="RoundRectangle 41"
+                                HorizontalOptions="Center">
+                            <Image Source="vyron_icon_only.png"
+                                   WidthRequest="46"
+                                   HeightRequest="46"
+                                   Aspect="AspectFit"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center" />
+                        </Border>
                         <Label Text="{Binding EmptyTitle}"
                                FontFamily="OpenSansSemibold"
                                FontSize="18"
@@ -232,10 +242,12 @@
                 <!-- ── Store cards ───────────────────────────────────── -->
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="dto:StoreListItemDto">
+                        <!-- TapFeedbackBehavior is intentionally NOT on this Grid.
+                             TouchBehavior.ShouldMakeChildrenInputTransparent=true would make
+                             the inner Order Now / View Store buttons input-transparent,
+                             preventing their Commands from firing. The buttons carry their
+                             own VSM press feedback via the global Button style. -->
                         <Grid Padding="20,8">
-                            <Grid.Behaviors>
-                                <behaviors:TapFeedbackBehavior />
-                            </Grid.Behaviors>
 
                             <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkElevatedCardBackground}}"
                                     Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
@@ -442,11 +454,23 @@
             <VerticalStackLayout HorizontalOptions="Center"
                                  VerticalOptions="Center"
                                  Spacing="16">
-                <Image x:Name="LoadingIcon"
-                       Source="vyron_icon_only.png"
-                       WidthRequest="64"
-                       HeightRequest="64"
-                       HorizontalOptions="Center" />
+                <!-- Circle clips the icon's white background in dark mode.
+                     Image diagonal at 44px = ~62px; circle at 72px keeps
+                     all corners inside the clip at every rotation angle. -->
+                <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
+                        WidthRequest="72"
+                        HeightRequest="72"
+                        Stroke="Transparent"
+                        StrokeShape="RoundRectangle 36"
+                        HorizontalOptions="Center">
+                    <Image x:Name="LoadingIcon"
+                           Source="vyron_icon_only.png"
+                           WidthRequest="44"
+                           HeightRequest="44"
+                           Aspect="AspectFit"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center" />
+                </Border>
                 <Label Text="{Binding OverlayText}"
                        FontSize="14"
                        FontFamily="OpenSansSemibold"
