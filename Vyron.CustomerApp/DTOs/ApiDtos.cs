@@ -146,6 +146,7 @@ public class StoreListItemDto
     public string RatingDisplay        => TotalReviews > 0
         ? $"Rating {AverageRating:F1} ({TotalReviews})"
         : "No reviews yet";
+    public string RatingPillText       => TotalReviews > 0 ? $"★ {AverageRating:F1}" : "★ New";
     public string EstimatedTimeDisplay => $"~{EstimatedPickupMinutes} min";
     public string PickupFeeDisplay     => $"₦{PickupFee:N0} pickup";
     public string DeliveryFeeDisplay   => $"₦{DeliveryFee:N0} delivery";
@@ -163,6 +164,17 @@ public class StoreListItemDto
     public string? StartingFromText => Services.Any(s => s.IsActive)
         ? $" · from ₦{Services.Where(s => s.IsActive).Min(s => s.BasePrice):N0}"
         : null;
+    public string StartingAtText => Services.Any(s => s.IsActive)
+        ? $"Starting at ₦{Services.Where(s => s.IsActive).Min(s => s.BasePrice):N0}"
+        : "Services coming soon";
+    public string ReviewsAndPriceText => Services.Any(s => s.IsActive)
+        ? TotalReviews > 0
+            ? $"{TotalReviews:N0} reviews · From ₦{Services.Where(s => s.IsActive).Min(s => s.BasePrice):N0}"
+            : $"New store · From ₦{Services.Where(s => s.IsActive).Min(s => s.BasePrice):N0}"
+        : TotalReviews > 0
+            ? $"{TotalReviews:N0} reviews · Services coming soon"
+            : "New store · Services coming soon";
+    public string AreaDisplay => string.IsNullOrWhiteSpace(Area) ? "Nearby" : Area;
 
     // â”€â”€ Image helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     /// Fully-qualified URL, resolving relative paths against the API base.

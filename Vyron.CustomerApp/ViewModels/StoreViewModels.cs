@@ -334,6 +334,7 @@ public partial class StoresViewModel : BaseViewModel
     private readonly StoreService _stores;
     private DateTime _lastLoadedAt = DateTime.MinValue;
     private bool _hasLoaded;
+    private Task? _loadTask;
 
     [ObservableProperty] private ObservableCollection<StoreListItemDto> _storeItems = new();
     [ObservableProperty] private string _searchText    = "";
@@ -345,6 +346,8 @@ public partial class StoresViewModel : BaseViewModel
 
     private CancellationTokenSource? _searchDebounce;
     public bool IsNotNavigating => !IsNavigating;
+    public int StoreCount => StoreItems.Count;
+    public string StoresSubtitle => $"{StoreCount} verified laundry store{(StoreCount == 1 ? "" : "s")} near you";
     public bool HasSearchContext =>
         !string.IsNullOrWhiteSpace(SearchText) ||
         !string.IsNullOrWhiteSpace(SelectedFilter);
@@ -352,6 +355,10 @@ public partial class StoresViewModel : BaseViewModel
     public string EmptySubtitle => HasSearchContext
         ? "Try another service, store name, or location."
         : "Verified laundry stores will appear here.";
+    public bool IsNearestFilterSelected => string.IsNullOrWhiteSpace(SelectedFilter);
+    public bool IsTopRatedFilterSelected => SelectedFilter == "toprated";
+    public bool IsFastestFilterSelected => SelectedFilter == "fast";
+    public bool IsCheapestFilterSelected => SelectedFilter == "cheapest";
 
     // ── Personalised greeting ────────────────────────────────────
     public string Greeting
@@ -380,10 +387,7 @@ public partial class StoresViewModel : BaseViewModel
 
     public async Task InitAsync()
     {
-        if (_hasLoaded && DateTime.UtcNow - _lastLoadedAt < TimeSpan.FromMinutes(2))
-            return;
-
-        await LoadAsync();
+        await LoadStoresAsync(force: false);
     }
 
     /// <summary>Debounce live search: fires LoadAsync 400ms after user stops typing.</summary>
@@ -392,11 +396,14 @@ public partial class StoresViewModel : BaseViewModel
         OnPropertyChanged(nameof(HasSearchContext));
         OnPropertyChanged(nameof(EmptyTitle));
         OnPropertyChanged(nameof(EmptySubtitle));
+        if (!_hasLoaded)
+            return;
+
         _searchDebounce?.Cancel();
         _searchDebounce = new CancellationTokenSource();
         var tok = _searchDebounce.Token;
         Task.Delay(400, tok).ContinueWith(
-            _ => MainThread.BeginInvokeOnMainThread(async () => await LoadAsync()),
+            _ => MainThread.BeginInvokeOnMainThread(async () => await LoadStoresAsync(force: true)),
             CancellationToken.None, TaskContinuationOptions.OnlyOnRanToCompletion,
             TaskScheduler.Default);
     }
@@ -406,10 +413,37 @@ public partial class StoresViewModel : BaseViewModel
         OnPropertyChanged(nameof(HasSearchContext));
         OnPropertyChanged(nameof(EmptyTitle));
         OnPropertyChanged(nameof(EmptySubtitle));
+        OnPropertyChanged(nameof(IsNearestFilterSelected));
+        OnPropertyChanged(nameof(IsTopRatedFilterSelected));
+        OnPropertyChanged(nameof(IsFastestFilterSelected));
+        OnPropertyChanged(nameof(IsCheapestFilterSelected));
     }
 
     [RelayCommand]
-    private async Task LoadAsync()
+    private async Task LoadAsync() => await LoadStoresAsync(force: true);
+
+    [RelayCommand]
+    private async Task RefreshAsync() => await LoadStoresAsync(force: true);
+
+    private async Task LoadStoresAsync(bool force)
+    {
+        if (!force && _hasLoaded && DateTime.UtcNow - _lastLoadedAt < TimeSpan.FromMinutes(2))
+        {
+            IsRefreshing = false;
+            return;
+        }
+
+        if (_loadTask is { IsCompleted: false })
+        {
+            IsRefreshing = false;
+            return;
+        }
+
+        _loadTask = LoadStoresCoreAsync();
+        await _loadTask;
+    }
+
+    private async Task LoadStoresCoreAsync()
     {
         if (IsBusy)
         {
@@ -433,7 +467,7 @@ public partial class StoresViewModel : BaseViewModel
 
         try
         {
-            var (data, _) = await SafeRefreshCallAsync(() =>
+            var (data, _) = await SafeCallAsync(() =>
                 _stores.GetStoresAsync(
                     search: string.IsNullOrWhiteSpace(SearchText) ? null : SearchText,
                     sort: sort,
@@ -448,6 +482,8 @@ public partial class StoresViewModel : BaseViewModel
                 StoreItems.Clear();
                 foreach (var s in stores)
                     StoreItems.Add(s);
+
+                NotifyStoreSummaryChanged();
             }
 
             IsEmpty = StoreItems.Count == 0;
@@ -461,14 +497,28 @@ public partial class StoresViewModel : BaseViewModel
     }
 
     [RelayCommand]
-    private async Task SearchAsync() => await LoadAsync();
+    private async Task SearchAsync()
+    {
+        _searchDebounce?.Cancel();
+        await LoadStoresAsync(force: true);
+    }
 
     [RelayCommand]
     private async Task SetFilterAsync(string value)
     {
+        if (SelectedFilter == value && StoreItems.Count > 0)
+            return;
+
+        _searchDebounce?.Cancel();
         SelectedFilter = value;
         _lastLoadedAt = DateTime.MinValue;
-        await LoadAsync();
+        await LoadStoresAsync(force: true);
+    }
+
+    private void NotifyStoreSummaryChanged()
+    {
+        OnPropertyChanged(nameof(StoreCount));
+        OnPropertyChanged(nameof(StoresSubtitle));
     }
 
     [RelayCommand]
