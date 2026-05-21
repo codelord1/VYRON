@@ -24,7 +24,7 @@
                     StrokeShape="RoundRectangle 22"
                     Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
                     BackgroundColor="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}">
-                <Label Text="←"
+                <Label Text="❮"
                        FontSize="20"
                        TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}"
                        HorizontalOptions="Center"
@@ -46,31 +46,52 @@
                    Margin="8,0"
                    TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}" />
 
-            <!-- Circular favourite button -->
-            <Border Grid.Column="2"
-                    WidthRequest="44"
-                    HeightRequest="44"
-                    StrokeShape="RoundRectangle 22"
-                    Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
-                    BackgroundColor="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}">
-                <Label Text="♡"
-                       FontSize="20"
-                       TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}"
+            <!-- Favourite button — local Preferences persistence (fav_store_{id}) -->
+            <VerticalStackLayout Grid.Column="2"
+                                 Spacing="2"
+                                 HorizontalOptions="End"
+                                 VerticalOptions="Center">
+                <VerticalStackLayout.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding ToggleFavoriteCommand}" />
+                </VerticalStackLayout.GestureRecognizers>
+
+                <Border WidthRequest="44"
+                        HeightRequest="44"
+                        StrokeShape="RoundRectangle 22"
+                        Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}"
+                        HorizontalOptions="Center">
+                    <Label Text="♡"
+                           FontSize="20"
+                           TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label"
+                                         Binding="{Binding IsFavorite}"
+                                         Value="True">
+                                <Setter Property="Text" Value="♥" />
+                                <Setter Property="TextColor" Value="#EF4444" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+                </Border>
+
+                <!-- "Save" / "Saved" micro-label below the button -->
+                <Label Text="Save"
+                       FontSize="9"
                        HorizontalOptions="Center"
-                       VerticalOptions="Center">
+                       TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}">
                     <Label.Triggers>
                         <DataTrigger TargetType="Label"
                                      Binding="{Binding IsFavorite}"
                                      Value="True">
-                            <Setter Property="Text" Value="♥" />
+                            <Setter Property="Text" Value="Saved" />
                             <Setter Property="TextColor" Value="#EF4444" />
                         </DataTrigger>
                     </Label.Triggers>
                 </Label>
-                <Border.GestureRecognizers>
-                    <TapGestureRecognizer Command="{Binding ToggleFavoriteCommand}" />
-                </Border.GestureRecognizers>
-            </Border>
+            </VerticalStackLayout>
 
         </Grid>
 
@@ -338,33 +359,6 @@
                                 </VerticalStackLayout>
                             </Grid>
 
-                            <!-- Phone -->
-                            <Grid ColumnDefinitions="48,*" ColumnSpacing="12"
-                                  IsVisible="{Binding Store.Phone, Converter={StaticResource NotEmptyBool}}">
-                                <Border Grid.Column="0"
-                                        WidthRequest="36"
-                                        HeightRequest="36"
-                                        StrokeShape="RoundRectangle 18"
-                                        Stroke="Transparent"
-                                        BackgroundColor="{AppThemeBinding Light={StaticResource LightSoftTeal}, Dark={StaticResource DarkSoftTeal}}"
-                                        HorizontalOptions="Start"
-                                        VerticalOptions="Center">
-                                    <Label Text="📞"
-                                           FontSize="16"
-                                           HorizontalOptions="Center"
-                                           VerticalOptions="Center" />
-                                </Border>
-                                <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
-                                    <Label Text="Phone"
-                                           FontFamily="OpenSansSemibold"
-                                           FontSize="12"
-                                           TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
-                                    <Label Text="{Binding Store.Phone}"
-                                           FontSize="13"
-                                           TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}" />
-                                </VerticalStackLayout>
-                            </Grid>
-
                         </VerticalStackLayout>
                     </Border>
 
@@ -401,7 +395,11 @@
                                        TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
                             </VerticalStackLayout>
 
+                            <!-- Need Help? — tappable, navigates to Dispute History (support route) -->
                             <VerticalStackLayout Grid.Column="2" Spacing="4" HorizontalOptions="Center">
+                                <VerticalStackLayout.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding ContactSupportCommand}" />
+                                </VerticalStackLayout.GestureRecognizers>
                                 <Label Text="💬"
                                        FontSize="22"
                                        HorizontalOptions="Center" />
@@ -410,7 +408,7 @@
                                        FontSize="11"
                                        HorizontalOptions="Center"
                                        HorizontalTextAlignment="Center"
-                                       TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
+                                       TextColor="{StaticResource BrandTeal}" />
                             </VerticalStackLayout>
 
                         </Grid>
@@ -571,15 +569,19 @@
                             <BoxView HeightRequest="1"
                                      Color="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" />
 
-                            <!-- Contact store (real phone) -->
+                            <!-- Contact Vyron Support — routes to Dispute History -->
+                            <!-- TODO: replace subtitle with live support contact once Admin Portal exposes system settings -->
                             <Grid ColumnDefinitions="32,*" ColumnSpacing="10">
-                                <Label Grid.Column="0" Text="📞" FontSize="18" VerticalOptions="Center" />
+                                <Grid.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding ContactSupportCommand}" />
+                                </Grid.GestureRecognizers>
+                                <Label Grid.Column="0" Text="🎧" FontSize="18" VerticalOptions="Center" />
                                 <VerticalStackLayout Grid.Column="1" Spacing="1">
-                                    <Label Text="Contact Store"
+                                    <Label Text="Contact Vyron Support"
                                            FontFamily="OpenSansSemibold"
                                            FontSize="13"
-                                           TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}" />
-                                    <Label Text="{Binding Store.Phone}"
+                                           TextColor="{StaticResource BrandTeal}" />
+                                    <Label Text="For issues, complaints, and order concerns"
                                            FontSize="12"
                                            TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
                                 </VerticalStackLayout>

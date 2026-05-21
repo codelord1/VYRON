@@ -41,6 +41,14 @@ public static class AppConstants
 
     public const string ApiBaseUrl = "http://192.168.0.166:50680/";
     public const string SignalRUrl = "http://192.168.0.166:50680/hubs/tracking";
+
+    // ── VYRON SUPPORT CONTACT ────────────────────────────────────────
+    // TODO: Replace these with values fetched from Admin Portal → System Settings API
+    //       once the backend exposes a /api/settings/public or similar endpoint.
+    //       At that point, inject a SettingsService and consume it in StoreDetailsViewModel.
+    public const string SupportPhoneNumber = "";  // e.g. "+234 800 000 0000" — set via Admin Portal
+    public const string SupportEmail       = "";  // e.g. "support@vyron.com"  — set via Admin Portal
+    public const string SupportDisplayText = "For issues, complaints, and order concerns";
 }
 
 public static class MauiProgram

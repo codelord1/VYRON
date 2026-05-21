@@ -347,9 +347,11 @@ public partial class StoresViewModel : BaseViewModel
     private bool _isNavigating;
 
     private CancellationTokenSource? _searchDebounce;
+    // Tracks the specific overlay text while IsNavigating is true.
+    private string _storeNavText = "Opening store…";
     public bool IsNotNavigating => !IsNavigating;
     public bool IsOverlayVisible => IsBusy || IsNavigating;
-    public string OverlayText => IsNavigating ? "Opening store…" : "Loading stores…";
+    public string OverlayText => IsNavigating ? _storeNavText : "Loading stores…";
     public int StoreCount => StoreItems.Count;
     public string StoresSubtitle => $"{StoreCount} verified laundry store{(StoreCount == 1 ? "" : "s")} near you";
     public bool HasSearchContext =>
@@ -574,6 +576,7 @@ public partial class StoresViewModel : BaseViewModel
             return;
 
         TapFeedback.HapticClick();
+        _storeNavText = "Opening Order Now…";
         IsNavigating = true;
         try
         {
@@ -582,6 +585,7 @@ public partial class StoresViewModel : BaseViewModel
         finally
         {
             IsNavigating = false;
+            _storeNavText = "Opening store…";
         }
     }
 
@@ -607,12 +611,17 @@ public partial class StoreDetailsViewModel : BaseViewModel
     [NotifyPropertyChangedFor(nameof(OverlayText))]
     private bool _isNavigating;
 
+    // Tracks the specific action text shown while IsNavigating is true.
+    // Updated before IsNavigating is set so the overlay shows the correct text immediately.
+    private string _navActionText = "Opening store…";
+
     // ── Local favourite toggle (persisted to Preferences) ──────
+    // Key: fav_store_{storeId} — local device only until backend favorites are implemented.
     [ObservableProperty] private bool _isFavorite;
 
     public bool IsNotNavigating  => !IsNavigating;
     public bool IsOverlayVisible => IsBusy || IsNavigating;
-    public string OverlayText    => IsNavigating ? "Opening store…" : "Loading store…";
+    public string OverlayText    => IsBusy ? "Loading store…" : _navActionText;
 
     // ── Quick-stats helpers (computed from Store) ───────────────
     public string PickupFeeText    => Store?.PickupFee == 0 ? "Free" : Store?.PickupFeeDisplay ?? "—";
@@ -638,8 +647,9 @@ public partial class StoreDetailsViewModel : BaseViewModel
     partial void OnStoreIdChanged(string value)
     {
         if (!Guid.TryParse(value, out _)) return;
-        // Restore persisted favourite state for this store
-        IsFavorite = Preferences.Default.Get($"fav_{value}", false);
+        // Restore persisted favourite state for this store.
+        // Key: fav_store_{storeId} — local Preferences only (no backend API yet).
+        IsFavorite = Preferences.Default.Get($"fav_store_{value}", false);
         MainThread.BeginInvokeOnMainThread(async () =>
         {
             try { await LoadAsync(); }
@@ -703,6 +713,8 @@ public partial class StoreDetailsViewModel : BaseViewModel
             return;
         }
         TapFeedback.HapticClick();
+        _navActionText = "Opening Order Now…";
+        OnPropertyChanged(nameof(OverlayText));
         IsNavigating = true;
         try
         {
@@ -718,6 +730,38 @@ public partial class StoreDetailsViewModel : BaseViewModel
         finally
         {
             IsNavigating = false;
+            _navActionText = "Opening store…";
+        }
+    }
+
+    /// <summary>
+    /// Navigates to Dispute History — the closest existing support/help page.
+    /// Used by both the "Need Help?" trust strip tap and the "Contact Vyron Support" policy row.
+    /// TODO: Replace with a dedicated Vyron Support page once one exists.
+    /// </summary>
+    [RelayCommand]
+    private async Task ContactSupportAsync()
+    {
+        if (IsNavigating) return;
+        TapFeedback.HapticClick();
+        _navActionText = "Opening Support…";
+        OnPropertyChanged(nameof(OverlayText));
+        IsNavigating = true;
+        try
+        {
+            await Shell.Current.GoToAsync(AppRoutes.DisputeHistory);
+        }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[NAV ERROR] ContactSupport: {ex}");
+#endif
+            SetError("Unable to open support. Please try again.");
+        }
+        finally
+        {
+            IsNavigating = false;
+            _navActionText = "Opening store…";
         }
     }
 
@@ -727,7 +771,8 @@ public partial class StoreDetailsViewModel : BaseViewModel
         IsFavorite = !IsFavorite;
         TapFeedback.HapticClick();
         if (!string.IsNullOrEmpty(StoreId))
-            Preferences.Default.Set($"fav_{StoreId}", IsFavorite);
+            // Local-only persistence — key: fav_store_{storeId}
+            Preferences.Default.Set($"fav_store_{StoreId}", IsFavorite);
     }
 
     [RelayCommand]
