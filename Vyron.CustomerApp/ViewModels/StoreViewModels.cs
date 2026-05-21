@@ -342,10 +342,14 @@ public partial class StoresViewModel : BaseViewModel
     [ObservableProperty] private bool   _isEmpty;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsNotNavigating))]
+    [NotifyPropertyChangedFor(nameof(IsOverlayVisible))]
+    [NotifyPropertyChangedFor(nameof(OverlayText))]
     private bool _isNavigating;
 
     private CancellationTokenSource? _searchDebounce;
     public bool IsNotNavigating => !IsNavigating;
+    public bool IsOverlayVisible => IsBusy || IsNavigating;
+    public string OverlayText => IsNavigating ? "Opening store…" : "Loading stores…";
     public int StoreCount => StoreItems.Count;
     public string StoresSubtitle => $"{StoreCount} verified laundry store{(StoreCount == 1 ? "" : "s")} near you";
     public bool HasSearchContext =>
@@ -380,6 +384,20 @@ public partial class StoresViewModel : BaseViewModel
             if (string.IsNullOrWhiteSpace(name)) return "?";
             var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             return string.Concat(parts.Take(2).Select(p => p[0].ToString().ToUpperInvariant()));
+        }
+    }
+
+    // Propagate IsBusy → IsOverlayVisible / OverlayText.
+    // IsNavigating is handled via [NotifyPropertyChangedFor] on the field.
+    // Note: OnPropertyChanged(PropertyChangedEventArgs) is virtual; the string
+    // overload is not — so we override the EventArgs form.
+    protected override void OnPropertyChanged(System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+        if (e.PropertyName is nameof(IsBusy))
+        {
+            base.OnPropertyChanged(new System.ComponentModel.PropertyChangedEventArgs(nameof(IsOverlayVisible)));
+            base.OnPropertyChanged(new System.ComponentModel.PropertyChangedEventArgs(nameof(OverlayText)));
         }
     }
 
@@ -504,6 +522,16 @@ public partial class StoresViewModel : BaseViewModel
     }
 
     [RelayCommand]
+    private async Task ClearSearchAsync()
+    {
+        _searchDebounce?.Cancel();
+        SearchText = "";
+        SelectedFilter = "";
+        _lastLoadedAt = DateTime.MinValue;
+        await LoadStoresAsync(force: true);
+    }
+
+    [RelayCommand]
     private async Task SetFilterAsync(string value)
     {
         if (SelectedFilter == value && StoreItems.Count > 0)
@@ -532,6 +560,24 @@ public partial class StoresViewModel : BaseViewModel
         try
         {
             await Shell.Current.GoToAsync($"{AppRoutes.StoreDetails}?storeId={store.Id}");
+        }
+        finally
+        {
+            IsNavigating = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task OrderNowAsync(StoreListItemDto store)
+    {
+        if (IsNavigating || store == null)
+            return;
+
+        TapFeedback.HapticClick();
+        IsNavigating = true;
+        try
+        {
+            await Shell.Current.GoToAsync($"{AppRoutes.ServiceSelection}?storeId={store.Id}");
         }
         finally
         {
