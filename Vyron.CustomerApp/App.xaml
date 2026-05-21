@@ -8,9 +8,9 @@
             <!-- ── Brand Colours ── -->
             <Color x:Key="VyronPrimary">#006B50</Color>
             <Color x:Key="VyronBlack">#111111</Color>
-            <Color x:Key="VyronBackground">#F7F8FA</Color>
-            <Color x:Key="VyronWhite">#FFFFFF</Color>
-            <Color x:Key="VyronText">#1F2937</Color>
+            <AppThemeBinding x:Key="VyronBackground" Light="#F7F8FA" Dark="#071416" />
+            <AppThemeBinding x:Key="VyronWhite" Light="#FFFFFF" Dark="#102022" />
+            <AppThemeBinding x:Key="VyronText" Light="#1F2937" Dark="#F4FAF7" />
             <Color x:Key="VyronAccent">#008866</Color>
             <Color x:Key="VyronSuccess">#16A34A</Color>
             <Color x:Key="VyronWarning">#F59E0B</Color>
@@ -18,18 +18,18 @@
             
             <Color x:Key="Teal">#008866</Color>
             <Color x:Key="TealDark">#006B50</Color>
-            <Color x:Key="Mint">#D9F8EC</Color>
-            <Color x:Key="MintSoft">#EEF8F4</Color>
-            <Color x:Key="Dark">#061F1A</Color>
-            <Color x:Key="Bg">#F4FAF7</Color>
-            <Color x:Key="CardStroke">#DCE9E4</Color>
-            <Color x:Key="Gray3">#697780</Color>
-            <Color x:Key="Gray5">#071A1F</Color>
+            <AppThemeBinding x:Key="Mint" Light="#D9F8EC" Dark="#143B35" />
+            <AppThemeBinding x:Key="MintSoft" Light="#EEF8F4" Dark="#0E2424" />
+            <AppThemeBinding x:Key="Dark" Light="#061F1A" Dark="#102527" />
+            <AppThemeBinding x:Key="Bg" Light="#F4FAF7" Dark="#071416" />
+            <AppThemeBinding x:Key="CardStroke" Light="#DCE9E4" Dark="#263A3C" />
+            <AppThemeBinding x:Key="Gray3" Light="#697780" Dark="#9AA8AC" />
+            <AppThemeBinding x:Key="Gray5" Light="#071A1F" Dark="#F4FAF7" />
             <Color x:Key="Danger">#DC2626</Color>
 
             <Color x:Key="Success">#16A34A</Color>
             <Color x:Key="Warning">#F59E0B</Color>
-            <Color x:Key="InputBg">#FFFFFF</Color>
+            <AppThemeBinding x:Key="InputBg" Light="#FFFFFF" Dark="#102022" />
             <Color x:Key="OverlayBg">#99000000</Color>
 
             <!-- ── Converters (global) ── -->

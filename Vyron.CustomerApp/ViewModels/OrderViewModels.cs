@@ -15,11 +15,15 @@ public partial class ServiceSelectionViewModel : BaseViewModel
 
     [ObservableProperty] private string _storeId = "";
     [ObservableProperty] private StoreDetailDto? _store;
+    [ObservableProperty] private string _serviceSearchText = "";
 
     // Service cards with IsSelected state
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasDraftItems))]
     private ObservableCollection<ServiceCardViewModel> _serviceCards = new();
+
+    [ObservableProperty]
+    private ObservableCollection<ServiceCardViewModel> _filteredServiceCards = new();
 
     // Expose the draft's item collection directly for XAML binding
     public ObservableCollection<OrderDraftItem> DraftItems => _draft.Items;
@@ -34,6 +38,8 @@ public partial class ServiceSelectionViewModel : BaseViewModel
     [ObservableProperty] private decimal _balanceDueLater;
 
     public bool HasDraftItems => _draft.HasItems;
+    public bool HasServiceSearch => !string.IsNullOrWhiteSpace(ServiceSearchText);
+    public bool IsServiceSearchEmpty => HasServiceSearch && FilteredServiceCards.Count == 0 && !IsBusy;
 
     public ServiceSelectionViewModel(StoreService stores, OrderDraftService draft)
     {
@@ -71,9 +77,37 @@ public partial class ServiceSelectionViewModel : BaseViewModel
             ServiceCards.Clear();
             foreach (var svc in Store.Services.Where(s => s.IsActive))
                 ServiceCards.Add(new ServiceCardViewModel(svc));
+            ApplyServiceFilter();
             RefreshTotals();
         }
     }
+
+    partial void OnServiceSearchTextChanged(string value) => ApplyServiceFilter();
+
+    private void ApplyServiceFilter()
+    {
+        var term = ServiceSearchText?.Trim();
+        var source = ServiceCards.AsEnumerable();
+        if (!string.IsNullOrWhiteSpace(term))
+        {
+            source = source.Where(card =>
+                Contains(card.Service.Name, term) ||
+                Contains(card.Service.Description, term) ||
+                Contains(card.Service.ServiceType, term) ||
+                Contains(card.Service.PricingMode, term));
+        }
+
+        FilteredServiceCards.Clear();
+        foreach (var card in source)
+            FilteredServiceCards.Add(card);
+
+        OnPropertyChanged(nameof(HasServiceSearch));
+        OnPropertyChanged(nameof(IsServiceSearchEmpty));
+    }
+
+    private static bool Contains(string? value, string term) =>
+        !string.IsNullOrWhiteSpace(value) &&
+        value.Contains(term, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Add a service to the cart (or increment quantity if already added).</summary>
     [RelayCommand]

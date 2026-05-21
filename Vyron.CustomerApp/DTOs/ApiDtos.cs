@@ -460,6 +460,22 @@ public class StoreSummaryDto
     public string? LogoUrl       { get; set; }
     public string  Phone         { get; set; } = "";
     public bool HasLogo => !string.IsNullOrWhiteSpace(LogoUrl);
+    public string? FullLogoUrl => ResolveImageUrl(LogoUrl);
+
+    private static string? ResolveImageUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return null;
+        if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            var apiHost = new Uri(AppConstants.ApiBaseUrl).Host;
+            return System.Text.RegularExpressions.Regex.Replace(
+                url, @"://localhost(:\d+)?", $"://{apiHost}$1",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        }
+        var baseUrl = AppConstants.ApiBaseUrl.TrimEnd('/');
+        return baseUrl + (url.StartsWith('/') ? url : "/" + url);
+    }
 }
 
 public class RiderSummaryDto
@@ -469,9 +485,29 @@ public class RiderSummaryDto
     public string Phone        { get; set; } = "";
     public string VehicleType  { get; set; } = "";
     public string? VehiclePlate{ get; set; }
+    public string? PhotoUrl     { get; set; }
+    public string? AvatarUrl    { get; set; }
+    public string? PassportUrl  { get; set; }
     public string VehicleDisplay => string.IsNullOrWhiteSpace(VehiclePlate)
         ? VehicleType
         : $"{VehicleType} - {VehiclePlate}";
+    public string? BestAvatarUrl => ResolveImageUrl(PhotoUrl ?? AvatarUrl ?? PassportUrl);
+    public bool HasAvatar => !string.IsNullOrWhiteSpace(BestAvatarUrl);
+
+    private static string? ResolveImageUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return null;
+        if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            var apiHost = new Uri(AppConstants.ApiBaseUrl).Host;
+            return System.Text.RegularExpressions.Regex.Replace(
+                url, @"://localhost(:\d+)?", $"://{apiHost}$1",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        }
+        var baseUrl = AppConstants.ApiBaseUrl.TrimEnd('/');
+        return baseUrl + (url.StartsWith('/') ? url : "/" + url);
+    }
 }
 
 public class StatusHistoryDto

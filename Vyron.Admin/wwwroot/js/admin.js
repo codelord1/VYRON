@@ -56,15 +56,41 @@
         });
     });
 
-    // Image preview on file input change
-    $$('input[type="file"][data-preview]').forEach(function (input) {
+    // Image preview + client-side type validation on upload fields.
+    $$('input[type="file"]').forEach(function (input) {
         input.addEventListener('change', function () {
+            var file = input.files && input.files[0];
+            var wrap = input.closest('.form-group') || input.parentElement || input;
+            var oldError = wrap.querySelector('.upload-error');
+            var oldPreview = wrap.querySelector('.upload-preview');
+            if (oldError) oldError.remove();
+            if (!file) {
+                if (oldPreview) oldPreview.remove();
+                return;
+            }
+
+            var name = (file.name || '').toLowerCase();
+            var valid = /\.(jpe?g|png|webp)$/.test(name);
+            if (!valid) {
+                input.value = '';
+                if (oldPreview) oldPreview.remove();
+                var err = document.createElement('div');
+                err.className = 'upload-error';
+                err.textContent = 'Please choose a JPG, PNG, or WEBP image.';
+                wrap.appendChild(err);
+                return;
+            }
+
             var previewId = input.dataset.preview;
-            var preview = document.getElementById(previewId);
-            if (!preview || !input.files || !input.files[0]) return;
+            var preview = previewId ? document.getElementById(previewId) : oldPreview;
+            if (!preview) {
+                preview = document.createElement('img');
+                preview.className = 'upload-preview';
+                input.insertAdjacentElement('afterend', preview);
+            }
             var reader = new FileReader();
             reader.onload = function (e) { preview.src = e.target.result; preview.style.display = 'block'; };
-            reader.readAsDataURL(input.files[0]);
+            reader.readAsDataURL(file);
         });
     });
 

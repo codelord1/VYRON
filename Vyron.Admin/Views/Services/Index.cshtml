@@ -48,7 +48,7 @@
                 <thead>
                     <tr>
                         <th>Service Name</th>
-                        <th>Store</th>
+                        <th>Store / Owner</th>
                         <th>Type</th>
                         <th>Pricing</th>
                         <th class="text-right">Base Price</th>
@@ -70,7 +70,24 @@
                                     <br /><small class="text-muted">@(s.Description.Length > 60 ? s.Description[..60] + "…" : s.Description)</small>
                                 }
                             </td>
-                            <td>@s.Store.Name</td>
+                            <td>
+                                <div class="entity-cell">
+                                    <span class="entity-thumb">
+                                        @if (!string.IsNullOrWhiteSpace(s.Store.LogoUrl))
+                                        {
+                                            <img src="@ResolveImage(s.Store.LogoUrl)" alt="@s.Store.Name" />
+                                        }
+                                        else
+                                        {
+                                            @s.Store.Name.Substring(0, 1).ToUpperInvariant()
+                                        }
+                                    </span>
+                                    <div>
+                                        <div class="entity-title">@s.Store.Name</div>
+                                        <div class="entity-sub">@(s.Store.Owner?.FullName ?? "No owner")</div>
+                                    </div>
+                                </div>
+                            </td>
                             <td><span class="badge badge-secondary">@typeLabel</span></td>
                             <td>@s.PricingMode</td>
                             <td class="text-right">&#8358;@s.BasePrice.ToString("N0")</td>
@@ -163,5 +180,10 @@
         if (value.Contains("Wash", StringComparison.OrdinalIgnoreCase)) return "W";
         if (value.Contains("Dry", StringComparison.OrdinalIgnoreCase)) return "D";
         return "S";
+    }
+    string ResolveImage(string url)
+    {
+        if (url.StartsWith("http", StringComparison.OrdinalIgnoreCase)) return url;
+        return Url.Content(url.StartsWith("/") ? "~" + url : "~/" + url);
     }
 }

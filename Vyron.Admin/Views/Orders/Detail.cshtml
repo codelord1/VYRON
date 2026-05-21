@@ -2,93 +2,213 @@
 @{
     ViewData["Title"] = $"Order {Model.OrderNumber}";
     var riders = (List<Rider>)ViewBag.Riders;
+    var total = Model.ActualTotal > 0 ? Model.ActualTotal : Model.TotalEstimate;
+    var items = Model.Items.Any()
+        ? Model.Items
+        : new List<OrderItem>
+        {
+            new()
+            {
+                ServiceName = Model.Service.Name,
+                PricingMode = Model.Service.PricingMode.ToString(),
+                Weight = Model.EstimatedWeight,
+                Pieces = Model.EstimatedPieces,
+                UnitPrice = Model.Service.BasePrice,
+                LineTotal = Model.EstimatedLaundryCost
+            }
+        };
 }
 
-<div class="page-header">
+<div class="content-hero">
     <div>
         <h1>@Model.OrderNumber</h1>
-        <small class="text-muted">Placed @Model.CreatedAt.ToString("MMM dd, yyyy 'at' HH:mm")</small>
+        <p>Placed @Model.CreatedAt.ToString("MMM dd, yyyy 'at' HH:mm")</p>
     </div>
-    <a href="/Orders" class="btn btn-secondary btn-sm">← Back</a>
+    <div class="action-row">
+        <span class="badge badge-@StatusBadge(Model.Status)">@Model.Status</span>
+        <span class="badge badge-@PaymentBadge(Model.PaymentState)">@Model.PaymentState</span>
+        <a href="/Orders" class="btn btn-secondary btn-sm">Back</a>
+    </div>
 </div>
 
-<div class="grid-2">
-    <!-- ── LEFT COLUMN ── -->
+<div class="detail-grid">
     <div>
-        <div class="card">
-            <h3 class="card-title">Order Summary</h3>
-            <div class="flex-between mb-2">
-                <span>Status</span>
-                <span class="badge badge-@StatusBadge(Model.Status)">@Model.Status</span>
+        <section class="detail-section">
+            <h3>Customer</h3>
+            <div class="entity-cell">
+                <span class="entity-avatar">@Initial(Model.Customer.FullName)</span>
+                <div>
+                    <div class="entity-title">@Model.Customer.FullName</div>
+                    <div class="entity-sub">@Model.Customer.Phone</div>
+                    @if (!string.IsNullOrWhiteSpace(Model.Customer.Email))
+                    {
+                        <div class="entity-sub">@Model.Customer.Email</div>
+                    }
+                </div>
             </div>
-            <div class="flex-between mb-2">
-                <span>Payment</span>
-                <span class="badge badge-@PaymentBadge(Model.PaymentState)">@Model.PaymentState</span>
+        </section>
+
+        <section class="detail-section">
+            <h3>Store</h3>
+            <div class="entity-cell">
+                <span class="entity-thumb">
+                    @if (!string.IsNullOrWhiteSpace(Model.Store.LogoUrl))
+                    {
+                        <img src="@ResolveImage(Model.Store.LogoUrl)" alt="@Model.Store.Name" />
+                    }
+                    else
+                    {
+                        @Initial(Model.Store.Name)
+                    }
+                </span>
+                <div>
+                    <div class="entity-title">@Model.Store.Name</div>
+                    <div class="entity-sub">@Model.Store.Address</div>
+                </div>
             </div>
-            <hr style="border:none;border-top:1px solid var(--gray-2);margin:10px 0;" />
-            <div class="flex-between mb-1"><span>Service</span><span class="text-bold">@Model.Service.Name</span></div>
-            <div class="flex-between mb-1"><span>Quantity</span><span>@(Model.EstimatedWeight > 0 ? $"{Model.EstimatedWeight}kg" : $"{Model.EstimatedPieces} pcs")</span></div>
-            <hr style="border:none;border-top:1px solid var(--gray-2);margin:10px 0;" />
-            <div class="flex-between mb-1"><span>Laundry cost</span><span>₦@Model.EstimatedLaundryCost.ToString("N0")</span></div>
-            <div class="flex-between mb-1"><span>Pickup fee</span><span>₦@Model.PickupFee.ToString("N0")</span></div>
-            <div class="flex-between mb-1"><span>Delivery fee</span><span>₦@Model.DeliveryFee.ToString("N0")</span></div>
-            <hr style="border:none;border-top:1px solid var(--gray-2);margin:10px 0;" />
-            <div class="flex-between"><span class="text-bold">Total estimate</span><span class="text-bold text-teal" style="font-size:16px;">₦@Model.TotalEstimate.ToString("N0")</span></div>
-            @if (Model.ActualTotal > 0)
-            {
-                <div class="flex-between mb-1 mt-2"><span class="text-bold">Actual total</span><span class="text-bold">₦@Model.ActualTotal.ToString("N0")</span></div>
-                @if (Model.AdminPriceOverride)
+        </section>
+
+        <section class="detail-section">
+            <h3>Riders</h3>
+            <div class="detail-row" style="display:block;">
+                <span>Pickup rider</span>
+                @if (Model.Rider != null)
                 {
-                    <div class="alert alert-info mt-2" style="font-size: 11px;">
-                        <strong>Override:</strong> @Model.AdminOverrideReason
+                    <div class="entity-cell" style="margin-top:8px;">
+                        <span class="entity-avatar">
+                            @if (!string.IsNullOrWhiteSpace(Model.Rider.User.ProfilePhoto))
+                            {
+                                <img src="@ResolveImage(Model.Rider.User.ProfilePhoto)" alt="@Model.Rider.User.FullName" />
+                            }
+                            else
+                            {
+                                @Initial(Model.Rider.User.FullName)
+                            }
+                        </span>
+                        <div>
+                            <div class="entity-title">@Model.Rider.User.FullName</div>
+                            <div class="entity-sub">@Model.Rider.User.Phone · @Model.Rider.VehicleType @Model.Rider.VehiclePlate</div>
+                        </div>
                     </div>
                 }
-            }
-        </div>
+                else
+                {
+                    <strong>Pickup rider not assigned yet</strong>
+                }
+            </div>
+            <div class="detail-row" style="display:block;">
+                <span>Delivery rider</span>
+                @if (Model.DeliveryRider != null)
+                {
+                    <div class="entity-cell" style="margin-top:8px;">
+                        <span class="entity-avatar">
+                            @if (!string.IsNullOrWhiteSpace(Model.DeliveryRider.User.ProfilePhoto))
+                            {
+                                <img src="@ResolveImage(Model.DeliveryRider.User.ProfilePhoto)" alt="@Model.DeliveryRider.User.FullName" />
+                            }
+                            else
+                            {
+                                @Initial(Model.DeliveryRider.User.FullName)
+                            }
+                        </span>
+                        <div>
+                            <div class="entity-title">@Model.DeliveryRider.User.FullName</div>
+                            <div class="entity-sub">@Model.DeliveryRider.User.Phone · @Model.DeliveryRider.VehicleType @Model.DeliveryRider.VehiclePlate</div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <strong>Delivery rider not assigned yet</strong>
+                }
+            </div>
+        </section>
 
-        <div class="card">
-            <h3 class="card-title">Customer</h3>
-            <p class="text-bold mb-0">@Model.Customer.FullName</p>
-            <p class="text-muted mb-0">@Model.Customer.Phone</p>
-            @if (!string.IsNullOrEmpty(Model.Customer.Email)) { <p class="text-muted mb-0">@Model.Customer.Email</p> }
-        </div>
-
-        <div class="card">
-            <h3 class="card-title">Logistics</h3>
-            <div class="mb-2"><strong>Store:</strong> @Model.Store.Name<br /><small class="text-muted">@Model.Store.Address</small></div>
-            <div class="mb-2"><strong>📍 Pickup:</strong><br />@Model.PickupAddress</div>
-            <div class="mb-2"><strong>🏠 Delivery:</strong><br />@Model.DeliveryAddress</div>
-            <div class="mb-2"><strong>🕐 When:</strong> @Model.RequestedPickupDate.ToString("dddd, MMM dd") · @Model.RequestedPickupSlot</div>
-            @if (!string.IsNullOrEmpty(Model.SpecialInstructions))
+        <section class="detail-section">
+            <h3>Addresses</h3>
+            <div class="detail-row"><span>Pickup</span><strong>@Fallback(Model.PickupAddress)</strong></div>
+            <div class="detail-row"><span>Delivery</span><strong>@Fallback(Model.DeliveryAddress)</strong></div>
+            <div class="detail-row"><span>Requested</span><strong>@Model.RequestedPickupDate.ToString("dddd, MMM dd") · @Model.RequestedPickupSlot</strong></div>
+            @if (!string.IsNullOrWhiteSpace(Model.SpecialInstructions))
             {
-                <div class="alert alert-info" style="font-size: 12px;">📝 @Model.SpecialInstructions</div>
+                <div class="detail-row"><span>Notes</span><strong>@Model.SpecialInstructions</strong></div>
             }
-        </div>
+        </section>
 
-        @if (Model.Rider != null)
-        {
-            <div class="card">
-                <h3 class="card-title">Pickup Rider</h3>
-                <p class="text-bold mb-0">@Model.Rider.User.FullName</p>
-                <p class="text-muted mb-0">@Model.Rider.User.Phone · @Model.Rider.VehicleType (@Model.Rider.VehiclePlate)</p>
+        <section class="detail-section">
+            <h3>Items / Services</h3>
+            <div class="table-wrap" style="box-shadow:none;border:0;margin:0;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>Pricing</th>
+                            <th>Qty / Weight</th>
+                            <th class="text-right">Unit</th>
+                            <th class="text-right">Line total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in items)
+                        {
+                            <tr>
+                                <td class="text-bold">@item.ServiceName</td>
+                                <td><span class="badge badge-info">@item.PricingMode</span></td>
+                                <td>@Quantity(item)</td>
+                                <td class="text-right">&#8358;@item.UnitPrice.ToString("N0")</td>
+                                <td class="text-right text-bold">&#8358;@item.LineTotal.ToString("N0")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
             </div>
-        }
+        </section>
 
-        @if (Model.DeliveryRider != null)
-        {
-            <div class="card">
-                <h3 class="card-title">Delivery Rider</h3>
-                <p class="text-bold mb-0">@Model.DeliveryRider.User.FullName</p>
-                <p class="text-muted mb-0">@Model.DeliveryRider.User.Phone · @Model.DeliveryRider.VehicleType (@Model.DeliveryRider.VehiclePlate)</p>
+        <section class="detail-section">
+            <h3>Timeline</h3>
+            <div class="timeline-clean">
+                @foreach (var h in Model.StatusHistory.OrderByDescending(x => x.ChangedAt))
+                {
+                    <div class="timeline-clean-item">
+                        <div class="entity-title">@h.Status</div>
+                        <div class="entity-sub">@h.ChangedAt.ToString("MMM dd, yyyy 'at' HH:mm")</div>
+                        @if (!string.IsNullOrWhiteSpace(h.Note))
+                        {
+                            <div class="entity-sub">@h.Note</div>
+                        }
+                    </div>
+                }
+                @if (!Model.StatusHistory.Any())
+                {
+                    <div class="entity-sub">No timeline events yet.</div>
+                }
             </div>
-        }
+        </section>
     </div>
 
-    <!-- ── RIGHT COLUMN ── -->
     <div>
-        <!-- Update status -->
-        <div class="card">
-            <h3 class="card-title">Update Status</h3>
+        <section class="detail-section premium-summary">
+            <h3>Pricing</h3>
+            <div class="detail-row"><span>Laundry cost</span><strong>&#8358;@Model.EstimatedLaundryCost.ToString("N0")</strong></div>
+            <div class="detail-row"><span>Pickup fee</span><strong>&#8358;@Model.PickupFee.ToString("N0")</strong></div>
+            <div class="detail-row"><span>Delivery fee</span><strong>&#8358;@Model.DeliveryFee.ToString("N0")</strong></div>
+            <div class="detail-row"><span>Total estimate</span><strong>&#8358;@Model.TotalEstimate.ToString("N0")</strong></div>
+            @if (Model.ActualTotal > 0)
+            {
+                <div class="detail-row"><span>Actual total</span><strong>&#8358;@Model.ActualTotal.ToString("N0")</strong></div>
+            }
+            <div class="detail-row"><span>Balance</span><strong>&#8358;@Model.BalanceAmount.ToString("N0")</strong></div>
+        </section>
+
+        <section class="detail-section">
+            <h3>Payment</h3>
+            <div class="detail-row"><span>Method</span><strong>@Model.PaymentMethod</strong></div>
+            <div class="detail-row"><span>Status</span><strong>@Model.PaymentState</strong></div>
+            <div class="detail-row"><span>Pickup fee due</span><strong>&#8358;@Model.PickupFeeAmount.ToString("N0")</strong></div>
+        </section>
+
+        <section class="detail-section">
+            <h3>Update Status</h3>
             <form asp-action="UpdateStatus" method="post">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="id" value="@Model.Id" />
@@ -97,10 +217,7 @@
                     <select name="newStatus" required>
                         @foreach (var s in Enum.GetValues<OrderStatus>())
                         {
-                            @* Hide PickUpRiderAssigned / DeliveryRiderAssigned from manual dropdown
-                               for non-SuperAdmin — those are set only via rider assignment actions *@
-                            @if ((s == OrderStatus.PickUpRiderAssigned || s == OrderStatus.DeliveryRiderAssigned)
-                                 && !User.IsInRole("SuperAdmin"))
+                            @if ((s == OrderStatus.PickUpRiderAssigned || s == OrderStatus.DeliveryRiderAssigned) && !User.IsInRole("SuperAdmin"))
                             {
                                 continue;
                             }
@@ -108,80 +225,66 @@
                         }
                     </select>
                 </div>
-                @if (User.IsInRole("SuperAdmin"))
-                {
-                    <p class="text-muted" style="font-size:11px;margin-top:-6px;">
-                        SuperAdmin: PickUpRiderAssigned / DeliveryRiderAssigned available. Use rider assignment forms instead where possible.
-                    </p>
-                }
                 <div class="form-group">
                     <label>Note (optional)</label>
                     <input type="text" name="note" placeholder="What changed?" />
                 </div>
                 <button type="submit" class="btn btn-primary btn-block">Update Status</button>
             </form>
-        </div>
+        </section>
 
-        <!-- Assign pickup rider -->
-        @if (Model.Status is OrderStatus.PickupFeePaid or OrderStatus.RiderAssigned
-                           or OrderStatus.Confirmed or OrderStatus.PickUpRiderAssigned)
+        @if (Model.Status is OrderStatus.PickupFeePaid or OrderStatus.RiderAssigned or OrderStatus.Confirmed or OrderStatus.PickUpRiderAssigned)
         {
-            <div class="card">
-                <h3 class="card-title">Assign Rider</h3>
+            <section class="detail-section">
+                <h3>Assign Pickup Rider</h3>
                 <form asp-action="AssignRider" method="post">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="id" value="@Model.Id" />
                     <div class="form-group">
-                        <label>Pick rider</label>
+                        <label>Rider</label>
                         <select name="riderId" required>
-                            <option value="">— Select rider —</option>
+                            <option value="">Select rider</option>
                             @foreach (var r in riders.Where(x => x.Status == RiderStatus.OnlineAvailable || Model.RiderId == x.Id))
                             {
-                                <option value="@r.Id" selected="@(Model.RiderId == r.Id)">
-                                    @r.User.FullName (@r.VehicleType) — @r.Status
-                                </option>
+                                <option value="@r.Id" selected="@(Model.RiderId == r.Id)">@r.User.FullName (@r.VehicleType) - @r.Status</option>
                             }
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-block">Assign Rider</button>
+                    <button type="submit" class="btn btn-primary btn-block">Assign Pickup Rider</button>
                 </form>
-            </div>
+            </section>
         }
 
-        <!-- Assign delivery rider -->
         @if (Model.Status is OrderStatus.Ready or OrderStatus.OutForDelivery or OrderStatus.DeliveryRiderAssigned)
         {
-            <div class="card">
-                <h3 class="card-title">Assign Delivery Rider</h3>
+            <section class="detail-section">
+                <h3>Assign Delivery Rider</h3>
                 <form asp-action="AssignDeliveryRider" method="post">
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="id" value="@Model.Id" />
                     <div class="form-group">
-                        <label>Pick rider</label>
+                        <label>Rider</label>
                         <select name="deliveryRiderId" required>
-                            <option value="">— Select delivery rider —</option>
+                            <option value="">Select delivery rider</option>
                             @foreach (var r in riders.Where(x => x.Status == RiderStatus.OnlineAvailable || Model.DeliveryRiderId == x.Id))
                             {
-                                <option value="@r.Id" selected="@(Model.DeliveryRiderId == r.Id)">
-                                    @r.User.FullName (@r.VehicleType) — @r.Status
-                                </option>
+                                <option value="@r.Id" selected="@(Model.DeliveryRiderId == r.Id)">@r.User.FullName (@r.VehicleType) - @r.Status</option>
                             }
                         </select>
                     </div>
                     <button type="submit" class="btn btn-primary btn-block">Assign Delivery Rider</button>
                 </form>
-            </div>
+            </section>
         }
 
-        <!-- Price override -->
-        <div class="card">
-            <h3 class="card-title">Override Price</h3>
-            <p class="text-muted" style="font-size: 12px;">Use only for weight differences, special items, or dispute resolution.</p>
+        <section class="detail-section">
+            <h3>Override Price</h3>
+            <p class="text-muted" style="font-size:12px;">Use only for weight differences, special items, or dispute resolution.</p>
             <form asp-action="OverridePrice" method="post" data-confirm="Override the laundry cost? This is logged in audit.">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="id" value="@Model.Id" />
                 <div class="form-group">
-                    <label>New laundry cost (₦)</label>
+                    <label>New laundry cost (&#8358;)</label>
                     <input type="number" step="0.01" name="actualLaundryCost" value="@(Model.ActualLaundryCost > 0 ? Model.ActualLaundryCost : Model.EstimatedLaundryCost)" required />
                 </div>
                 <div class="form-group">
@@ -190,32 +293,28 @@
                 </div>
                 <button type="submit" class="btn btn-warning btn-block">Override Price</button>
             </form>
-        </div>
-
-        <!-- Timeline -->
-        <div class="card">
-            <h3 class="card-title">Timeline</h3>
-            <div class="timeline">
-                @foreach (var h in Model.StatusHistory.OrderByDescending(x => x.ChangedAt))
-                {
-                    <div class="timeline-item">
-                        <div class="status-name">@h.Status</div>
-                        <div class="status-time">@h.ChangedAt.ToString("MMM dd, yyyy 'at' HH:mm")</div>
-                        @if (!string.IsNullOrEmpty(h.Note))
-                        {
-                            <div class="status-note">@h.Note</div>
-                        }
-                    </div>
-                }
-            </div>
-        </div>
+        </section>
     </div>
 </div>
 
 @functions {
+    string Initial(string? value) => string.IsNullOrWhiteSpace(value) ? "?" : value.Trim().Substring(0, 1).ToUpperInvariant();
+    string Fallback(string? value) => string.IsNullOrWhiteSpace(value) ? "Not provided" : value;
+    string ResolveImage(string url)
+    {
+        if (url.StartsWith("http", StringComparison.OrdinalIgnoreCase)) return url;
+        return Url.Content(url.StartsWith("/") ? "~" + url : "~/" + url);
+    }
+    string Quantity(OrderItem item) => item.PricingMode switch
+    {
+        "PerKg" => $"{item.Weight:N1} kg",
+        "PerItem" => $"{item.Pieces} items",
+        "Fixed" => "Fixed",
+        _ => item.Pieces > 0 ? $"{item.Pieces} items" : $"{item.Weight:N1} kg"
+    };
     string StatusBadge(OrderStatus s) => s switch
     {
-        OrderStatus.Confirmed or OrderStatus.PickupFeePaid or OrderStatus.RiderAssigned => "info",
+        OrderStatus.Confirmed or OrderStatus.PickupFeePaid or OrderStatus.RiderAssigned or OrderStatus.PickUpRiderAssigned or OrderStatus.DeliveryRiderAssigned => "info",
         OrderStatus.PickedUp or OrderStatus.OutForDelivery => "purple",
         OrderStatus.Processing => "warning",
         OrderStatus.Ready or OrderStatus.Delivered or OrderStatus.BalancePaid or OrderStatus.Completed => "success",

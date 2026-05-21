@@ -7,12 +7,12 @@
              x:DataType="vm:TrackViewModel"
              Title="Track"
              Shell.NavBarIsVisible="False"
-             BackgroundColor="{StaticResource Bg}">
+             BackgroundColor="{DynamicResource Bg}">
 
     <Grid RowDefinitions="Auto,*,Auto">
         <Border Grid.Row="0"
-                BackgroundColor="{StaticResource Bg}"
-                Stroke="{StaticResource CardStroke}"
+                BackgroundColor="{DynamicResource Bg}"
+                Stroke="{DynamicResource CardStroke}"
                 StrokeThickness="0,0,0,1"
                 Padding="18,16">
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
@@ -191,16 +191,20 @@
                     <Border Style="{StaticResource CardBorderStyle}"
                             IsVisible="{Binding HasPickupRider}">
                         <Grid ColumnDefinitions="54,*,Auto,Auto" ColumnSpacing="12">
-                            <Border BackgroundColor="{StaticResource Mint}"
+                            <Border BackgroundColor="{DynamicResource Mint}"
                                     WidthRequest="48"
                                     HeightRequest="48"
                                     Stroke="Transparent"
                                     StrokeShape="RoundRectangle 24">
+                                <Image Source="{Binding PickupRider.BestAvatarUrl}"
+                                       Aspect="AspectFill"
+                                       IsVisible="{Binding PickupRider.HasAvatar}" />
                                 <Label Text="{Binding PickupRider.FullName, Converter={StaticResource InitialsConverter}}"
                                        FontFamily="OpenSansSemibold"
                                        TextColor="{StaticResource TealDark}"
                                        HorizontalOptions="Center"
-                                       VerticalOptions="Center" />
+                                       VerticalOptions="Center"
+                                       IsVisible="{Binding PickupRider.HasAvatar, Converter={StaticResource InvertBool}}" />
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                                 <Label Text="Pickup Rider" FontSize="11" TextColor="{StaticResource Gray3}" />
@@ -226,20 +230,51 @@
                         </Grid>
                     </Border>
 
-                    <!-- Delivery rider card -->
                     <Border Style="{StaticResource CardBorderStyle}"
-                            IsVisible="{Binding HasDeliveryRider}">
+                            IsVisible="{Binding HasPickupRider, Converter={StaticResource InvertBool}}">
                         <Grid ColumnDefinitions="54,*,Auto" ColumnSpacing="12">
-                            <Border BackgroundColor="{StaticResource Mint}"
+                            <Border BackgroundColor="{DynamicResource Mint}"
                                     WidthRequest="48"
                                     HeightRequest="48"
                                     Stroke="Transparent"
                                     StrokeShape="RoundRectangle 24">
-                                <Label Text="{Binding DeliveryRider.FullName, Converter={StaticResource InitialsConverter}}"
+                                <Label Text="P"
                                        FontFamily="OpenSansSemibold"
                                        TextColor="{StaticResource TealDark}"
                                        HorizontalOptions="Center"
                                        VerticalOptions="Center" />
+                            </Border>
+                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                <Label Text="Pickup Rider" FontSize="11" TextColor="{DynamicResource Gray3}" />
+                                <Label Text="Pickup rider not assigned yet" FontFamily="OpenSansSemibold" FontSize="15" />
+                                <Label Text="We'll show call and chat options once assigned." FontSize="12" TextColor="{DynamicResource Gray3}" />
+                            </VerticalStackLayout>
+                            <Label Grid.Column="2"
+                                   Text="Pending"
+                                   TextColor="{DynamicResource Gray3}"
+                                   FontSize="11"
+                                   VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Delivery rider card -->
+                    <Border Style="{StaticResource CardBorderStyle}"
+                            IsVisible="{Binding HasDeliveryRider}">
+                        <Grid ColumnDefinitions="54,*,Auto,Auto" ColumnSpacing="12">
+                            <Border BackgroundColor="{DynamicResource Mint}"
+                                    WidthRequest="48"
+                                    HeightRequest="48"
+                                    Stroke="Transparent"
+                                    StrokeShape="RoundRectangle 24">
+                                <Image Source="{Binding DeliveryRider.BestAvatarUrl}"
+                                       Aspect="AspectFill"
+                                       IsVisible="{Binding DeliveryRider.HasAvatar}" />
+                                <Label Text="{Binding DeliveryRider.FullName, Converter={StaticResource InitialsConverter}}"
+                                       FontFamily="OpenSansSemibold"
+                                       TextColor="{StaticResource TealDark}"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center"
+                                       IsVisible="{Binding DeliveryRider.HasAvatar, Converter={StaticResource InvertBool}}" />
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                                 <Label Text="Delivery Rider" FontSize="11" TextColor="{StaticResource Gray3}" />
@@ -247,14 +282,50 @@
                                 <Label Text="{Binding DeliveryRider.VehiclePlate, StringFormat='Bike - {0}'}" FontSize="12" TextColor="{StaticResource Gray3}" />
                             </VerticalStackLayout>
                             <Button Grid.Column="2"
-                                    Text="Call"
-                                    Command="{Binding CallDeliveryRiderCommand}"
+                                    Text="Chat"
+                                    Command="{Binding MessageDeliveryRiderCommand}"
                                     BackgroundColor="{StaticResource Mint}"
                                     TextColor="{StaticResource TealDark}"
                                     WidthRequest="54"
                                     HeightRequest="44"
                                     Padding="0"
                                     FontSize="12" />
+                            <Button Grid.Column="3"
+                                    Text="Call"
+                                    Command="{Binding CallDeliveryRiderCommand}"
+                                    BackgroundColor="{StaticResource Teal}"
+                                    TextColor="White"
+                                    WidthRequest="54"
+                                    HeightRequest="44"
+                                    Padding="0"
+                                    FontSize="12" />
+                        </Grid>
+                    </Border>
+
+                    <Border Style="{StaticResource CardBorderStyle}"
+                            IsVisible="{Binding HasDeliveryRider, Converter={StaticResource InvertBool}}">
+                        <Grid ColumnDefinitions="54,*,Auto" ColumnSpacing="12">
+                            <Border BackgroundColor="{DynamicResource Mint}"
+                                    WidthRequest="48"
+                                    HeightRequest="48"
+                                    Stroke="Transparent"
+                                    StrokeShape="RoundRectangle 24">
+                                <Label Text="D"
+                                       FontFamily="OpenSansSemibold"
+                                       TextColor="{StaticResource TealDark}"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center" />
+                            </Border>
+                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                <Label Text="Delivery Rider" FontSize="11" TextColor="{DynamicResource Gray3}" />
+                                <Label Text="Delivery rider not assigned yet" FontFamily="OpenSansSemibold" FontSize="15" />
+                                <Label Text="Delivery contact opens when your order is ready." FontSize="12" TextColor="{DynamicResource Gray3}" />
+                            </VerticalStackLayout>
+                            <Label Grid.Column="2"
+                                   Text="Pending"
+                                   TextColor="{StaticResource TealDark}"
+                                   FontSize="11"
+                                   VerticalOptions="Center" />
                         </Grid>
                     </Border>
 
@@ -265,11 +336,15 @@
                                     HeightRequest="48"
                                     Stroke="Transparent"
                                     StrokeShape="RoundRectangle 24">
+                                <Image Source="{Binding ActiveOrder.Store.FullLogoUrl}"
+                                       Aspect="AspectFill"
+                                       IsVisible="{Binding ActiveOrder.Store.HasLogo}" />
                                 <Label Text="Store"
                                        FontSize="10"
                                        TextColor="{StaticResource TealDark}"
                                        HorizontalOptions="Center"
-                                       VerticalOptions="Center" />
+                                       VerticalOptions="Center"
+                                       IsVisible="{Binding ActiveOrder.Store.HasLogo, Converter={StaticResource InvertBool}}" />
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                                 <Label Text="{Binding ActiveOrder.Store.Name}" FontFamily="OpenSansSemibold" FontSize="15" />
@@ -394,11 +469,11 @@
               ColumnDefinitions="*,*"
               ColumnSpacing="12"
               Padding="18,12"
-              BackgroundColor="White"
+              BackgroundColor="{DynamicResource InputBg}"
               IsVisible="{Binding HasActiveOrder}">
             <Button Text="Report issue"
                     Command="{Binding ReportIssueCommand}"
-                    BackgroundColor="White"
+                    BackgroundColor="{DynamicResource InputBg}"
                     BorderColor="#FF9FA6"
                     BorderWidth="1"
                     TextColor="{StaticResource Danger}" />

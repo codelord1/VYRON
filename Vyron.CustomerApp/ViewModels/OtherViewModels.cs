@@ -266,6 +266,13 @@ public partial class TrackViewModel : BaseViewModel
         if (ActiveOrder == null) return;
         await Shell.Current.GoToAsync($"{AppRoutes.MessageRider}?orderId={ActiveOrder.Id}");
     }
+
+    [RelayCommand]
+    private async Task MessageDeliveryRiderAsync()
+    {
+        if (ActiveOrder == null || DeliveryRider == null) return;
+        await Shell.Current.GoToAsync($"{AppRoutes.MessageRider}?orderId={ActiveOrder.Id}");
+    }
 }
 
 // ─── MORE (account menu tab) ─────────────────────────────────────

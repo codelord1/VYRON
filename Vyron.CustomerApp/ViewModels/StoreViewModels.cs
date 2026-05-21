@@ -301,6 +301,13 @@ public partial class StoresViewModel : BaseViewModel
 
     private CancellationTokenSource? _searchDebounce;
     public bool IsNotNavigating => !IsNavigating;
+    public bool HasSearchContext =>
+        !string.IsNullOrWhiteSpace(SearchText) ||
+        !string.IsNullOrWhiteSpace(SelectedFilter);
+    public string EmptyTitle => HasSearchContext ? "No matching stores found" : "No stores available yet";
+    public string EmptySubtitle => HasSearchContext
+        ? "Try another service, store name, or location."
+        : "Verified laundry stores will appear here.";
 
     // ── Personalised greeting ────────────────────────────────────
     public string Greeting
@@ -338,6 +345,9 @@ public partial class StoresViewModel : BaseViewModel
     /// <summary>Debounce live search: fires LoadAsync 400ms after user stops typing.</summary>
     partial void OnSearchTextChanged(string value)
     {
+        OnPropertyChanged(nameof(HasSearchContext));
+        OnPropertyChanged(nameof(EmptyTitle));
+        OnPropertyChanged(nameof(EmptySubtitle));
         _searchDebounce?.Cancel();
         _searchDebounce = new CancellationTokenSource();
         var tok = _searchDebounce.Token;
@@ -345,6 +355,13 @@ public partial class StoresViewModel : BaseViewModel
             _ => MainThread.BeginInvokeOnMainThread(async () => await LoadAsync()),
             CancellationToken.None, TaskContinuationOptions.OnlyOnRanToCompletion,
             TaskScheduler.Default);
+    }
+
+    partial void OnSelectedFilterChanged(string value)
+    {
+        OnPropertyChanged(nameof(HasSearchContext));
+        OnPropertyChanged(nameof(EmptyTitle));
+        OnPropertyChanged(nameof(EmptySubtitle));
     }
 
     [RelayCommand]

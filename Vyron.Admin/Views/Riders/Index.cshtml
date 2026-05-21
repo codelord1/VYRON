@@ -4,8 +4,11 @@
     var deliveryMap = (Dictionary<Guid, int>)(ViewBag.DeliveryCountsMap ?? new Dictionary<Guid, int>());
 }
 
-<div class="page-header">
-    <h1>Riders</h1>
+<div class="content-hero">
+    <div>
+        <h1>Riders</h1>
+        <p>Manage rider approval, availability, trips, and active marketplace assignments.</p>
+    </div>
     <a href="/Riders/Create" class="btn btn-primary btn-sm">+ Add Rider</a>
 </div>
 
@@ -33,11 +36,25 @@
 
                 <tr>
                     <td>
-                        <span class="text-bold">@r.User.FullName</span><br />
-                        <small class="text-muted">@r.User.Phone</small><br />
-                        <small class="text-muted">@r.VehicleType &mdash; @r.VehiclePlate</small>
-                        <div class="rider-stat-strip">
-                            @if (activePickup > 0)  { <span class="rider-stat pickup">@activePickup active pickup</span> }
+                        <div class="entity-cell">
+                            <span class="entity-avatar">
+                                @if (!string.IsNullOrWhiteSpace(r.User.ProfilePhoto))
+                                {
+                                    <img src="@ResolveImage(r.User.ProfilePhoto)" alt="@r.User.FullName" />
+                                }
+                                else
+                                {
+                                    @r.User.FullName.Substring(0, 1).ToUpperInvariant()
+                                }
+                            </span>
+                            <div>
+                                <span class="text-bold">@r.User.FullName</span><br />
+                                <small class="text-muted">@r.User.Phone</small><br />
+                                <small class="text-muted">@r.VehicleType &mdash; @r.VehiclePlate</small>
+                                <div class="rider-stat-strip">
+                                    @if (activePickup > 0)  { <span class="rider-stat pickup">@activePickup active pickup</span> }
+                                </div>
+                            </div>
                         </div>
                     </td>
                     <td>
@@ -120,4 +137,12 @@
             <div class="stat-value">&#8358;@Model.Sum(r => r.TotalEarnings).ToString("N0")</div>
         </div>
     </div>
+}
+
+@functions {
+    string ResolveImage(string url)
+    {
+        if (url.StartsWith("http", StringComparison.OrdinalIgnoreCase)) return url;
+        return Url.Content(url.StartsWith("/") ? "~" + url : "~/" + url);
+    }
 }

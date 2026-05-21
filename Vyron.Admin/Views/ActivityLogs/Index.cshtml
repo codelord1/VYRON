@@ -1,43 +1,86 @@
 @model List<ActivityLog>
-@{ ViewData["Title"] = "Activity Logs"; }
 @{
+    ViewData["Title"] = "Activity Logs";
     var search = (string?)ViewBag.Search;
     var page   = (int)(ViewBag.Page ?? 1);
     var total  = (int)(ViewBag.Total ?? 0);
     var pages  = (int)Math.Ceiling(total / 50.0);
 }
 
-<div class="page-header">
-    <h1>Activity Logs</h1>
-    <small class="text-muted">@total entries</small>
+<div class="content-hero">
+    <div>
+        <h1>Activity Logs</h1>
+        <p>Audit trail for admin, store owner, and marketplace actions.</p>
+    </div>
+    <span class="badge badge-info">@total entries</span>
 </div>
 
-<form method="get" class="filters-row">
-    <input name="search" value="@search" class="form-control" placeholder="Search activity type, entity or user…" style="max-width:260px" />
+<form method="get" class="admin-panel filters-row">
+    <input name="search" value="@search" class="form-control" placeholder="Search actor, action, module, or description" style="max-width:340px" />
     <button class="btn btn-primary btn-sm">Search</button>
-    @if (!string.IsNullOrEmpty(search)) { <a href="/ActivityLogs" class="btn btn-ghost btn-sm">Clear</a> }
+    @if (!string.IsNullOrEmpty(search))
+    {
+        <a href="/ActivityLogs" class="btn btn-ghost btn-sm">Clear</a>
+    }
 </form>
 
-<div class="table-wrap">
-    <table class="table-mobile-card">
-        <thead>
-            <tr><th>When</th><th>User</th><th>Activity</th><th>Entity</th><th>Description</th><th>IP</th></tr>
-        </thead>
-        <tbody>
-            @foreach (var log in Model)
-            {
+@if (!Model.Any())
+{
+    <div class="admin-empty admin-panel">
+        <div>
+            <strong>No activity records found</strong>
+            <span>Try changing your search query or date range.</span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="table-wrap admin-panel">
+        <table class="table-mobile-card">
+            <thead>
                 <tr>
-                    <td><small>@log.CreatedAt.ToLocalTime().ToString("MMM d HH:mm:ss")</small></td>
-                    <td><small>@(log.User?.FullName ?? log.UserId?.ToString("N")[..8] ?? "System")</small></td>
-                    <td><span class="badge badge-info">@log.ActivityType</span></td>
-                    <td><small>@log.EntityType @(log.EntityId.HasValue ? "(" + log.EntityId.Value.ToString("N")[..8] + "…)" : "")</small></td>
-                    <td><small>@log.Description</small></td>
-                    <td><small class="text-muted">@log.IpAddress</small></td>
+                    <th>Timestamp</th>
+                    <th>Actor/User</th>
+                    <th>Action</th>
+                    <th>Module/Entity</th>
+                    <th>Description</th>
+                    <th>IP / UserAgent</th>
                 </tr>
-            }
-        </tbody>
-    </table>
-</div>
+            </thead>
+            <tbody>
+                @foreach (var log in Model)
+                {
+                    var actor = log.User?.FullName ?? log.UserId?.ToString("N")[..8] ?? "System";
+                    <tr>
+                        <td><small>@log.CreatedAt.ToLocalTime().ToString("MMM d, yyyy HH:mm:ss")</small></td>
+                        <td>
+                            <div class="entity-cell">
+                                <span class="entity-avatar">@actor.Substring(0, 1).ToUpperInvariant()</span>
+                                <div>
+                                    <div class="entity-title">@actor</div>
+                                    <div class="entity-sub">@(log.User != null ? log.User.Role.ToString() : "System")</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="badge badge-@ActionBadge(log.ActivityType)">@log.ActivityType</span></td>
+                        <td>
+                            <div class="entity-title">@log.EntityType</div>
+                            @if (log.EntityId.HasValue)
+                            {
+                                <div class="entity-sub">@log.EntityId.Value.ToString("N")[..8]</div>
+                            }
+                        </td>
+                        <td><small>@(string.IsNullOrWhiteSpace(log.Description) ? "No description provided." : log.Description)</small></td>
+                        <td>
+                            <small class="text-muted">@(!string.IsNullOrWhiteSpace(log.IpAddress) ? log.IpAddress : "No IP")</small><br />
+                            <small class="text-muted">@(!string.IsNullOrWhiteSpace(log.UserAgent) ? log.UserAgent : "No user agent")</small>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
 
 @if (pages > 1)
 {
@@ -47,4 +90,15 @@
             <a href="/ActivityLogs?search=@search&page=@p" class="btn btn-sm @(p == page ? "btn-primary" : "btn-ghost")">@p</a>
         }
     </div>
+}
+
+@functions {
+    string ActionBadge(string? action)
+    {
+        if (string.IsNullOrWhiteSpace(action)) return "gray";
+        if (action.Contains("Create", StringComparison.OrdinalIgnoreCase) || action.Contains("Add", StringComparison.OrdinalIgnoreCase)) return "success";
+        if (action.Contains("Delete", StringComparison.OrdinalIgnoreCase) || action.Contains("Reject", StringComparison.OrdinalIgnoreCase)) return "danger";
+        if (action.Contains("Update", StringComparison.OrdinalIgnoreCase) || action.Contains("Edit", StringComparison.OrdinalIgnoreCase)) return "info";
+        return "gray";
+    }
 }

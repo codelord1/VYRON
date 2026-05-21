@@ -42,11 +42,11 @@
                         </Grid>
                     </Border>
 
-                    <Border BackgroundColor="White" Stroke="{StaticResource CardStroke}" StrokeShape="RoundRectangle 24" HeightRequest="60">
+                    <Border BackgroundColor="{DynamicResource InputBg}" Stroke="{DynamicResource CardStroke}" StrokeShape="RoundRectangle 24" HeightRequest="60">
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Padding="16,0">
                             <Label Text="SEARCH" FontSize="10" TextColor="{StaticResource Gray3}" VerticalOptions="Center" />
                             <Entry Grid.Column="1" Placeholder="Search store, service, area" Text="{Binding SearchText}" ReturnCommand="{Binding SearchCommand}" ReturnType="Search" />
-                            <Border Grid.Column="2" BackgroundColor="{StaticResource Mint}" Stroke="Transparent" StrokeShape="RoundRectangle 20" WidthRequest="40" HeightRequest="40" VerticalOptions="Center">
+                            <Border Grid.Column="2" BackgroundColor="{DynamicResource Mint}" Stroke="Transparent" StrokeShape="RoundRectangle 20" WidthRequest="40" HeightRequest="40" VerticalOptions="Center">
                                 <Path Stroke="{StaticResource TealDark}" StrokeThickness="2" StrokeLineCap="Round" Data="M14,18 L34,18 M20,14 L20,22 M14,30 L34,30 M28,26 L28,34" />
                             </Border>
                         </Grid>
@@ -63,7 +63,7 @@
                                     <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="" />
                                 </Border.GestureRecognizers>
                             </Border>
-                            <Border BackgroundColor="White" Stroke="{StaticResource CardStroke}" StrokeShape="RoundRectangle 18" Padding="16,9">
+                            <Border BackgroundColor="{DynamicResource InputBg}" Stroke="{DynamicResource CardStroke}" StrokeShape="RoundRectangle 18" Padding="16,9">
                                 <Border.Behaviors>
                                     <behaviors:TapFeedbackBehavior />
                                 </Border.Behaviors>
@@ -72,7 +72,7 @@
                                     <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="toprated" />
                                 </Border.GestureRecognizers>
                             </Border>
-                            <Border BackgroundColor="White" Stroke="{StaticResource CardStroke}" StrokeShape="RoundRectangle 18" Padding="16,9">
+                            <Border BackgroundColor="{DynamicResource InputBg}" Stroke="{DynamicResource CardStroke}" StrokeShape="RoundRectangle 18" Padding="16,9">
                                 <Border.Behaviors>
                                     <behaviors:TapFeedbackBehavior />
                                 </Border.Behaviors>
@@ -81,7 +81,7 @@
                                     <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="fast" />
                                 </Border.GestureRecognizers>
                             </Border>
-                            <Border BackgroundColor="White" Stroke="{StaticResource CardStroke}" StrokeShape="RoundRectangle 18" Padding="16,9">
+                            <Border BackgroundColor="{DynamicResource InputBg}" Stroke="{DynamicResource CardStroke}" StrokeShape="RoundRectangle 18" Padding="16,9">
                                 <Border.Behaviors>
                                     <behaviors:TapFeedbackBehavior />
                                 </Border.Behaviors>
@@ -97,7 +97,7 @@
 
             <CollectionView.EmptyView>
                 <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="12" Padding="40,80">
-                    <Border BackgroundColor="{StaticResource Mint}" WidthRequest="76" HeightRequest="76" Stroke="Transparent" StrokeShape="RoundRectangle 38">
+                    <Border BackgroundColor="{DynamicResource Mint}" WidthRequest="76" HeightRequest="76" Stroke="Transparent" StrokeShape="RoundRectangle 38">
                         <Image Source="vyron_icon_only.png"
                                HeightRequest="42"
                                WidthRequest="42"
@@ -105,8 +105,8 @@
                                HorizontalOptions="Center"
                                VerticalOptions="Center" />
                     </Border>
-                    <Label Text="No stores available yet" FontFamily="OpenSansSemibold" FontSize="18" HorizontalTextAlignment="Center" />
-                    <Label Text="Verified laundry stores will appear here." FontSize="13" TextColor="{StaticResource Gray3}" HorizontalTextAlignment="Center" />
+                    <Label Text="{Binding EmptyTitle}" FontFamily="OpenSansSemibold" FontSize="18" HorizontalTextAlignment="Center" />
+                    <Label Text="{Binding EmptySubtitle}" FontSize="13" TextColor="{DynamicResource Gray3}" HorizontalTextAlignment="Center" />
                 </VerticalStackLayout>
             </CollectionView.EmptyView>
 
@@ -116,7 +116,7 @@
                         <Grid.Behaviors>
                             <behaviors:TapFeedbackBehavior />
                         </Grid.Behaviors>
-                        <Border BackgroundColor="White" Stroke="{StaticResource CardStroke}" StrokeShape="RoundRectangle 24">
+                        <Border BackgroundColor="{DynamicResource InputBg}" Stroke="{DynamicResource CardStroke}" StrokeShape="RoundRectangle 24">
                             <Grid RowDefinitions="128,Auto">
                                 <Grid BackgroundColor="#0AA37F">
                                     <Label Text="{Binding NameInitial}" FontFamily="OpenSansSemibold" FontSize="46" TextColor="#BDF5E5" HorizontalOptions="Center" VerticalOptions="Center" />

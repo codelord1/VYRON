@@ -1,15 +1,22 @@
 @model List<Order>
-@{ ViewData["Title"] = "Orders"; var status = (OrderStatus?)ViewBag.Status; var search = (string?)ViewBag.Search; }
+@{
+    ViewData["Title"] = "Orders";
+    var status = (OrderStatus?)ViewBag.Status;
+    var search = (string?)ViewBag.Search;
+}
 
-<div class="page-header">
-    <h1>Orders</h1>
-    <span class="text-muted">@ViewBag.Total total</span>
+<div class="content-hero">
+    <div>
+        <h1>Orders</h1>
+        <p>Review customer orders, payments, rider assignment, and current status.</p>
+    </div>
+    <span class="badge badge-info">@ViewBag.Total total</span>
 </div>
 
-<form class="filters" method="get">
+<form class="admin-panel filters" method="get">
     <div class="form-group">
         <label>Search</label>
-        <input type="text" name="search" value="@search" placeholder="Order #, customer, store" />
+        <input type="text" name="search" value="@search" placeholder="Order number, customer, store" />
     </div>
     <div class="form-group">
         <label>Status</label>
@@ -25,48 +32,107 @@
     <a href="/Orders" class="btn btn-secondary btn-sm">Reset</a>
 </form>
 
-<div class="table-wrap">
-    <table class="table-mobile-card">
-        <thead>
-            <tr><th>Order #</th><th>Customer</th><th>Store</th><th>Service</th><th>Status</th><th>Total</th><th>Created</th><th></th></tr>
-        </thead>
-        <tbody>
-            @if (!Model.Any())
-            {
-                <tr><td colspan="8" class="text-center text-muted" style="padding: 30px;">No orders found.</td></tr>
-            }
-            @foreach (var o in Model)
-            {
+@if (!Model.Any())
+{
+    <div class="admin-empty admin-panel">
+        <div>
+            <strong>No orders found</strong>
+            <span>Try another filter or search term.</span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="table-wrap admin-panel">
+        <table class="table-mobile-card">
+            <thead>
                 <tr>
-                    <td><a href="/Orders/Detail/@o.Id" class="text-bold">@o.OrderNumber</a></td>
-                    <td>@o.Customer.FullName<br /><small class="text-muted">@o.Customer.Phone</small></td>
-                    <td>@o.Store.Name</td>
-                    <td>@o.Service.Name</td>
-                    <td><span class="badge badge-@StatusBadge(o.Status)">@o.Status</span></td>
-                    <td class="text-bold">₦@((o.ActualTotal > 0 ? o.ActualTotal : o.TotalEstimate).ToString("N0"))</td>
-                    <td><small>@o.CreatedAt.ToString("MMM dd HH:mm")</small></td>
-                    <td><a href="/Orders/Detail/@o.Id" class="btn btn-secondary btn-sm">View →</a></td>
+                    <th>Order</th>
+                    <th>Customer</th>
+                    <th>Store</th>
+                    <th>Status</th>
+                    <th>Payment</th>
+                    <th>Amount</th>
+                    <th>Riders</th>
+                    <th>Created</th>
+                    <th></th>
                 </tr>
-            }
-        </tbody>
-    </table>
-</div>
+            </thead>
+            <tbody>
+                @foreach (var o in Model)
+                {
+                    var amount = o.ActualTotal > 0 ? o.ActualTotal : o.TotalEstimate;
+                    <tr>
+                        <td>
+                            <a href="/Orders/Detail/@o.Id" class="text-bold">@o.OrderNumber</a><br />
+                            <small class="text-muted">@o.Service.Name</small>
+                        </td>
+                        <td>
+                            <div class="entity-title">@o.Customer.FullName</div>
+                            <div class="entity-sub">@o.Customer.Phone</div>
+                        </td>
+                        <td>
+                            <div class="entity-cell">
+                                <span class="entity-thumb">
+                                    @if (!string.IsNullOrWhiteSpace(o.Store.LogoUrl))
+                                    {
+                                        <img src="@ResolveImage(o.Store.LogoUrl)" alt="@o.Store.Name" />
+                                    }
+                                    else
+                                    {
+                                        @o.Store.Name.Substring(0, 1).ToUpperInvariant()
+                                    }
+                                </span>
+                                <div>
+                                    <div class="entity-title">@o.Store.Name</div>
+                                    <div class="entity-sub">@o.Store.Area</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="badge badge-@StatusBadge(o.Status)">@o.Status</span></td>
+                        <td><span class="badge badge-@PaymentBadge(o.PaymentState)">@o.PaymentState</span></td>
+                        <td class="text-bold">&#8358;@amount.ToString("N0")</td>
+                        <td>
+                            <small>Pickup: @(o.Rider?.User?.FullName ?? "Unassigned")</small><br />
+                            <small>Delivery: @(o.DeliveryRider?.User?.FullName ?? "Unassigned")</small>
+                        </td>
+                        <td><small>@o.CreatedAt.ToString("MMM dd HH:mm")</small></td>
+                        <td><a href="/Orders/Detail/@o.Id" class="btn btn-secondary btn-sm">View</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
 
 @{ var page = (int)ViewBag.Page; var hasNext = Model.Count == 25; }
 <div class="pagination">
-    @if (page > 1) { <a href="?status=@status&search=@search&page=@(page-1)">← Prev</a> }
+    @if (page > 1) { <a href="?status=@status&search=@search&page=@(page-1)">Prev</a> }
     <span class="active">Page @(page)</span>
-    @if (hasNext) { <a href="?status=@status&search=@search&page=@(page+1)">Next →</a> }
+    @if (hasNext) { <a href="?status=@status&search=@search&page=@(page+1)">Next</a> }
 </div>
 
 @functions {
+    string ResolveImage(string url)
+    {
+        if (url.StartsWith("http", StringComparison.OrdinalIgnoreCase)) return url;
+        return Url.Content(url.StartsWith("/") ? "~" + url : "~/" + url);
+    }
     string StatusBadge(OrderStatus s) => s switch
     {
-        OrderStatus.Confirmed or OrderStatus.PickupFeePaid or OrderStatus.RiderAssigned => "info",
+        OrderStatus.Confirmed or OrderStatus.PickupFeePaid or OrderStatus.RiderAssigned or OrderStatus.PickUpRiderAssigned or OrderStatus.DeliveryRiderAssigned => "info",
         OrderStatus.PickedUp or OrderStatus.OutForDelivery => "purple",
         OrderStatus.Processing => "warning",
         OrderStatus.Ready or OrderStatus.Delivered or OrderStatus.BalancePaid or OrderStatus.Completed => "success",
         OrderStatus.Disputed => "danger",
+        _ => "gray"
+    };
+    string PaymentBadge(PaymentState s) => s switch
+    {
+        PaymentState.FullyPaid => "success",
+        PaymentState.PickupFeePaid => "info",
+        PaymentState.BalancePending => "warning",
+        PaymentState.Refunded => "purple",
         _ => "gray"
     };
 }
