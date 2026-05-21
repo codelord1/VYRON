@@ -11,6 +11,7 @@ using Serilog.Events;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Security.Claims;
+using System.Threading.RateLimiting;
 using System.Text;
 using System.Text.Json.Serialization;
 using Vyron.API.Data;
@@ -149,6 +150,38 @@ builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
 builder.Services.AddScoped<ICouponService, CouponService>();
 builder.Services.AddScoped<IImageProcessingService, ImageProcessingService>();
+
+// ─── RATE LIMITING ────────────────────────────────────────────────
+// Fixed-window policy on POST /api/customer-auth/login only.
+// 10 attempts per IP per 15-minute window → 429 with JSON body on excess.
+// No other endpoints are affected.
+builder.Services.AddRateLimiter(options =>
+{
+    // OnRejected sets the status code and JSON body; RejectionStatusCode is
+    // a fallback for endpoints that do NOT use a named policy.
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode  = StatusCodes.Status429TooManyRequests;
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsJsonAsync(
+            new { error = "Too many login attempts. Please try again shortly." },
+            cancellationToken);
+    };
+
+    options.AddPolicy("customer-login", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit          = 10,
+                Window               = TimeSpan.FromMinutes(15),
+                QueueLimit           = 0,   // reject excess immediately — no queue
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                AutoReplenishment    = true
+            }));
+});
 
 // ─── CONTROLLERS + SWAGGER ────────────────────────────────────────
 // JsonStringEnumConverter: serialises UserRole (and all enums) as strings ("Customer")
@@ -321,6 +354,7 @@ app.UseSwaggerUI(c => { c.SwaggerEndpoint("/swagger/v3/swagger.json", "VYRON API
 app.UseCors("VyronV3");
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();   // after auth so identity is available to future policies
 if (hangfireRunServer)
 {
     app.UseHangfireDashboard("/hangfire", new DashboardOptions

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 using Vyron.API.Data;
 using Vyron.API.DTOs;
@@ -26,7 +27,9 @@ public class CustomerAuthController : VyronController
 
     // ── LOGIN ──────────────────────────────────────────────────────
     /// <summary>Returning customer login: phone + password. No OTP.</summary>
-    [HttpPost("login"), AllowAnonymous]
+    [HttpPost("login")]
+    [AllowAnonymous]
+    [EnableRateLimiting("customer-login")]   // 10 attempts / IP / 15 min → 429
     public async Task<IActionResult> Login([FromBody] CustomerLoginRequest req)
     {
         var (response, error) = await _auth.LoginAsync(req);
