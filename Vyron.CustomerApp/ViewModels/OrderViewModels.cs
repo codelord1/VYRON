@@ -60,8 +60,18 @@ public partial class ServiceSelectionViewModel : BaseViewModel
 
     partial void OnStoreIdChanged(string value)
     {
-        if (Guid.TryParse(value, out _))
-            MainThread.BeginInvokeOnMainThread(async () => await LoadAsync());
+        if (!Guid.TryParse(value, out _)) return;
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            try { await LoadAsync(); }
+            catch (Exception ex)
+            {
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[ServiceSelectionViewModel] OnStoreIdChanged load error: {ex}");
+#endif
+                SetError(ApiErrorHelper.ForException(ex));
+            }
+        });
     }
 
     [RelayCommand]
@@ -264,8 +274,18 @@ public partial class OrderSuccessViewModel : BaseViewModel
 
     partial void OnOrderIdChanged(string value)
     {
-        if (Guid.TryParse(value, out _))
-            MainThread.BeginInvokeOnMainThread(async () => await LoadAsync());
+        if (!Guid.TryParse(value, out _)) return;
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            try { await LoadAsync(); }
+            catch (Exception ex)
+            {
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[OrderSuccessViewModel] OnOrderIdChanged load error: {ex}");
+#endif
+                SetError(ApiErrorHelper.ForException(ex));
+            }
+        });
     }
 
     private async Task LoadAsync()
@@ -279,12 +299,29 @@ public partial class OrderSuccessViewModel : BaseViewModel
     private async Task PayPickupFeeAsync()
     {
         if (Order != null)
-            await Shell.Current.GoToAsync($"{AppRoutes.PickupFeePayment}?orderId={Order.Id}");
+        {
+            try { await Shell.Current.GoToAsync($"{AppRoutes.PickupFeePayment}?orderId={Order.Id}"); }
+            catch (Exception ex)
+            {
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[NAV ERROR] PayPickupFee: {ex}");
+#endif
+                SetError("Unable to open payment page. Please try again.");
+            }
+        }
     }
 
     [RelayCommand]
     private async Task GoToOrdersAsync()
-        => await Shell.Current.GoToAsync(AppRoutes.Orders);
+    {
+        try { await Shell.Current.GoToAsync(AppRoutes.Orders); }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[NAV ERROR] GoToOrders: {ex}");
+#endif
+        }
+    }
 }
 
 // ─── PICKUP FEE PAYMENT ──────────────────────────────────────────
@@ -306,8 +343,18 @@ public partial class PickupFeeViewModel : BaseViewModel
 
     partial void OnOrderIdChanged(string value)
     {
-        if (Guid.TryParse(value, out _))
-            MainThread.BeginInvokeOnMainThread(async () => await LoadAsync());
+        if (!Guid.TryParse(value, out _)) return;
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            try { await LoadAsync(); }
+            catch (Exception ex)
+            {
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[PickupFeeViewModel] OnOrderIdChanged load error: {ex}");
+#endif
+                SetError(ApiErrorHelper.ForException(ex));
+            }
+        });
     }
 
     private async Task LoadAsync()
@@ -377,7 +424,15 @@ public partial class PickupFeeViewModel : BaseViewModel
 
     [RelayCommand]
     private async Task TrackOrderAsync()
-        => await Shell.Current.GoToAsync(AppRoutes.Orders);
+    {
+        try { await Shell.Current.GoToAsync(AppRoutes.Orders); }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[NAV ERROR] PickupFeeTrackOrder: {ex}");
+#endif
+        }
+    }
 }
 
 // ─── ORDERS LIST ─────────────────────────────────────────────────
@@ -502,30 +557,48 @@ public partial class OrdersViewModel : BaseViewModel
     [RelayCommand]
     private async Task SelectOrderAsync(OrderDto order)
     {
-        if (IsOpeningOrder || order == null)
-            return;
-
-        if (!ApiErrorHelper.HasInternetAccess)
-        {
-            SetError(ApiErrorHelper.OfflineMessage);
-            return;
-        }
-
+        if (IsOpeningOrder || order == null) return;
+        if (!ApiErrorHelper.HasInternetAccess) { SetError(ApiErrorHelper.OfflineMessage); return; }
         IsOpeningOrder = true;
         ClearMessages();
         try
         {
             TapFeedback.HapticClick();
-            await Shell.Current.GoToAsync($"{AppRoutes.OrderTracking}?orderId={order.Id}");
+            await Shell.Current.GoToAsync($"{AppRoutes.OrderDetails}?orderId={order.Id}");
         }
         catch (Exception ex)
         {
-            SetError(ApiErrorHelper.ForException(ex));
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[ORDERS NAV] SelectOrder error: {ex}");
+#endif
+            SetError("Unable to open order details. Please try again.");
         }
-        finally
+        finally { IsOpeningOrder = false; }
+    }
+
+    [RelayCommand]
+    private async Task TrackOrderAsync(OrderDto order)
+    {
+        if (IsOpeningOrder || order == null) return;
+        if (!ApiErrorHelper.HasInternetAccess) { SetError(ApiErrorHelper.OfflineMessage); return; }
+        IsOpeningOrder = true;
+        ClearMessages();
+        try
         {
-            IsOpeningOrder = false;
+            TapFeedback.HapticClick();
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[TRACK NAV] OrderId={order.Id}, OrderNumber={order.OrderNumber}");
+#endif
+            await Shell.Current.GoToAsync($"{AppRoutes.OrderTracking}?orderNumber={Uri.EscapeDataString(order.OrderNumber ?? "")}");
         }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[TRACK NAV ERROR] {ex}");
+#endif
+            SetError("Unable to open tracking. Please try again.");
+        }
+        finally { IsOpeningOrder = false; }
     }
 }
 
@@ -554,8 +627,18 @@ public partial class OrderDetailsViewModel : BaseViewModel
 
     partial void OnOrderIdChanged(string value)
     {
-        if (Guid.TryParse(value, out _))
-            MainThread.BeginInvokeOnMainThread(async () => await LoadAsync());
+        if (!Guid.TryParse(value, out _)) return;
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            try { await LoadAsync(); }
+            catch (Exception ex)
+            {
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[OrderDetailsViewModel] OnOrderIdChanged load error: {ex}");
+#endif
+                SetError(ApiErrorHelper.ForException(ex));
+            }
+        });
     }
 
     [RelayCommand]
@@ -620,29 +703,57 @@ public partial class OrderDetailsViewModel : BaseViewModel
     [RelayCommand]
     private async Task PayPickupFeeAsync()
     {
-        if (Order != null)
-            await Shell.Current.GoToAsync($"{AppRoutes.PickupFeePayment}?orderId={Order.Id}");
+        if (Order == null) return;
+        try { await Shell.Current.GoToAsync($"{AppRoutes.PickupFeePayment}?orderId={Order.Id}"); }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[NAV ERROR] PayPickupFee: {ex}");
+#endif
+            SetError("Unable to open payment page. Please try again.");
+        }
     }
 
     [RelayCommand]
     private async Task PayBalanceAsync()
     {
-        if (Order != null)
-            await Shell.Current.GoToAsync($"{AppRoutes.BalancePayment}?orderId={Order.Id}");
+        if (Order == null) return;
+        try { await Shell.Current.GoToAsync($"{AppRoutes.BalancePayment}?orderId={Order.Id}"); }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[NAV ERROR] PayBalance: {ex}");
+#endif
+            SetError("Unable to open payment page. Please try again.");
+        }
     }
 
     [RelayCommand]
     private async Task RaiseDisputeAsync()
     {
-        if (Order != null)
-            await Shell.Current.GoToAsync($"{AppRoutes.RaiseDispute}?orderId={Order.Id}");
+        if (Order == null) return;
+        try { await Shell.Current.GoToAsync($"{AppRoutes.RaiseDispute}?orderId={Order.Id}"); }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[NAV ERROR] RaiseDispute: {ex}");
+#endif
+            SetError("Unable to open dispute page. Please try again.");
+        }
     }
 
     [RelayCommand]
     private async Task AddReviewAsync()
     {
-        if (Order != null)
-            await Shell.Current.GoToAsync($"{AppRoutes.AddReview}?orderId={Order.Id}&storeId={Order.Store.Id}");
+        if (Order?.Store?.Id == null) return;
+        try { await Shell.Current.GoToAsync($"{AppRoutes.AddReview}?orderId={Order.Id}&storeId={Order.Store.Id}"); }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[NAV ERROR] AddReview: {ex}");
+#endif
+            SetError("Unable to open review page. Please try again.");
+        }
     }
 }
 
@@ -665,8 +776,18 @@ public partial class BalancePaymentViewModel : BaseViewModel
 
     partial void OnOrderIdChanged(string value)
     {
-        if (Guid.TryParse(value, out _))
-            MainThread.BeginInvokeOnMainThread(async () => await LoadAsync());
+        if (!Guid.TryParse(value, out _)) return;
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            try { await LoadAsync(); }
+            catch (Exception ex)
+            {
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[BalancePaymentViewModel] OnOrderIdChanged load error: {ex}");
+#endif
+                SetError(ApiErrorHelper.ForException(ex));
+            }
+        });
     }
 
     private async Task LoadAsync()

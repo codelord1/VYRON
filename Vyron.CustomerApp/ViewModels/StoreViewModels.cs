@@ -91,18 +91,37 @@ public partial class HomeViewModel : BaseViewModel
             return;
         }
 
+        IsBusy = true;
+        ClearMessages();
         try
         {
             var search = string.IsNullOrWhiteSpace(SearchText) ? null : SearchText.Trim();
-            var (stores, _) = await SafeRefreshCallAsync(() => _stores.GetStoresAsync(search: search, sort: "rating"), "stores");
+
+            // Parallel fetch: stores + orders in one round-trip window
+            var storesTask = _stores.GetStoresAsync(search: search, sort: "rating");
+            var ordersTask = _orders.GetMyOrdersAsync();
+            await Task.WhenAll(storesTask, ordersTask);
+
+            var (stores, storesError) = storesTask.Result;
+            var (orders, ordersError) = ordersTask.Result;
+
+            if (storesError == "SESSION_EXPIRED" || ordersError == "SESSION_EXPIRED")
+            {
+                await HandleUnauthorized();
+                return;
+            }
+
             if (stores != null)
             {
                 StoreItems.Clear();
                 foreach (var store in stores.Take(6))
                     StoreItems.Add(store);
             }
+            else if (storesError != null)
+            {
+                SetError(ApiErrorHelper.FriendlyContextMessage(storesError, "stores"));
+            }
 
-            var (orders, _) = await SafeRefreshCallAsync(() => _orders.GetMyOrdersAsync(), "orders");
             if (orders != null)
             {
                 ActiveOrder = orders.FirstOrDefault(o => o.Status is not ("Completed" or "Cancelled" or "BalancePaid"));
@@ -110,8 +129,10 @@ public partial class HomeViewModel : BaseViewModel
 
                 var lastCompleted = orders.FirstOrDefault(o => o.Status is "Completed" or "BalancePaid" or "Delivered");
                 LastCompletedOrderId = lastCompleted?.Id;
-                ReorderTitle = lastCompleted != null ? $"Reorder from {lastCompleted.Store.Name}" : null;
-                ReorderSubtitle = lastCompleted != null
+                ReorderTitle = lastCompleted?.Store?.Name != null
+                    ? $"Reorder from {lastCompleted.Store.Name}"
+                    : null;
+                ReorderSubtitle = lastCompleted?.Service?.Name != null
                     ? $"{lastCompleted.Service.Name} · ₦{lastCompleted.TotalEstimate:N0}"
                     : null;
                 OnPropertyChanged(nameof(HasReorder));
@@ -122,8 +143,13 @@ public partial class HomeViewModel : BaseViewModel
             _hasLoaded = true;
             _lastLoadedAt = DateTime.UtcNow;
         }
+        catch (Exception ex)
+        {
+            SetError(ApiErrorHelper.ForException(ex));
+        }
         finally
         {
+            IsBusy = false;
             IsRefreshing = false;
         }
     }
@@ -131,14 +157,32 @@ public partial class HomeViewModel : BaseViewModel
     [RelayCommand]
     private async Task GoToStoresAsync()
     {
-        if (string.IsNullOrWhiteSpace(SearchText))
-            await Shell.Current.GoToAsync(AppRoutes.Stores);
-        else
-            await Shell.Current.GoToAsync($"{AppRoutes.Stores}?search={Uri.EscapeDataString(SearchText.Trim())}");
+        try
+        {
+            if (string.IsNullOrWhiteSpace(SearchText))
+                await Shell.Current.GoToAsync(AppRoutes.Stores);
+            else
+                await Shell.Current.GoToAsync($"{AppRoutes.Stores}?search={Uri.EscapeDataString(SearchText.Trim())}");
+        }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[NAV ERROR] GoToStores: {ex}");
+#endif
+        }
     }
 
     [RelayCommand]
-    private async Task GoToOrdersAsync() => await Shell.Current.GoToAsync(AppRoutes.Orders);
+    private async Task GoToOrdersAsync()
+    {
+        try { await Shell.Current.GoToAsync(AppRoutes.Orders); }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[NAV ERROR] GoToOrders: {ex}");
+#endif
+        }
+    }
 
     [RelayCommand]
     private async Task SelectStoreAsync(StoreListItemDto store)
@@ -464,8 +508,18 @@ public partial class StoreDetailsViewModel : BaseViewModel
 
     partial void OnStoreIdChanged(string value)
     {
-        if (Guid.TryParse(value, out _))
-            MainThread.BeginInvokeOnMainThread(async () => await LoadAsync());
+        if (!Guid.TryParse(value, out _)) return;
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            try { await LoadAsync(); }
+            catch (Exception ex)
+            {
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine($"[StoreDetailsViewModel] OnStoreIdChanged load error: {ex}");
+#endif
+                SetError(ApiErrorHelper.ForException(ex));
+            }
+        });
     }
 
     [RelayCommand]
@@ -509,6 +563,16 @@ public partial class StoreDetailsViewModel : BaseViewModel
             return;
         }
         TapFeedback.HapticClick();
-        await Shell.Current.GoToAsync($"{AppRoutes.ServiceSelection}?storeId={Store.Id}");
+        try
+        {
+            await Shell.Current.GoToAsync($"{AppRoutes.ServiceSelection}?storeId={Store.Id}");
+        }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[NAV ERROR] StartOrder: {ex}");
+#endif
+            SetError("Unable to open service selection. Please try again.");
+        }
     }
 }

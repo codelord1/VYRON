@@ -178,6 +178,14 @@
                                             StrokeShape="RoundRectangle 18"
                                             Padding="16,9"
                                             VerticalOptions="Center">
+                                        <Border.Behaviors>
+                                            <behaviors:TapFeedbackBehavior />
+                                        </Border.Behaviors>
+                                        <Border.GestureRecognizers>
+                                            <TapGestureRecognizer
+                                                Command="{Binding Source={x:Reference ThisPage}, Path=BindingContext.TrackOrderCommand}"
+                                                CommandParameter="{Binding .}" />
+                                        </Border.GestureRecognizers>
                                         <Label Text="Track"
                                                TextColor="White"
                                                FontSize="12"

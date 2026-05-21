@@ -20,7 +20,7 @@ public class OrderProgressStep
 }
 
 // ─── TRACK (active order live status) ────────────────────────────
-[QueryProperty(nameof(OrderId), "orderId")]
+[QueryProperty(nameof(OrderNumber), "orderNumber")]
 public partial class TrackViewModel : BaseViewModel
 {
     private readonly OrderService _orders;
@@ -45,7 +45,7 @@ public partial class TrackViewModel : BaseViewModel
     [ObservableProperty]
     private List<OrderProgressStep> _progressSteps = new();
 
-    [ObservableProperty] private string _orderId = "";
+    [ObservableProperty] private string _orderNumber = "";
     [ObservableProperty] private bool _isNavigating;
 
     public bool IsEmpty => !HasActiveOrder && !IsBusy;
@@ -61,7 +61,7 @@ public partial class TrackViewModel : BaseViewModel
 
     public async Task InitAsync() => await LoadAsync();
 
-    // NOTE: OnOrderIdChanged does NOT trigger a load.
+    // NOTE: OnOrderNumberChanged does NOT trigger a separate load.
     // TrackPage.OnAppearing calls InitAsync() after the QueryProperty is set,
     // so a second BeginInvokeOnMainThread call here would race with the
     // OnAppearing load and corrupt the RefreshView IsRefreshing state on Android.
@@ -79,15 +79,15 @@ public partial class TrackViewModel : BaseViewModel
             ClearMessages();
 #if DEBUG
             System.Diagnostics.Debug.WriteLine(
-                $"[TRACK] LoadAsync — OrderId='{OrderId}'");
+                $"[TRACK] LoadAsync — OrderNumber='{OrderNumber}'");
 #endif
             OrderDto? active = null;
-            if (Guid.TryParse(OrderId, out var id))
+            if (!string.IsNullOrWhiteSpace(OrderNumber))
             {
-                var (order, error) = await _orders.GetOrderAsync(id);
+                var (order, error) = await _orders.TrackByNumberAsync(OrderNumber);
 #if DEBUG
                 System.Diagnostics.Debug.WriteLine(
-                    $"[TRACK] GetOrderAsync result: order={(order?.OrderNumber ?? "null")}, error={error}");
+                    $"[TRACK] TrackByNumberAsync result: order={(order?.OrderNumber ?? "null")}, error={error}");
 #endif
                 if (error == "SESSION_EXPIRED")
                 {
@@ -547,6 +547,13 @@ public partial class NotificationsViewModel : BaseViewModel
             }
             UnreadCount = Items.Count(n => !n.IsRead);
             OnPropertyChanged(nameof(IsEmpty));
+        }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[NotificationsViewModel] LoadAsync error: {ex}");
+#endif
+            SetError(ApiErrorHelper.ForException(ex));
         }
         finally
         {

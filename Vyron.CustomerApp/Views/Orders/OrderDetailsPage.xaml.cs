@@ -12,9 +12,7 @@ public partial class OrderDetailsPage : ContentPage
         BindingContext = _vm = vm;
     }
 
-    protected override async void OnAppearing()
-    {
-        base.OnAppearing();
-        await _vm.LoadCommand.ExecuteAsync(null);
-    }
+    // Loading is triggered by OnOrderIdChanged → BeginInvokeOnMainThread in the ViewModel.
+    // Pull-to-refresh is bound to LoadCommand. No OnAppearing load needed.
+    protected override void OnAppearing() => base.OnAppearing();
 }
