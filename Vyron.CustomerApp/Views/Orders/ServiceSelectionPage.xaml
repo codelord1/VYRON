@@ -18,6 +18,7 @@
                 <Label Text="{Binding Store.Name}"
                        FontFamily="OpenSansSemibold"
                        FontSize="18"
+                       TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}"
                        Margin="0,4,0,0" />
 
                 <!-- Error -->
@@ -28,7 +29,8 @@
                 </Border>
 
                 <Label Text="Tap a service to add it to your order"
-                       FontFamily="OpenSansSemibold" FontSize="15" />
+                       FontFamily="OpenSansSemibold" FontSize="15"
+                       TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}" />
 
                 <!-- ── Available Services ── -->
                 <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
@@ -44,19 +46,28 @@
                         <Entry Grid.Column="1"
                                Text="{Binding ServiceSearchText}"
                                Placeholder="Search services"
-                               ReturnType="Search" />
+                               ReturnType="Search"
+                               TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}"
+                               PlaceholderColor="{AppThemeBinding Light={StaticResource LightTextMuted}, Dark={StaticResource DarkTextMuted}}" />
                     </Grid>
                 </Border>
 
                 <VerticalStackLayout BindableLayout.ItemsSource="{Binding FilteredServiceCards}" Spacing="8">
                     <BindableLayout.ItemTemplate>
                         <DataTemplate x:DataType="vm:ServiceCardViewModel">
+                            <!-- BackgroundColor and Stroke set here as non-null defaults so that
+                                 DataTrigger exit-state (when BindableLayout clears/re-adds on search text
+                                 change) never restores these properties to null, which throws
+                                 ArgumentNullException (Parameter 'color') inside MAUI rendering. -->
                             <Border StrokeShape="RoundRectangle 14"
-                                    Padding="14,12">
+                                    Padding="14,12"
+                                    BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
+                                    Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
+                                    StrokeThickness="1.5">
                                 <Border.Behaviors>
                                     <behaviors:TapFeedbackBehavior />
                                 </Border.Behaviors>
-                                <!-- Selected = teal border + light teal bg; unselected = gray border + white -->
+                                <!-- Selected = teal border + light teal bg; unselected = theme card border -->
                                 <Border.Triggers>
                                     <DataTrigger TargetType="Border"
                                                  Binding="{Binding IsSelected}"
@@ -102,7 +113,9 @@
                                                TextColor="{StaticResource Teal}"
                                                HorizontalOptions="End" />
                                         <!-- Show "✓ Added" when selected, "+ Add" when not -->
-                                        <Label FontSize="11" HorizontalOptions="End">
+                                        <!-- TextColor set here so DataTrigger exit-state never restores to null. -->
+                                        <Label FontSize="11" HorizontalOptions="End"
+                                               TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}">
                                             <Label.Triggers>
                                                 <DataTrigger TargetType="Label"
                                                              Binding="{Binding IsSelected}"
