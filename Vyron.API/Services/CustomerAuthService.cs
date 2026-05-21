@@ -55,11 +55,19 @@ public class CustomerAuthService : ICustomerAuthService
         if (string.IsNullOrWhiteSpace(request.Phone) || string.IsNullOrWhiteSpace(request.Password))
             return (null, "Phone and password are required.");
 
+#if DEBUG
+        var _sw = System.Diagnostics.Stopwatch.StartNew();
+        long _tLookup, _tPassword, _tRoles, _tSave, _tToken, _tAudit;
+#endif
+
         // Single-table lookup — no UserRoles JOIN before password is verified.
         // Avoids a 3-table join on every failed/wrong-password attempt.
-        // Role names are loaded lean via a separate SELECT only after auth passes.
         var user = await _db.Users
             .FirstOrDefaultAsync(u => u.Phone == request.Phone && u.IsActive);
+
+#if DEBUG
+        _tLookup = _sw.ElapsedMilliseconds;
+#endif
 
         if (user == null)
             return (null, "No account found for this phone number. Please create an account.");
@@ -67,10 +75,14 @@ public class CustomerAuthService : ICustomerAuthService
         if (string.IsNullOrEmpty(user.PasswordHash))
             return (null, "This account does not have a password set. Please use 'Forgot Password' to create one.");
 
-        // ⚠ bcrypt/PBKDF2 verification is intentionally slow (~600–700 ms on typical
-        // hardware). This is the dominant cost of login and cannot be reduced without
-        // weakening security. All operations below complete in < 100 ms combined.
+        // ⚠ PBKDF2 verification is intentionally slow (~600–700 ms on typical hardware).
+        // This is the dominant login cost and CANNOT be reduced without weakening security.
         var result = _hasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
+
+#if DEBUG
+        _tPassword = _sw.ElapsedMilliseconds;
+#endif
+
         if (result == PasswordVerificationResult.Failed)
             return (null, "Incorrect password. Please try again.");
 
@@ -80,12 +92,27 @@ public class CustomerAuthService : ICustomerAuthService
             user.PasswordChangedAt = DateTime.UtcNow;
         }
 
-        user.LastLoginAt = DateTime.UtcNow;
+        // Single upfront role query — eliminates the old AnyAsync + post-save Select pattern
+        // (was 2 extra DB round-trips; now 1 query before the save covers both concerns).
+        var roleNames = await _db.UserRoles
+            .Where(ur => ur.UserId == user.Id)
+            .Select(ur => ur.Role!.Name)
+            .Where(n => n != null)
+            .Cast<string>()
+            .ToListAsync();
 
-        // Back-fill role entry for legacy accounts (DB check, not in-memory navigation)
-        var hasRole = await _db.UserRoles.AnyAsync(ur => ur.UserId == user.Id);
-        if (!hasRole)
+        if (roleNames.Count == 0)
+        {
+            // Back-fill role for legacy accounts — adds to change-tracker, saved below.
             await EnsureCustomerRoleAsync(user);
+            roleNames = new List<string> { "Customer" };
+        }
+
+#if DEBUG
+        _tRoles = _sw.ElapsedMilliseconds;
+#endif
+
+        user.LastLoginAt = DateTime.UtcNow;
 
         var refreshVal = _tokens.GenerateRefreshToken();
         _db.RefreshTokens.Add(new RefreshToken
@@ -94,18 +121,29 @@ public class CustomerAuthService : ICustomerAuthService
             Token = refreshVal,
             ExpiresAt = DateTime.UtcNow.AddDays(30)
         });
+
+        // Single save: LastLoginAt + RefreshToken (+ optional back-filled UserRole) in one round-trip.
         await _db.SaveChangesAsync();
 
-        // Lean role name query — only Names, no Role entity hydration
-        var roleNames = await _db.UserRoles
-            .Where(ur => ur.UserId == user.Id)
-            .Select(ur => ur.Role!.Name)
-            .Where(n => n != null)
-            .Cast<string>()
-            .ToListAsync();
+#if DEBUG
+        _tSave = _sw.ElapsedMilliseconds;
+#endif
 
         var access = _tokens.GenerateAccessToken(user, roleNames.Count > 0 ? roleNames : null);
+
+#if DEBUG
+        _tToken = _sw.ElapsedMilliseconds;
+#endif
+
         await _audit.LogAsync(user.Id, "CUSTOMER_LOGIN", "User", user.Id);
+
+#if DEBUG
+        _tAudit = _sw.ElapsedMilliseconds;
+        System.Diagnostics.Debug.WriteLine(
+            $"[LOGIN-PERF] Lookup={_tLookup}ms Password={_tPassword - _tLookup}ms " +
+            $"Roles={_tRoles - _tPassword}ms RefreshSave={_tSave - _tRoles}ms " +
+            $"Token={_tToken - _tSave}ms Audit={_tAudit - _tToken}ms Total={_tAudit}ms");
+#endif
 
         _logger.LogInformation("[LOGIN] {Phone} ({Name})", user.Phone, user.FullName);
         return (new CustomerLoginResponse(access, refreshVal, DateTime.UtcNow.AddMinutes(60),
