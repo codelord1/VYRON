@@ -600,11 +600,46 @@ public partial class StoreDetailsViewModel : BaseViewModel
     [ObservableProperty] private StoreDetailDto? _store;
     [ObservableProperty] private bool            _hasReviews;
 
+    // ── Page-lock for navigation actions ───────────────────────
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNotNavigating))]
+    [NotifyPropertyChangedFor(nameof(IsOverlayVisible))]
+    [NotifyPropertyChangedFor(nameof(OverlayText))]
+    private bool _isNavigating;
+
+    // ── Local favourite toggle (persisted to Preferences) ──────
+    [ObservableProperty] private bool _isFavorite;
+
+    public bool IsNotNavigating  => !IsNavigating;
+    public bool IsOverlayVisible => IsBusy || IsNavigating;
+    public string OverlayText    => IsNavigating ? "Opening store…" : "Loading store…";
+
+    // ── Quick-stats helpers (computed from Store) ───────────────
+    public string PickupFeeText    => Store?.PickupFee == 0 ? "Free" : Store?.PickupFeeDisplay ?? "—";
+    public string DeliveryFeeText  => Store?.DeliveryFee == 0 ? "Free" : Store?.DeliveryFeeDisplay ?? "—";
+    public string TurnaroundText   => Store != null ? $"~{Store.EstimatedPickupMinutes} min" : "—";
+    public string ServiceCountText => Store != null
+        ? $"{Store.Services.Count(s => s.IsActive)} service{(Store.Services.Count(s => s.IsActive) == 1 ? "" : "s")}"
+        : "";
+
+    // Propagate IsBusy → IsOverlayVisible / OverlayText
+    protected override void OnPropertyChanged(System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+        if (e.PropertyName is nameof(IsBusy))
+        {
+            base.OnPropertyChanged(new System.ComponentModel.PropertyChangedEventArgs(nameof(IsOverlayVisible)));
+            base.OnPropertyChanged(new System.ComponentModel.PropertyChangedEventArgs(nameof(OverlayText)));
+        }
+    }
+
     public StoreDetailsViewModel(StoreService stores) => _stores = stores;
 
     partial void OnStoreIdChanged(string value)
     {
         if (!Guid.TryParse(value, out _)) return;
+        // Restore persisted favourite state for this store
+        IsFavorite = Preferences.Default.Get($"fav_{value}", false);
         MainThread.BeginInvokeOnMainThread(async () =>
         {
             try { await LoadAsync(); }
@@ -616,6 +651,15 @@ public partial class StoreDetailsViewModel : BaseViewModel
                 SetError(ApiErrorHelper.ForException(ex));
             }
         });
+    }
+
+    partial void OnStoreChanged(StoreDetailDto? value)
+    {
+        // Notify all quick-stat computed properties when Store loads
+        OnPropertyChanged(nameof(PickupFeeText));
+        OnPropertyChanged(nameof(DeliveryFeeText));
+        OnPropertyChanged(nameof(TurnaroundText));
+        OnPropertyChanged(nameof(ServiceCountText));
     }
 
     [RelayCommand]
@@ -651,7 +695,7 @@ public partial class StoreDetailsViewModel : BaseViewModel
     [RelayCommand]
     private async Task StartOrderAsync()
     {
-        if (Store == null) return;
+        if (Store == null || IsNavigating) return;
         if (Store.Status != "Active" || !Store.IsCurrentlyOpen)
         {
             await Shell.Current.DisplayAlert("Store closed",
@@ -659,6 +703,7 @@ public partial class StoreDetailsViewModel : BaseViewModel
             return;
         }
         TapFeedback.HapticClick();
+        IsNavigating = true;
         try
         {
             await Shell.Current.GoToAsync($"{AppRoutes.ServiceSelection}?storeId={Store.Id}");
@@ -670,5 +715,22 @@ public partial class StoreDetailsViewModel : BaseViewModel
 #endif
             SetError("Unable to open service selection. Please try again.");
         }
+        finally
+        {
+            IsNavigating = false;
+        }
     }
+
+    [RelayCommand]
+    private void ToggleFavorite()
+    {
+        IsFavorite = !IsFavorite;
+        TapFeedback.HapticClick();
+        if (!string.IsNullOrEmpty(StoreId))
+            Preferences.Default.Set($"fav_{StoreId}", IsFavorite);
+    }
+
+    [RelayCommand]
+    private static async Task GoBackAsync()
+        => await Shell.Current.GoToAsync("..");
 }

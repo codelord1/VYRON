@@ -302,6 +302,7 @@ public class ServiceSummaryDto
     };
     public string MinChargeDisplay => MinimumCharge > 0 ? $"Min ₦{MinimumCharge:N0}" : "";
     public string TimeDisplay      => EstimatedHours > 0 ? $"~{EstimatedHours}h" : "";
+    public string NameInitial      => Name.Length > 0 ? Name.Substring(0, 1).ToUpperInvariant() : "?";
 }
 
 // â”€â”€â”€ ORDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

@@ -6,54 +6,122 @@
              xmlns:dto="clr-namespace:Vyron.CustomerApp.DTOs"
              x:Class="Vyron.CustomerApp.Views.Stores.StoreDetailsPage"
              x:DataType="vm:StoreDetailsViewModel"
-             Title="{Binding Store.Name, FallbackValue='Store Details'}"
+             Shell.NavBarIsVisible="False"
              BackgroundColor="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}">
 
-    <Grid RowDefinitions="*,Auto">
+    <Grid RowDefinitions="Auto,*,Auto">
 
-        <!-- ── Scrollable body ─────────────────────────────────── -->
-        <RefreshView Grid.Row="0" Command="{Binding LoadCommand}" IsRefreshing="{Binding IsRefreshing}">
-        <ScrollView>
-            <VerticalStackLayout Spacing="0">
+        <!-- ══ ROW 0 — Custom top bar ═══════════════════════════════════ -->
+        <Grid Grid.Row="0"
+              ColumnDefinitions="Auto,*,Auto"
+              Padding="16,12,16,12"
+              BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}">
 
-                <!-- Loading indicator (covers the banner placeholder) -->
-                <ActivityIndicator IsRunning="{Binding IsBusy}"
-                                   Color="{StaticResource Teal}"
-                                   IsVisible="{Binding IsBusy}"
-                                   HorizontalOptions="Center"
-                                   Margin="0,60" />
+            <!-- Circular back button -->
+            <Border Grid.Column="0"
+                    WidthRequest="44"
+                    HeightRequest="44"
+                    StrokeShape="RoundRectangle 22"
+                    Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}">
+                <Label Text="←"
+                       FontSize="20"
+                       TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center" />
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding GoBackCommand}" />
+                </Border.GestureRecognizers>
+            </Border>
 
-                <VerticalStackLayout IsVisible="{Binding IsNotBusy}" Spacing="0">
+            <!-- Store name -->
+            <Label Grid.Column="1"
+                   Text="{Binding Store.Name, FallbackValue='Store Details'}"
+                   FontFamily="OpenSansSemibold"
+                   FontSize="17"
+                   HorizontalOptions="Center"
+                   VerticalOptions="Center"
+                   MaxLines="1"
+                   LineBreakMode="TailTruncation"
+                   Margin="8,0"
+                   TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}" />
 
-                    <!-- ══ BANNER IMAGE ══════════════════════════════ -->
-                    <Grid HeightRequest="220" BackgroundColor="#D8EEE9">
+            <!-- Circular favourite button -->
+            <Border Grid.Column="2"
+                    WidthRequest="44"
+                    HeightRequest="44"
+                    StrokeShape="RoundRectangle 22"
+                    Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}">
+                <Label Text="♡"
+                       FontSize="20"
+                       TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center">
+                    <Label.Triggers>
+                        <DataTrigger TargetType="Label"
+                                     Binding="{Binding IsFavorite}"
+                                     Value="True">
+                            <Setter Property="Text" Value="♥" />
+                            <Setter Property="TextColor" Value="#EF4444" />
+                        </DataTrigger>
+                    </Label.Triggers>
+                </Label>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding ToggleFavoriteCommand}" />
+                </Border.GestureRecognizers>
+            </Border>
 
-                        <!-- Placeholder initial -->
+        </Grid>
+
+        <!-- ══ ROW 1 — Scrollable content ═══════════════════════════════ -->
+        <RefreshView Grid.Row="1"
+                     Command="{Binding LoadCommand}"
+                     IsRefreshing="{Binding IsRefreshing}">
+            <ScrollView>
+                <VerticalStackLayout Spacing="0">
+
+                    <!-- ── HERO IMAGE ─────────────────────────────────── -->
+                    <Grid HeightRequest="260"
+                          BackgroundColor="{AppThemeBinding Light={StaticResource LightSoftTeal}, Dark={StaticResource DarkSoftTeal}}">
+
+                        <!-- Name-initial placeholder -->
                         <Label Text="{Binding Store.NameInitial}"
                                FontFamily="OpenSansSemibold"
                                FontSize="80"
-                               TextColor="#9FD5CB"
+                               TextColor="{AppThemeBinding Light=#9FD5CB, Dark=#3A7068}"
                                HorizontalOptions="Center"
                                VerticalOptions="Center" />
 
-                        <!-- Store image (banner preferred, logo as fallback) -->
+                        <!-- Banner / logo image -->
                         <Image Source="{Binding Store.BestImageUrl}"
                                Aspect="AspectFill"
                                IsVisible="{Binding Store.HasImage}" />
 
-                        <!-- Open / Closed chip over image -->
+                        <!-- Gradient fade at bottom -->
+                        <BoxView VerticalOptions="End"
+                                 HeightRequest="80">
+                            <BoxView.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="Transparent" Offset="0.0" />
+                                    <GradientStop Color="#55000000" Offset="1.0" />
+                                </LinearGradientBrush>
+                            </BoxView.Background>
+                        </BoxView>
+
+                        <!-- Open / Closed pill -->
                         <Border HorizontalOptions="End"
                                 VerticalOptions="End"
                                 Margin="0,0,16,16"
                                 Padding="10,5"
                                 StrokeShape="RoundRectangle 10"
                                 Stroke="Transparent"
-                                BackgroundColor="#00C9A7">
+                                BackgroundColor="#16A34A">
                             <Border.Triggers>
                                 <DataTrigger TargetType="Border"
                                              Binding="{Binding Store.IsOpen}"
                                              Value="False">
-                                    <Setter Property="BackgroundColor" Value="#E74C3C" />
+                                    <Setter Property="BackgroundColor" Value="#64748B" />
                                 </DataTrigger>
                             </Border.Triggers>
                             <Label Text="{Binding Store.OpenStatusText}"
@@ -64,162 +132,351 @@
 
                     </Grid>
 
-                    <!-- ══ STORE HEADER CARD ════════════════════════ -->
+                    <!-- ── STORE HEADER ────────────────────────────────── -->
                     <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
                             Stroke="Transparent"
-                            Padding="20,18,20,14"
-                            Margin="0">
-                        <VerticalStackLayout Spacing="6">
+                            Padding="20,18,20,16">
+                        <VerticalStackLayout Spacing="8">
 
-                            <!-- Name + rating row -->
-                            <Grid ColumnDefinitions="*,Auto">
-                                <Label Text="{Binding Store.Name}"
-                                       FontFamily="OpenSansSemibold"
-                                       FontSize="22" />
-                                <Label Grid.Column="1"
-                                       Text="{Binding Store.RatingDisplay}"
-                                       FontSize="13"
-                                       TextColor="#E6A817"
-                                       VerticalOptions="Center" />
-                            </Grid>
+                            <Label Text="{Binding Store.Name}"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="22"
+                                   TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}" />
 
-                            <!-- Badges (Verified / Top Rated / Fast) -->
-                            <Label Text="{Binding Store.BadgeText}"
-                                   FontSize="13"
-                                   TextColor="{StaticResource Teal}"
-                                   IsVisible="{Binding Store.BadgeText, Converter={StaticResource NotEmptyBool}}" />
+                            <!-- Rating row -->
+                            <Label FontSize="14">
+                                <Label.FormattedText>
+                                    <FormattedString>
+                                        <Span Text="★ "
+                                              FontSize="15"
+                                              FontFamily="OpenSansSemibold"
+                                              TextColor="#F59E0B" />
+                                        <Span Text="{Binding Store.AverageRating, StringFormat='{0:F1}'}"
+                                              FontSize="15"
+                                              FontFamily="OpenSansSemibold"
+                                              TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}" />
+                                        <Span Text="{Binding Store.TotalReviews, StringFormat='  ({0} reviews)'}"
+                                              FontSize="13"
+                                              TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
+                                    </FormattedString>
+                                </Label.FormattedText>
+                            </Label>
+
+                            <!-- Verified / Top Rated badges -->
+                            <HorizontalStackLayout Spacing="8">
+                                <Border Padding="10,4"
+                                        StrokeShape="RoundRectangle 8"
+                                        Stroke="Transparent"
+                                        BackgroundColor="#EBF8F5"
+                                        IsVisible="{Binding Store.IsVerified}">
+                                    <Label Text="✓ Verified"
+                                           FontFamily="OpenSansSemibold"
+                                           FontSize="11"
+                                           TextColor="#007A5A" />
+                                </Border>
+                                <Border Padding="10,4"
+                                        StrokeShape="RoundRectangle 8"
+                                        Stroke="Transparent"
+                                        BackgroundColor="#FEF3C7"
+                                        IsVisible="{Binding Store.IsTopRated}">
+                                    <Label Text="★ Top Rated"
+                                           FontFamily="OpenSansSemibold"
+                                           FontSize="11"
+                                           TextColor="#92400E" />
+                                </Border>
+                            </HorizontalStackLayout>
 
                             <!-- Description -->
                             <Label Text="{Binding Store.Description}"
                                    FontSize="13"
                                    TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}"
-                                   IsVisible="{Binding Store.Description, Converter={StaticResource NotEmptyBool}}" />
+                                   IsVisible="{Binding Store.Description, Converter={StaticResource NotEmptyBool}}"
+                                   Margin="0,2,0,0" />
 
                         </VerticalStackLayout>
                     </Border>
 
-                    <BoxView HeightRequest="8" Color="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}" />
+                    <BoxView HeightRequest="8"
+                             Color="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}" />
 
-                    <!-- ══ INFO CARD ═════════════════════════════════ -->
+                    <!-- ── QUICK STATS ─────────────────────────────────── -->
+                    <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
+                            Stroke="Transparent"
+                            Padding="0,18">
+                        <Grid ColumnDefinitions="*,1,*,1,*">
+
+                            <VerticalStackLayout Grid.Column="0" Spacing="4" HorizontalOptions="Center">
+                                <Label Text="⏱"
+                                       FontSize="24"
+                                       HorizontalOptions="Center" />
+                                <Label Text="{Binding TurnaroundText}"
+                                       FontFamily="OpenSansSemibold"
+                                       FontSize="14"
+                                       HorizontalOptions="Center"
+                                       TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}" />
+                                <Label Text="Turnaround"
+                                       FontSize="11"
+                                       HorizontalOptions="Center"
+                                       TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
+                            </VerticalStackLayout>
+
+                            <BoxView Grid.Column="1"
+                                     WidthRequest="1"
+                                     BackgroundColor="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
+                                     VerticalOptions="FillAndExpand" />
+
+                            <VerticalStackLayout Grid.Column="2" Spacing="4" HorizontalOptions="Center">
+                                <Label Text="🛍"
+                                       FontSize="24"
+                                       HorizontalOptions="Center" />
+                                <Label Text="{Binding PickupFeeText}"
+                                       FontFamily="OpenSansSemibold"
+                                       FontSize="14"
+                                       HorizontalOptions="Center"
+                                       TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}" />
+                                <Label Text="Pickup"
+                                       FontSize="11"
+                                       HorizontalOptions="Center"
+                                       TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
+                            </VerticalStackLayout>
+
+                            <BoxView Grid.Column="3"
+                                     WidthRequest="1"
+                                     BackgroundColor="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
+                                     VerticalOptions="FillAndExpand" />
+
+                            <VerticalStackLayout Grid.Column="4" Spacing="4" HorizontalOptions="Center">
+                                <Label Text="🚚"
+                                       FontSize="24"
+                                       HorizontalOptions="Center" />
+                                <Label Text="{Binding DeliveryFeeText}"
+                                       FontFamily="OpenSansSemibold"
+                                       FontSize="14"
+                                       HorizontalOptions="Center"
+                                       TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}" />
+                                <Label Text="Delivery"
+                                       FontSize="11"
+                                       HorizontalOptions="Center"
+                                       TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
+                            </VerticalStackLayout>
+
+                        </Grid>
+                    </Border>
+
+                    <BoxView HeightRequest="8"
+                             Color="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}" />
+
+                    <!-- ── STORE DETAILS ───────────────────────────────── -->
+                    <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
+                            Stroke="Transparent"
+                            Padding="20,16">
+                        <VerticalStackLayout Spacing="14">
+
+                            <Label Text="Store Details"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="15"
+                                   TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}"
+                                   Margin="0,0,0,2" />
+
+                            <!-- Address -->
+                            <Grid ColumnDefinitions="48,*" ColumnSpacing="12">
+                                <Border Grid.Column="0"
+                                        WidthRequest="36"
+                                        HeightRequest="36"
+                                        StrokeShape="RoundRectangle 18"
+                                        Stroke="Transparent"
+                                        BackgroundColor="{AppThemeBinding Light={StaticResource LightSoftTeal}, Dark={StaticResource DarkSoftTeal}}"
+                                        HorizontalOptions="Start"
+                                        VerticalOptions="Center">
+                                    <Label Text="📍"
+                                           FontSize="16"
+                                           HorizontalOptions="Center"
+                                           VerticalOptions="Center" />
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                                    <Label Text="Address"
+                                           FontFamily="OpenSansSemibold"
+                                           FontSize="12"
+                                           TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
+                                    <Label FontSize="13"
+                                           TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}">
+                                        <Label.FormattedText>
+                                            <FormattedString>
+                                                <Span Text="{Binding Store.Address}" />
+                                                <Span Text=", " />
+                                                <Span Text="{Binding Store.Area}" />
+                                            </FormattedString>
+                                        </Label.FormattedText>
+                                    </Label>
+                                </VerticalStackLayout>
+                            </Grid>
+
+                            <!-- Opening hours -->
+                            <Grid ColumnDefinitions="48,*" ColumnSpacing="12"
+                                  IsVisible="{Binding Store.OpeningHours, Converter={StaticResource NotNullToBool}}">
+                                <Border Grid.Column="0"
+                                        WidthRequest="36"
+                                        HeightRequest="36"
+                                        StrokeShape="RoundRectangle 18"
+                                        Stroke="Transparent"
+                                        BackgroundColor="{AppThemeBinding Light={StaticResource LightSoftTeal}, Dark={StaticResource DarkSoftTeal}}"
+                                        HorizontalOptions="Start"
+                                        VerticalOptions="Center">
+                                    <Label Text="🕐"
+                                           FontSize="16"
+                                           HorizontalOptions="Center"
+                                           VerticalOptions="Center" />
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                                    <Label Text="Opening Hours"
+                                           FontFamily="OpenSansSemibold"
+                                           FontSize="12"
+                                           TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
+                                    <Label Text="{Binding Store.OpeningHours}"
+                                           FontSize="13"
+                                           TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}" />
+                                </VerticalStackLayout>
+                            </Grid>
+
+                            <!-- Phone -->
+                            <Grid ColumnDefinitions="48,*" ColumnSpacing="12"
+                                  IsVisible="{Binding Store.Phone, Converter={StaticResource NotEmptyBool}}">
+                                <Border Grid.Column="0"
+                                        WidthRequest="36"
+                                        HeightRequest="36"
+                                        StrokeShape="RoundRectangle 18"
+                                        Stroke="Transparent"
+                                        BackgroundColor="{AppThemeBinding Light={StaticResource LightSoftTeal}, Dark={StaticResource DarkSoftTeal}}"
+                                        HorizontalOptions="Start"
+                                        VerticalOptions="Center">
+                                    <Label Text="📞"
+                                           FontSize="16"
+                                           HorizontalOptions="Center"
+                                           VerticalOptions="Center" />
+                                </Border>
+                                <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                                    <Label Text="Phone"
+                                           FontFamily="OpenSansSemibold"
+                                           FontSize="12"
+                                           TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
+                                    <Label Text="{Binding Store.Phone}"
+                                           FontSize="13"
+                                           TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}" />
+                                </VerticalStackLayout>
+                            </Grid>
+
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <BoxView HeightRequest="8"
+                             Color="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}" />
+
+                    <!-- ── TRUST STRIP ─────────────────────────────────── -->
+                    <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
+                            Stroke="Transparent"
+                            Padding="16,14">
+                        <Grid ColumnDefinitions="*,*,*">
+
+                            <VerticalStackLayout Grid.Column="0" Spacing="4" HorizontalOptions="Center">
+                                <Label Text="🛡"
+                                       FontSize="22"
+                                       HorizontalOptions="Center" />
+                                <Label Text="Trusted &amp; Verified"
+                                       FontFamily="OpenSansSemibold"
+                                       FontSize="11"
+                                       HorizontalOptions="Center"
+                                       HorizontalTextAlignment="Center"
+                                       TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Column="1" Spacing="4" HorizontalOptions="Center">
+                                <Label Text="👍"
+                                       FontSize="22"
+                                       HorizontalOptions="Center" />
+                                <Label Text="Loved by Customers"
+                                       FontFamily="OpenSansSemibold"
+                                       FontSize="11"
+                                       HorizontalOptions="Center"
+                                       HorizontalTextAlignment="Center"
+                                       TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Column="2" Spacing="4" HorizontalOptions="Center">
+                                <Label Text="💬"
+                                       FontSize="22"
+                                       HorizontalOptions="Center" />
+                                <Label Text="Need Help?"
+                                       FontFamily="OpenSansSemibold"
+                                       FontSize="11"
+                                       HorizontalOptions="Center"
+                                       HorizontalTextAlignment="Center"
+                                       TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
+                            </VerticalStackLayout>
+
+                        </Grid>
+                    </Border>
+
+                    <BoxView HeightRequest="8"
+                             Color="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}" />
+
+                    <!-- ── SERVICES & PRICING ─────────────────────────── -->
                     <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
                             Stroke="Transparent"
                             Padding="20,16">
                         <VerticalStackLayout Spacing="12">
 
-                            <Label Text="Store Details"
-                                   FontFamily="OpenSansSemibold"
-                                   FontSize="15"
-                                   Margin="0,0,0,4" />
-
-                            <!-- Location -->
-                            <Grid ColumnDefinitions="24,*" ColumnSpacing="10">
-                                <Label Text="📍" Grid.Column="0" VerticalOptions="Start" />
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Text="Services &amp; Pricing"
+                                       FontFamily="OpenSansSemibold"
+                                       FontSize="15"
+                                       TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}" />
                                 <Label Grid.Column="1"
-                                       FontSize="13"
-                                       VerticalOptions="Start">
-                                    <Label.FormattedText>
-                                        <FormattedString>
-                                            <Span Text="{Binding Store.Address}" />
-                                            <Span Text=", " />
-                                            <Span Text="{Binding Store.Area}" />
-                                        </FormattedString>
-                                    </Label.FormattedText>
-                                </Label>
+                                       Text="{Binding ServiceCountText}"
+                                       FontSize="12"
+                                       VerticalOptions="Center"
+                                       TextColor="{StaticResource BrandTeal}" />
                             </Grid>
-
-                            <!-- Hours -->
-                            <Grid ColumnDefinitions="24,*" ColumnSpacing="10"
-                                  IsVisible="{Binding Store.OpeningHours, Converter={StaticResource NotNullToBool}}">
-                                <Label Text="🕐" Grid.Column="0" VerticalOptions="Center" />
-                                <Label Grid.Column="1"
-                                       Text="{Binding Store.OpeningHours}"
-                                       FontSize="13"
-                                       VerticalOptions="Center" />
-                            </Grid>
-
-                            <!-- Phone -->
-                            <Grid ColumnDefinitions="24,*" ColumnSpacing="10"
-                                  IsVisible="{Binding Store.Phone, Converter={StaticResource NotEmptyBool}}">
-                                <Label Text="📞" Grid.Column="0" VerticalOptions="Center" />
-                                <Label Grid.Column="1"
-                                       Text="{Binding Store.Phone}"
-                                       FontSize="13"
-                                       VerticalOptions="Center" />
-                            </Grid>
-
-                            <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" Margin="0,4" />
-
-                            <!-- Fees row -->
-                            <Grid ColumnDefinitions="*,*,*">
-                                <VerticalStackLayout Grid.Column="0" Spacing="2">
-                                    <Label Text="{Binding Store.PickupFeeDisplay}"
-                                           FontFamily="OpenSansSemibold"
-                                           FontSize="14"
-                                           TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}" />
-                                    <Label Text="Pickup fee"
-                                           FontSize="11"
-                                           TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
-                                </VerticalStackLayout>
-                                <VerticalStackLayout Grid.Column="1" Spacing="2">
-                                    <Label Text="{Binding Store.DeliveryFeeDisplay}"
-                                           FontFamily="OpenSansSemibold"
-                                           FontSize="14"
-                                           TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}"
-                                           HorizontalOptions="Center" />
-                                    <Label Text="Delivery fee"
-                                           FontSize="11"
-                                           TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}"
-                                           HorizontalOptions="Center" />
-                                </VerticalStackLayout>
-                                <VerticalStackLayout Grid.Column="2" Spacing="2">
-                                    <Label Text="{Binding Store.EstimatedTimeDisplay}"
-                                           FontFamily="OpenSansSemibold"
-                                           FontSize="14"
-                                           TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}"
-                                           HorizontalOptions="End" />
-                                    <Label Text="Est. pickup"
-                                           FontSize="11"
-                                           TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}"
-                                           HorizontalOptions="End" />
-                                </VerticalStackLayout>
-                            </Grid>
-
-                        </VerticalStackLayout>
-                    </Border>
-
-                    <BoxView HeightRequest="8" Color="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}" />
-
-                    <!-- ══ SERVICES ═══════════════════════════════════ -->
-                    <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
-                            Stroke="Transparent"
-                            Padding="20,16">
-                        <VerticalStackLayout Spacing="10">
-
-                            <Label Text="Services"
-                                   FontFamily="OpenSansSemibold"
-                                   FontSize="15"
-                                   Margin="0,0,0,4" />
 
                             <VerticalStackLayout BindableLayout.ItemsSource="{Binding Store.Services}"
-                                                  Spacing="8">
+                                                 Spacing="10">
                                 <BindableLayout.ItemTemplate>
                                     <DataTemplate x:DataType="dto:ServiceSummaryDto">
                                         <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightElevatedCardBackground}, Dark={StaticResource DarkElevatedCardBackground}}"
                                                 Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
-                                                StrokeShape="RoundRectangle 12"
+                                                StrokeShape="RoundRectangle 14"
                                                 Padding="14,12">
-                                            <Grid ColumnDefinitions="*,Auto">
+                                            <Grid ColumnDefinitions="52,*,Auto" ColumnSpacing="12">
 
-                                                <VerticalStackLayout Grid.Column="0" Spacing="3">
+                                                <!-- Service initial circle -->
+                                                <Border Grid.Column="0"
+                                                        WidthRequest="44"
+                                                        HeightRequest="44"
+                                                        StrokeShape="RoundRectangle 22"
+                                                        Stroke="Transparent"
+                                                        BackgroundColor="{StaticResource BrandTeal}"
+                                                        VerticalOptions="Center">
+                                                    <Label Text="{Binding NameInitial}"
+                                                           FontFamily="OpenSansSemibold"
+                                                           FontSize="18"
+                                                           TextColor="White"
+                                                           HorizontalOptions="Center"
+                                                           VerticalOptions="Center" />
+                                                </Border>
+
+                                                <!-- Service info -->
+                                                <VerticalStackLayout Grid.Column="1"
+                                                                     Spacing="2"
+                                                                     VerticalOptions="Center">
                                                     <Label Text="{Binding Name}"
                                                            FontFamily="OpenSansSemibold"
-                                                           FontSize="14" />
+                                                           FontSize="14"
+                                                           TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}" />
                                                     <Label Text="{Binding Description}"
                                                            FontSize="12"
                                                            TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}"
                                                            IsVisible="{Binding Description, Converter={StaticResource NotNullToBool}}" />
-                                                    <Label FontSize="12"
-                                                           TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}">
+                                                    <Label FontSize="11"
+                                                           TextColor="{AppThemeBinding Light={StaticResource LightTextMuted}, Dark={StaticResource DarkTextMuted}}">
                                                         <Label.FormattedText>
                                                             <FormattedString>
                                                                 <Span Text="{Binding MinChargeDisplay}" />
@@ -230,15 +487,14 @@
                                                     </Label>
                                                 </VerticalStackLayout>
 
-                                                <VerticalStackLayout Grid.Column="1"
-                                                                      VerticalOptions="Center"
-                                                                      Spacing="2">
-                                                    <Label Text="{Binding PriceDisplay}"
-                                                           FontFamily="OpenSansSemibold"
-                                                           FontSize="15"
-                                                           TextColor="{StaticResource Teal}"
-                                                           HorizontalOptions="End" />
-                                                </VerticalStackLayout>
+                                                <!-- Price pill -->
+                                                <Label Grid.Column="2"
+                                                       Text="{Binding PriceDisplay}"
+                                                       FontFamily="OpenSansSemibold"
+                                                       FontSize="14"
+                                                       TextColor="{StaticResource BrandTeal}"
+                                                       VerticalOptions="Center"
+                                                       HorizontalOptions="End" />
 
                                             </Grid>
                                         </Border>
@@ -246,46 +502,127 @@
                                 </BindableLayout.ItemTemplate>
                             </VerticalStackLayout>
 
-                            <Label Text="No services listed for this store."
-                                   FontSize="13"
-                                   TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}"
-                                   IsVisible="{Binding Store.Services.Count, Converter={StaticResource NullToBool}}" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <BoxView HeightRequest="8"
+                             Color="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}" />
+
+                    <!-- ── STORE POLICIES ─────────────────────────────── -->
+                    <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
+                            Stroke="Transparent"
+                            Padding="20,16">
+                        <VerticalStackLayout Spacing="14">
+
+                            <Label Text="Store Policies"
+                                   FontFamily="OpenSansSemibold"
+                                   FontSize="15"
+                                   TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}"
+                                   Margin="0,0,0,2" />
+
+                            <!-- Turnaround time (real data) -->
+                            <Grid ColumnDefinitions="32,*" ColumnSpacing="10">
+                                <Label Grid.Column="0" Text="⏱" FontSize="18" VerticalOptions="Center" />
+                                <VerticalStackLayout Grid.Column="1" Spacing="1">
+                                    <Label Text="Turnaround Time"
+                                           FontFamily="OpenSansSemibold"
+                                           FontSize="13"
+                                           TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}" />
+                                    <Label Text="{Binding Store.EstimatedTimeDisplay}"
+                                           FontSize="12"
+                                           TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
+                                </VerticalStackLayout>
+                            </Grid>
+
+                            <BoxView HeightRequest="1"
+                                     Color="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" />
+
+                            <!-- Damage policy -->
+                            <Grid ColumnDefinitions="32,*" ColumnSpacing="10">
+                                <Label Grid.Column="0" Text="🛡" FontSize="18" VerticalOptions="Center" />
+                                <VerticalStackLayout Grid.Column="1" Spacing="1">
+                                    <Label Text="Damage Policy"
+                                           FontFamily="OpenSansSemibold"
+                                           FontSize="13"
+                                           TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}" />
+                                    <Label Text="All items handled with care. Report issues within 24 hours of delivery."
+                                           FontSize="12"
+                                           TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
+                                </VerticalStackLayout>
+                            </Grid>
+
+                            <BoxView HeightRequest="1"
+                                     Color="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" />
+
+                            <!-- Late delivery -->
+                            <Grid ColumnDefinitions="32,*" ColumnSpacing="10">
+                                <Label Grid.Column="0" Text="⚠" FontSize="18" VerticalOptions="Center" />
+                                <VerticalStackLayout Grid.Column="1" Spacing="1">
+                                    <Label Text="Late Delivery"
+                                           FontFamily="OpenSansSemibold"
+                                           FontSize="13"
+                                           TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}" />
+                                    <Label Text="We'll notify you if your order is delayed. No extra charges apply."
+                                           FontSize="12"
+                                           TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
+                                </VerticalStackLayout>
+                            </Grid>
+
+                            <BoxView HeightRequest="1"
+                                     Color="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" />
+
+                            <!-- Contact store (real phone) -->
+                            <Grid ColumnDefinitions="32,*" ColumnSpacing="10">
+                                <Label Grid.Column="0" Text="📞" FontSize="18" VerticalOptions="Center" />
+                                <VerticalStackLayout Grid.Column="1" Spacing="1">
+                                    <Label Text="Contact Store"
+                                           FontFamily="OpenSansSemibold"
+                                           FontSize="13"
+                                           TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}" />
+                                    <Label Text="{Binding Store.Phone}"
+                                           FontSize="12"
+                                           TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
+                                </VerticalStackLayout>
+                            </Grid>
 
                         </VerticalStackLayout>
                     </Border>
 
-                    <!-- ══ REVIEWS ════════════════════════════════════ -->
-                    <BoxView HeightRequest="8" Color="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}"
+                    <!-- ── REVIEWS (only if there are any) ──────────────── -->
+                    <BoxView HeightRequest="8"
+                             Color="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}"
                              IsVisible="{Binding HasReviews}" />
 
                     <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
                             Stroke="Transparent"
                             Padding="20,16"
                             IsVisible="{Binding HasReviews}">
-                        <VerticalStackLayout Spacing="10">
+                        <VerticalStackLayout Spacing="12">
 
                             <Label Text="Recent Reviews"
                                    FontFamily="OpenSansSemibold"
                                    FontSize="15"
-                                   Margin="0,0,0,4" />
+                                   TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}"
+                                   Margin="0,0,0,2" />
 
                             <VerticalStackLayout BindableLayout.ItemsSource="{Binding Store.RecentReviews}"
-                                                  Spacing="8">
+                                                 Spacing="8">
                                 <BindableLayout.ItemTemplate>
                                     <DataTemplate x:DataType="dto:ReviewDto">
                                         <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightElevatedCardBackground}, Dark={StaticResource DarkElevatedCardBackground}}"
                                                 Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
                                                 StrokeShape="RoundRectangle 12"
                                                 Padding="14,12">
-                                            <VerticalStackLayout Spacing="4">
+                                            <VerticalStackLayout Spacing="5">
                                                 <Grid ColumnDefinitions="*,Auto">
                                                     <Label Text="{Binding CustomerName}"
                                                            FontFamily="OpenSansSemibold"
-                                                           FontSize="13" />
+                                                           FontSize="13"
+                                                           TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}" />
                                                     <Label Grid.Column="1"
                                                            Text="{Binding StarsDisplay}"
-                                                           FontSize="14"
-                                                           TextColor="#E6A817" />
+                                                           FontSize="13"
+                                                           TextColor="#F59E0B" />
                                                 </Grid>
                                                 <Label Text="{Binding Comment}"
                                                        FontSize="12"
@@ -301,40 +638,80 @@
                     </Border>
 
                     <!-- Bottom spacer so content clears the sticky CTA -->
-                    <BoxView HeightRequest="20" Color="Transparent" />
+                    <BoxView HeightRequest="24" Color="Transparent" />
 
                 </VerticalStackLayout>
-            </VerticalStackLayout>
-        </ScrollView>
+            </ScrollView>
         </RefreshView>
 
-        <!-- ── Closed store banner ───────────────────────────────── -->
-        <Border Grid.Row="1"
-                BackgroundColor="#FDECEA"
-                Stroke="#F5C6CB"
-                StrokeShape="RoundRectangle 0"
-                Padding="16,10"
-                IsVisible="{Binding Store.IsCurrentlyOpen, Converter={StaticResource InvertBool}}">
-            <Label Text="🔴  This store is currently closed and not accepting orders."
-                   FontSize="13"
-                   TextColor="#C0392B"
-                   HorizontalTextAlignment="Center" />
-        </Border>
-
-        <!-- ── Sticky "Start Order" CTA ──────────────────────────── -->
-        <Border Grid.Row="1"
+        <!-- ══ ROW 2 — Sticky CTA ════════════════════════════════════════ -->
+        <Border Grid.Row="2"
                 BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
                 Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
-                Padding="20,12"
-                IsVisible="{Binding Store.IsCurrentlyOpen}">
-            <Button Text="🧺  Start Order"
-                    Command="{Binding StartOrderCommand}"
-                    IsEnabled="{Binding IsNotBusy}">
-                <Button.Behaviors>
-                    <behaviors:TapFeedbackBehavior />
-                </Button.Behaviors>
-            </Button>
+                StrokeShape="RoundRectangle 0"
+                Padding="20,14,20,28"
+                IsVisible="{Binding IsNotBusy}">
+            <VerticalStackLayout Spacing="10">
+
+                <!-- Closed notice -->
+                <Border BackgroundColor="#FEF2F2"
+                        Stroke="Transparent"
+                        StrokeShape="RoundRectangle 10"
+                        Padding="12,8"
+                        IsVisible="{Binding Store.IsOpen, Converter={StaticResource InvertBool}}">
+                    <Label Text="🔴  This store is currently closed and not accepting new orders."
+                           FontSize="12"
+                           TextColor="#B91C1C"
+                           HorizontalTextAlignment="Center" />
+                </Border>
+
+                <Button Text="🧺  Start Order"
+                        Command="{Binding StartOrderCommand}"
+                        IsEnabled="{Binding IsNotNavigating}"
+                        BackgroundColor="{StaticResource BrandTeal}"
+                        TextColor="White"
+                        FontFamily="OpenSansSemibold"
+                        FontSize="16"
+                        CornerRadius="14"
+                        HeightRequest="54" />
+
+            </VerticalStackLayout>
         </Border>
+
+        <!-- ══ Full-page loading overlay (blocks touches while loading) ══ -->
+        <Grid Grid.Row="0"
+              Grid.RowSpan="3"
+              IsVisible="{Binding IsOverlayVisible}"
+              BackgroundColor="{StaticResource OverlayBg}"
+              InputTransparent="False">
+            <VerticalStackLayout HorizontalOptions="Center"
+                                 VerticalOptions="Center"
+                                 Spacing="16">
+
+                <!-- Branded 72×72 circle — wraps white-bg PNG so dark mode is clean -->
+                <Border WidthRequest="72"
+                        HeightRequest="72"
+                        StrokeShape="RoundRectangle 36"
+                        Stroke="Transparent"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
+                        HorizontalOptions="Center">
+                    <Image x:Name="LoadingIcon"
+                           Source="vyron_icon_only.png"
+                           WidthRequest="48"
+                           HeightRequest="48"
+                           Aspect="AspectFit"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center" />
+                </Border>
+
+                <Label Text="{Binding OverlayText}"
+                       FontFamily="OpenSansSemibold"
+                       FontSize="14"
+                       TextColor="White"
+                       HorizontalOptions="Center" />
+
+            </VerticalStackLayout>
+        </Grid>
 
     </Grid>
 
