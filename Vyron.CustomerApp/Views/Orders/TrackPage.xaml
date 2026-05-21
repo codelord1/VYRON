@@ -212,18 +212,18 @@
                                 <Label Text="{Binding PickupRider.VehiclePlate, StringFormat='Bike - {0}'}" FontSize="12" TextColor="{StaticResource Gray3}" />
                             </VerticalStackLayout>
                             <Button Grid.Column="2"
-                                    Text="Chat"
+                                    Text="✉ Chat"
                                     Command="{Binding MessageRiderCommand}"
                                     BackgroundColor="{StaticResource Mint}"
                                     TextColor="{StaticResource TealDark}"
-                                    WidthRequest="54"
+                                    WidthRequest="72"
                                     HeightRequest="44"
                                     Padding="0"
                                     FontSize="12" />
                             <Button Grid.Column="3"
-                                    Text="Call"
+                                    Text="☎ Call"
                                     Command="{Binding CallRiderCommand}"
-                                    WidthRequest="54"
+                                    WidthRequest="72"
                                     HeightRequest="44"
                                     Padding="0"
                                     FontSize="12" />
@@ -282,20 +282,20 @@
                                 <Label Text="{Binding DeliveryRider.VehiclePlate, StringFormat='Bike - {0}'}" FontSize="12" TextColor="{StaticResource Gray3}" />
                             </VerticalStackLayout>
                             <Button Grid.Column="2"
-                                    Text="Chat"
+                                    Text="✉ Chat"
                                     Command="{Binding MessageDeliveryRiderCommand}"
                                     BackgroundColor="{StaticResource Mint}"
                                     TextColor="{StaticResource TealDark}"
-                                    WidthRequest="54"
+                                    WidthRequest="72"
                                     HeightRequest="44"
                                     Padding="0"
                                     FontSize="12" />
                             <Button Grid.Column="3"
-                                    Text="Call"
+                                    Text="☎ Call"
                                     Command="{Binding CallDeliveryRiderCommand}"
                                     BackgroundColor="{StaticResource Teal}"
                                     TextColor="White"
-                                    WidthRequest="54"
+                                    WidthRequest="72"
                                     HeightRequest="44"
                                     Padding="0"
                                     FontSize="12" />
@@ -376,11 +376,11 @@
                                 <Label Text="Need help with this order? Contact support or report an issue." FontSize="12" TextColor="{StaticResource Gray3}" />
                             </VerticalStackLayout>
                             <Button Grid.Column="2"
-                                    Text="Help"
+                                    Text="☎ Help"
                                     Command="{Binding ContactSupportCommand}"
                                     BackgroundColor="{StaticResource Mint}"
                                     TextColor="{StaticResource TealDark}"
-                                    WidthRequest="58"
+                                    WidthRequest="74"
                                     HeightRequest="44"
                                     Padding="0"
                                     FontSize="12" />

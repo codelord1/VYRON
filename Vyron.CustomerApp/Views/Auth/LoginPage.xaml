@@ -50,9 +50,10 @@
                     StrokeShape="RoundRectangle 24"
                     HeightRequest="52"
                     Margin="0,0,0,18">
-                <Grid ColumnDefinitions="116,*" ColumnSpacing="10" Padding="12,0">
+                <Grid ColumnDefinitions="148,*" ColumnSpacing="10" Padding="12,0">
                     <Picker ItemsSource="{Binding CountryOptions}"
                             SelectedItem="{Binding SelectedCountry}"
+                            ItemDisplayBinding="{Binding DisplayText, x:DataType=dto:CountryCodeOption}"
                             BackgroundColor="Transparent"
                             FontSize="13" />
                     <Grid Grid.Column="1" ColumnDefinitions="Auto,*" ColumnSpacing="8">

@@ -62,6 +62,10 @@ public partial class LoginViewModel : BaseViewModel
             return;
         }
 
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine($"[Customer Login] Phone payload: {phone}");
+#endif
+
         IsBusy = true;
         try
         {

@@ -109,7 +109,7 @@ public class AuthService : IAuthService
             new CustomerLoginRequest(phone, password));
 
         if (response == null)
-            return (false, error ?? "Login failed. Please check your credentials and try again.");
+            return (false, FriendlyAuthError(error ?? "Login failed. Please check your credentials and try again."));
 
         // ── Session isolation: clear any previous user's state before setting new auth ──
         _draft.Clear();

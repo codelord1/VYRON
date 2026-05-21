@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Net;
+using System.Text.Json;
 
 namespace Vyron.CustomerApp.Services;
 
@@ -16,12 +17,16 @@ public static class ApiErrorHelper
 
         if (statusCode == HttpStatusCode.BadRequest)
         {
+            var serverMessage = ExtractMessage(responseBody);
             var duplicate = responseBody?.Contains("exists", StringComparison.OrdinalIgnoreCase) == true
                 || responseBody?.Contains("already", StringComparison.OrdinalIgnoreCase) == true
                 || responseBody?.Contains("duplicate", StringComparison.OrdinalIgnoreCase) == true;
 
-            return duplicate
-                ? "This phone number already exists. Please login instead."
+            if (duplicate)
+                return "This phone number already exists. Please login instead.";
+
+            return IsSafeUserMessage(serverMessage)
+                ? serverMessage!
                 : "Something looks incorrect. Please check your details and try again.";
         }
 
@@ -83,6 +88,47 @@ public static class ApiErrorHelper
         error.Contains("Something went wrong", StringComparison.OrdinalIgnoreCase)
         || error.Contains("couldn't reach", StringComparison.OrdinalIgnoreCase)
         || error.Contains("request took too long", StringComparison.OrdinalIgnoreCase);
+
+    private static string? ExtractMessage(string? responseBody)
+    {
+        if (string.IsNullOrWhiteSpace(responseBody))
+            return null;
+
+        try
+        {
+            using var document = JsonDocument.Parse(responseBody);
+            var root = document.RootElement;
+
+            if (root.TryGetProperty("error", out var error))
+                return error.GetString();
+
+            if (root.TryGetProperty("Error", out var pascalError))
+                return pascalError.GetString();
+
+            if (root.TryGetProperty("message", out var message))
+                return message.GetString();
+
+            if (root.TryGetProperty("Message", out var pascalMessage))
+                return pascalMessage.GetString();
+        }
+        catch (JsonException)
+        {
+            return responseBody.Length <= 160 ? responseBody : null;
+        }
+
+        return null;
+    }
+
+    private static bool IsSafeUserMessage(string? message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+            return false;
+
+        return !message.Contains("Exception", StringComparison.OrdinalIgnoreCase)
+            && !message.Contains("StackTrace", StringComparison.OrdinalIgnoreCase)
+            && !message.Contains(" at ", StringComparison.OrdinalIgnoreCase)
+            && !message.Contains("System.", StringComparison.OrdinalIgnoreCase);
+    }
 
     [Conditional("DEBUG")]
     private static void LogDebug(string? message)

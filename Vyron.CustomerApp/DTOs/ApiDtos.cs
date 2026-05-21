@@ -67,10 +67,14 @@ public class CountryCodeOption
     public string DialCode    { get; init; } = "";   // e.g. "+234"
     public string CountryIso  { get; init; } = "";   // e.g. "NG"
 
-    /// Full display string shown in the picker, e.g. "+234 Nigeria".
-    public string DisplayText => $"{DialCode} {CountryName}";
+    /// Full display string shown in the picker, e.g. "🇳🇬 +234 Nigeria".
+    public string DisplayText => string.IsNullOrWhiteSpace(FlagEmoji)
+        ? $"{DialCode} {CountryName}"
+        : $"{FlagEmoji} {DialCode} {CountryName}";
 
-    public string ShortLabel  => DialCode;
+    public string ShortLabel  => string.IsNullOrWhiteSpace(FlagEmoji)
+        ? DialCode
+        : $"{FlagEmoji} {DialCode}";
 
     public override string ToString() => DisplayText;
 }
