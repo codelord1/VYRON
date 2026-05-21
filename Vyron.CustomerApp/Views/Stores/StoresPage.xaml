@@ -8,7 +8,7 @@
              x:Name="ThisPage"
              x:DataType="vm:StoresViewModel"
              Shell.NavBarIsVisible="False"
-             BackgroundColor="{DynamicResource Bg}">
+             BackgroundColor="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}">
 
     <RefreshView Command="{Binding LoadCommand}" IsRefreshing="{Binding IsRefreshing}">
         <CollectionView ItemsSource="{Binding StoreItems}" SelectionMode="None">
@@ -16,7 +16,7 @@
                 <VerticalStackLayout Padding="20,18,20,14" Spacing="16">
                     <VerticalStackLayout Spacing="2">
                         <Label Text="Nearby stores" FontFamily="OpenSansSemibold" FontSize="20" />
-                        <Label Text="Verified laundry stores near you" FontSize="13" TextColor="{StaticResource Gray3}" />
+                        <Label Text="Verified laundry stores near you" FontSize="13" TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
                     </VerticalStackLayout>
 
                     <Border BackgroundColor="#FFF4F3"
@@ -42,9 +42,9 @@
                         </Grid>
                     </Border>
 
-                    <Border BackgroundColor="{DynamicResource InputBg}" Stroke="{DynamicResource CardStroke}" StrokeShape="RoundRectangle 24" HeightRequest="60">
+                    <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}" Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" StrokeShape="RoundRectangle 24" HeightRequest="60">
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" Padding="16,0">
-                            <Label Text="SEARCH" FontSize="10" TextColor="{StaticResource Gray3}" VerticalOptions="Center" />
+                            <Label Text="SEARCH" FontSize="10" TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" VerticalOptions="Center" />
                             <Entry Grid.Column="1" Placeholder="Search store, service, area" Text="{Binding SearchText}" ReturnCommand="{Binding SearchCommand}" ReturnType="Search" />
                             <Border Grid.Column="2" BackgroundColor="{DynamicResource Mint}" Stroke="Transparent" StrokeShape="RoundRectangle 20" WidthRequest="40" HeightRequest="40" VerticalOptions="Center">
                                 <Path Stroke="{StaticResource TealDark}" StrokeThickness="2" StrokeLineCap="Round" Data="M14,18 L34,18 M20,14 L20,22 M14,30 L34,30 M28,26 L28,34" />
@@ -63,7 +63,7 @@
                                     <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="" />
                                 </Border.GestureRecognizers>
                             </Border>
-                            <Border BackgroundColor="{DynamicResource InputBg}" Stroke="{DynamicResource CardStroke}" StrokeShape="RoundRectangle 18" Padding="16,9">
+                            <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}" Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" StrokeShape="RoundRectangle 18" Padding="16,9">
                                 <Border.Behaviors>
                                     <behaviors:TapFeedbackBehavior />
                                 </Border.Behaviors>
@@ -72,7 +72,7 @@
                                     <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="toprated" />
                                 </Border.GestureRecognizers>
                             </Border>
-                            <Border BackgroundColor="{DynamicResource InputBg}" Stroke="{DynamicResource CardStroke}" StrokeShape="RoundRectangle 18" Padding="16,9">
+                            <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}" Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" StrokeShape="RoundRectangle 18" Padding="16,9">
                                 <Border.Behaviors>
                                     <behaviors:TapFeedbackBehavior />
                                 </Border.Behaviors>
@@ -81,7 +81,7 @@
                                     <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="fast" />
                                 </Border.GestureRecognizers>
                             </Border>
-                            <Border BackgroundColor="{DynamicResource InputBg}" Stroke="{DynamicResource CardStroke}" StrokeShape="RoundRectangle 18" Padding="16,9">
+                            <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}" Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" StrokeShape="RoundRectangle 18" Padding="16,9">
                                 <Border.Behaviors>
                                     <behaviors:TapFeedbackBehavior />
                                 </Border.Behaviors>
@@ -106,7 +106,7 @@
                                VerticalOptions="Center" />
                     </Border>
                     <Label Text="{Binding EmptyTitle}" FontFamily="OpenSansSemibold" FontSize="18" HorizontalTextAlignment="Center" />
-                    <Label Text="{Binding EmptySubtitle}" FontSize="13" TextColor="{DynamicResource Gray3}" HorizontalTextAlignment="Center" />
+                    <Label Text="{Binding EmptySubtitle}" FontSize="13" TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" HorizontalTextAlignment="Center" />
                 </VerticalStackLayout>
             </CollectionView.EmptyView>
 
@@ -116,7 +116,7 @@
                         <Grid.Behaviors>
                             <behaviors:TapFeedbackBehavior />
                         </Grid.Behaviors>
-                        <Border BackgroundColor="{DynamicResource InputBg}" Stroke="{DynamicResource CardStroke}" StrokeShape="RoundRectangle 24">
+                        <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}" Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" StrokeShape="RoundRectangle 24">
                             <Grid RowDefinitions="128,Auto">
                                 <Grid BackgroundColor="#0AA37F">
                                     <Label Text="{Binding NameInitial}" FontFamily="OpenSansSemibold" FontSize="46" TextColor="#BDF5E5" HorizontalOptions="Center" VerticalOptions="Center" />
@@ -136,16 +136,16 @@
 
                                 <VerticalStackLayout Grid.Row="1" Padding="16,14,16,16" Spacing="8">
                                     <Label Text="{Binding Name}" FontFamily="OpenSansSemibold" FontSize="16" />
-                                    <Label Text="{Binding StartingFromText}" FontSize="12" TextColor="{StaticResource Gray3}" />
+                                    <Label Text="{Binding StartingFromText}" FontSize="12" TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
                                     <HorizontalStackLayout Spacing="12">
-                                        <Label Text="{Binding Area}" FontSize="12" TextColor="{StaticResource Gray3}" />
-                                        <Label Text="{Binding EstimatedTimeDisplay}" FontSize="12" TextColor="{StaticResource Gray3}" />
+                                        <Label Text="{Binding Area}" FontSize="12" TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
+                                        <Label Text="{Binding EstimatedTimeDisplay}" FontSize="12" TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
                                         <Label Text="{Binding PickupFeeDisplay}" FontSize="12" TextColor="{StaticResource TealDark}" />
                                         <Label Text="{Binding DeliveryFeeDisplay}" FontSize="12" TextColor="{StaticResource TealDark}" />
                                     </HorizontalStackLayout>
-                                    <BoxView HeightRequest="1" Color="{StaticResource CardStroke}" />
+                                    <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" />
                                     <Grid ColumnDefinitions="*,Auto">
-                                        <Label Text="{Binding StartingFromText}" FontSize="12" TextColor="{StaticResource Gray3}" VerticalOptions="Center" />
+                                        <Label Text="{Binding StartingFromText}" FontSize="12" TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" VerticalOptions="Center" />
                                         <Border Grid.Column="1" BackgroundColor="{StaticResource Teal}" Stroke="Transparent" StrokeShape="RoundRectangle 18" Padding="16,9">
                                             <Label Text="View Store" FontSize="12" FontFamily="OpenSansSemibold" TextColor="White" />
                                         </Border>

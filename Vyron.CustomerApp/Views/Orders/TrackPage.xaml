@@ -7,12 +7,12 @@
              x:DataType="vm:TrackViewModel"
              Title="Track"
              Shell.NavBarIsVisible="False"
-             BackgroundColor="{DynamicResource Bg}">
+             BackgroundColor="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}">
 
     <Grid RowDefinitions="Auto,*,Auto">
         <Border Grid.Row="0"
-                BackgroundColor="{DynamicResource Bg}"
-                Stroke="{DynamicResource CardStroke}"
+                BackgroundColor="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}"
+                Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
                 StrokeThickness="0,0,0,1"
                 Padding="18,16">
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
@@ -161,7 +161,7 @@
                         </VerticalStackLayout>
                     </Border>
 
-                    <Border BackgroundColor="#D8F5EA"
+                    <Border BackgroundColor="{AppThemeBinding Light=#D8F5EA, Dark=#143C36}"
                             Stroke="Transparent"
                             StrokeShape="RoundRectangle 24"
                             HeightRequest="176"
@@ -173,7 +173,7 @@
                                   Data="M 10 120 C 80 40, 160 150, 300 36"
                                   HorizontalOptions="Fill"
                                   VerticalOptions="Fill" />
-                            <Border BackgroundColor="White"
+                            <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
                                     Stroke="Transparent"
                                     StrokeShape="RoundRectangle 16"
                                     Padding="12,7"
@@ -182,7 +182,7 @@
                                 <Label Text="LIVE TRACKING"
                                        FontSize="11"
                                        FontFamily="OpenSansSemibold"
-                                       TextColor="{StaticResource Gray5}" />
+                                       TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}" />
                             </Border>
                         </Grid>
                     </Border>
@@ -207,9 +207,9 @@
                                        IsVisible="{Binding PickupRider.HasAvatar, Converter={StaticResource InvertBool}}" />
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                                <Label Text="Pickup Rider" FontSize="11" TextColor="{StaticResource Gray3}" />
+                                <Label Text="Pickup Rider" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
                                 <Label Text="{Binding PickupRider.FullName}" FontFamily="OpenSansSemibold" FontSize="15" />
-                                <Label Text="{Binding PickupRider.VehiclePlate, StringFormat='Bike - {0}'}" FontSize="12" TextColor="{StaticResource Gray3}" />
+                                <Label Text="{Binding PickupRider.VehiclePlate, StringFormat='Bike - {0}'}" FontSize="12" TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
                             </VerticalStackLayout>
                             <Button Grid.Column="2"
                                     Text="✉ Chat"
@@ -245,13 +245,13 @@
                                        VerticalOptions="Center" />
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                                <Label Text="Pickup Rider" FontSize="11" TextColor="{DynamicResource Gray3}" />
+                                <Label Text="Pickup Rider" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
                                 <Label Text="Pickup rider not assigned yet" FontFamily="OpenSansSemibold" FontSize="15" />
-                                <Label Text="We'll show call and chat options once assigned." FontSize="12" TextColor="{DynamicResource Gray3}" />
+                                <Label Text="We'll show call and chat options once assigned." FontSize="12" TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
                             </VerticalStackLayout>
                             <Label Grid.Column="2"
                                    Text="Pending"
-                                   TextColor="{DynamicResource Gray3}"
+                                   TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}"
                                    FontSize="11"
                                    VerticalOptions="Center" />
                         </Grid>
@@ -277,9 +277,9 @@
                                        IsVisible="{Binding DeliveryRider.HasAvatar, Converter={StaticResource InvertBool}}" />
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                                <Label Text="Delivery Rider" FontSize="11" TextColor="{StaticResource Gray3}" />
+                                <Label Text="Delivery Rider" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
                                 <Label Text="{Binding DeliveryRider.FullName}" FontFamily="OpenSansSemibold" FontSize="15" />
-                                <Label Text="{Binding DeliveryRider.VehiclePlate, StringFormat='Bike - {0}'}" FontSize="12" TextColor="{StaticResource Gray3}" />
+                                <Label Text="{Binding DeliveryRider.VehiclePlate, StringFormat='Bike - {0}'}" FontSize="12" TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
                             </VerticalStackLayout>
                             <Button Grid.Column="2"
                                     Text="✉ Chat"
@@ -317,9 +317,9 @@
                                        VerticalOptions="Center" />
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
-                                <Label Text="Delivery Rider" FontSize="11" TextColor="{DynamicResource Gray3}" />
+                                <Label Text="Delivery Rider" FontSize="11" TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
                                 <Label Text="Delivery rider not assigned yet" FontFamily="OpenSansSemibold" FontSize="15" />
-                                <Label Text="Delivery contact opens when your order is ready." FontSize="12" TextColor="{DynamicResource Gray3}" />
+                                <Label Text="Delivery contact opens when your order is ready." FontSize="12" TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
                             </VerticalStackLayout>
                             <Label Grid.Column="2"
                                    Text="Pending"
@@ -348,11 +348,11 @@
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                                 <Label Text="{Binding ActiveOrder.Store.Name}" FontFamily="OpenSansSemibold" FontSize="15" />
-                                <Label Text="Store updates appear in the order timeline." FontSize="12" TextColor="{StaticResource Gray3}" />
+                                <Label Text="Store updates appear in the order timeline." FontSize="12" TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
                             </VerticalStackLayout>
                             <Label Grid.Column="2"
                                    Text="No direct call"
-                                   TextColor="{StaticResource Gray3}"
+                                   TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}"
                                    FontSize="11"
                                    VerticalOptions="Center" />
                         </Grid>
@@ -373,7 +373,7 @@
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                                 <Label Text="Vyron Support" FontFamily="OpenSansSemibold" FontSize="15" />
-                                <Label Text="Need help with this order? Contact support or report an issue." FontSize="12" TextColor="{StaticResource Gray3}" />
+                                <Label Text="Need help with this order? Contact support or report an issue." FontSize="12" TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
                             </VerticalStackLayout>
                             <Button Grid.Column="2"
                                     Text="☎ Help"
@@ -430,7 +430,7 @@
                                                        FontSize="14" />
                                                 <Label Text="{Binding Timestamp}"
                                                        FontSize="12"
-                                                       TextColor="{StaticResource Gray3}"
+                                                       TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}"
                                                        IsVisible="{Binding Timestamp, Converter={StaticResource NotNullToBool}}" />
                                             </VerticalStackLayout>
                                         </Grid>
@@ -455,7 +455,7 @@
                            HorizontalTextAlignment="Center" />
                     <Label Text="When you place an order, its live status will appear here."
                            FontSize="13"
-                           TextColor="{StaticResource Gray3}"
+                           TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}"
                            HorizontalTextAlignment="Center" />
                     <Button Text="Browse Stores"
                             Command="{Binding GoToStoresCommand}"
@@ -469,11 +469,11 @@
               ColumnDefinitions="*,*"
               ColumnSpacing="12"
               Padding="18,12"
-              BackgroundColor="{DynamicResource InputBg}"
+              BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
               IsVisible="{Binding HasActiveOrder}">
             <Button Text="Report issue"
                     Command="{Binding ReportIssueCommand}"
-                    BackgroundColor="{DynamicResource InputBg}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
                     BorderColor="#FF9FA6"
                     BorderWidth="1"
                     TextColor="{StaticResource Danger}" />

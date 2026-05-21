@@ -32,6 +32,26 @@
             <Color x:Key="InputBg">#FFFFFF</Color>
             <Color x:Key="OverlayBg">#99000000</Color>
 
+            <!-- ── Theme-aware Color Keys ── -->
+            <Color x:Key="LightPageBackground">#F8FAFC</Color>
+            <Color x:Key="DarkPageBackground">#061B1A</Color>
+            <Color x:Key="LightCardBackground">#FFFFFF</Color>
+            <Color x:Key="DarkCardBackground">#0D2A27</Color>
+            <Color x:Key="LightElevatedCardBackground">#FFFFFF</Color>
+            <Color x:Key="DarkElevatedCardBackground">#123631</Color>
+            <Color x:Key="LightTextPrimary">#0F172A</Color>
+            <Color x:Key="DarkTextPrimary">#F8FAFC</Color>
+            <Color x:Key="LightTextSecondary">#64748B</Color>
+            <Color x:Key="DarkTextSecondary">#CBD5E1</Color>
+            <Color x:Key="LightTextMuted">#94A3B8</Color>
+            <Color x:Key="DarkTextMuted">#94A3B8</Color>
+            <Color x:Key="LightBorder">#E2E8F0</Color>
+            <Color x:Key="DarkBorder">#1F4A44</Color>
+            <Color x:Key="LightSoftTeal">#E6FFFA</Color>
+            <Color x:Key="DarkSoftTeal">#143C36</Color>
+            <Color x:Key="BrandTeal">#009879</Color>
+            <Color x:Key="BrandTealDark">#007F68</Color>
+
             <!-- ── Converters (global) ── -->
             <conv:NotNullToBoolConverter   x:Key="NotNullToBool" />
             <conv:NullToBoolConverter      x:Key="NullToBool" />
@@ -114,6 +134,10 @@
                 <Setter Property="Shell.TabBarForegroundColor" Value="{DynamicResource Teal}" />
                 <Setter Property="Shell.TabBarUnselectedColor" Value="{AppThemeBinding Light=#697780, Dark=#9AA8AC}" />
                 <Setter Property="Shell.TabBarTitleColor" Value="{DynamicResource Teal}" />
+            </Style>
+
+            <Style TargetType="ContentPage" ApplyToDerivedTypes="True">
+                <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}" />
             </Style>
 
             <Style x:Key="CardBorderStyle" TargetType="Border">

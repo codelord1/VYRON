@@ -8,7 +8,7 @@
              x:DataType="vm:LoginViewModel"
              Shell.NavBarIsVisible="False"
              Shell.TabBarIsVisible="False"
-             BackgroundColor="{StaticResource Bg}">
+             BackgroundColor="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}">
 
     <Grid>
         <ScrollView IsEnabled="{Binding IsNotBusy}">
@@ -23,12 +23,12 @@
                 <Label Text="Welcome back"
                        FontFamily="OpenSansSemibold"
                        FontSize="30"
-                       TextColor="{StaticResource Gray5}"
+                       TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}"
                        Margin="0,0,0,4" />
 
                 <Label Text="Sign in to schedule your next pickup."
                        FontSize="15"
-                       TextColor="{StaticResource Gray3}"
+                       TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}"
                        Margin="0,0,0,28" />
 
                 <Border BackgroundColor="#FFF4F3"
@@ -44,7 +44,7 @@
 
                 <Label Text="Phone"
                        FontSize="13"
-                       TextColor="{StaticResource Gray5}"
+                       TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}"
                        Margin="0,0,0,8" />
 
                 <!-- Correct phone layout:
@@ -57,8 +57,8 @@
 
                     <!-- Nigeria country chip -->
                     <Border Grid.Column="0"
-                            BackgroundColor="White"
-                            Stroke="{StaticResource CardStroke}"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
+                            Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
                             StrokeShape="RoundRectangle 24"
                             HeightRequest="52"
                             Padding="12,0"
@@ -73,7 +73,7 @@
 
                             <Label Text="+234 Nigeria"
                                    FontSize="12"
-                                   TextColor="{StaticResource Gray5}"
+                                   TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}"
                                    VerticalOptions="Center"
                                    LineBreakMode="NoWrap" />
 
@@ -82,8 +82,8 @@
 
                     <!-- Phone number input -->
                     <Border Grid.Column="1"
-                            BackgroundColor="White"
-                            Stroke="{StaticResource CardStroke}"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
+                            Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
                             StrokeShape="RoundRectangle 24"
                             HeightRequest="52"
                             Padding="13,0"
@@ -110,8 +110,8 @@
                                    ReturnType="Next"
                                    BackgroundColor="Transparent"
                                    FontSize="14"
-                                   TextColor="{StaticResource Gray5}"
-                                   PlaceholderColor="{StaticResource Gray3}"
+                                   TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}"
+                                   PlaceholderColor="{AppThemeBinding Light={StaticResource LightTextMuted}, Dark={StaticResource DarkTextMuted}}"
                                    VerticalOptions="Center" />
 
                         </Grid>
@@ -121,11 +121,11 @@
 
                 <Label Text="Password"
                        FontSize="13"
-                       TextColor="{StaticResource Gray5}"
+                       TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}"
                        Margin="0,0,0,8" />
 
-                <Border BackgroundColor="White"
-                        Stroke="{StaticResource CardStroke}"
+                <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
+                        Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
                         StrokeShape="RoundRectangle 24"
                         HeightRequest="52"
                         Margin="0,0,0,12">
@@ -180,7 +180,7 @@
 
                         <Label Text="Remember me"
                                FontSize="13"
-                               TextColor="{StaticResource Gray3}"
+                               TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}"
                                VerticalOptions="Center" />
                     </HorizontalStackLayout>
 
@@ -211,7 +211,7 @@
                                        Spacing="4">
                     <Label Text="New to VYRON?"
                            FontSize="14"
-                           TextColor="{StaticResource Gray3}" />
+                           TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
 
                     <Label Text="Create an account"
                            FontSize="14"

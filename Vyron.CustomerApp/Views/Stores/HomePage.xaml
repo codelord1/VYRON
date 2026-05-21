@@ -8,7 +8,7 @@
              x:Name="ThisPage"
              x:DataType="vm:HomeViewModel"
              Shell.NavBarIsVisible="False"
-             BackgroundColor="{DynamicResource Bg}">
+             BackgroundColor="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}">
 
     <RefreshView Command="{Binding LoadCommand}" IsRefreshing="{Binding IsRefreshing}">
     <ScrollView>
@@ -73,9 +73,9 @@
                         <Label Text="Let's get your laundry sorted today." TextColor="#E3FFF6" FontSize="15" />
                     </VerticalStackLayout>
 
-                    <Border BackgroundColor="White" Stroke="Transparent" StrokeShape="RoundRectangle 24" HeightRequest="54">
+                    <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}" Stroke="Transparent" StrokeShape="RoundRectangle 24" HeightRequest="54">
                         <Grid ColumnDefinitions="Auto,*" Padding="16,0" ColumnSpacing="10">
-                            <Label Text="SEARCH" FontSize="10" TextColor="{StaticResource Gray3}" VerticalOptions="Center" />
+                            <Label Text="SEARCH" FontSize="10" TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" VerticalOptions="Center" />
                             <Entry Grid.Column="1"
                                    Placeholder="Search laundry store or service"
                                    Text="{Binding SearchText}"
@@ -84,14 +84,14 @@
                         </Grid>
                     </Border>
 
-                    <Border BackgroundColor="White" Stroke="Transparent" StrokeShape="RoundRectangle 28" Padding="20" Margin="0,12,0,-86">
+                    <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}" Stroke="Transparent" StrokeShape="RoundRectangle 28" Padding="20" Margin="0,12,0,-86">
                         <Grid ColumnDefinitions="*,100" ColumnSpacing="14">
                             <VerticalStackLayout Spacing="9">
                                 <Border BackgroundColor="{StaticResource Mint}" Stroke="Transparent" StrokeShape="RoundRectangle 14" Padding="10,5" HorizontalOptions="Start">
                                     <Label Text="Schedule today" FontSize="12" TextColor="{StaticResource TealDark}" FontFamily="OpenSansSemibold" />
                                 </Border>
                                 <Label Text="Schedule a laundry pickup today" FontFamily="OpenSansSemibold" FontSize="20" />
-                                <Label Text="Free pickup over ₦5,000 · Pay on delivery" FontSize="13" TextColor="{StaticResource Gray3}" />
+                                <Label Text="Free pickup over ₦5,000 · Pay on delivery" FontSize="13" TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
                                 <Button Text="Book Pickup ›" Command="{Binding StartPickupCommand}" HeightRequest="38" WidthRequest="132" FontSize="12" Padding="0" HorizontalOptions="Start">
                                     <Button.Behaviors>
                                         <behaviors:TapFeedbackBehavior />
@@ -199,7 +199,7 @@
                 </Grid>
 
                 <Border BackgroundColor="{StaticResource Mint}"
-                        Stroke="{StaticResource CardStroke}"
+                        Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
                         StrokeShape="RoundRectangle 24"
                         Padding="0"
                         IsVisible="{Binding HasActiveOrder}"
@@ -222,13 +222,13 @@
                                                WidthRequest="18"
                                                HeightRequest="18" />
                         </Grid>
-                        <Grid BackgroundColor="White" ColumnDefinitions="54,*" ColumnSpacing="12" Padding="16,14">
+                        <Grid BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}" ColumnDefinitions="54,*" ColumnSpacing="12" Padding="16,14">
                             <Border BackgroundColor="{StaticResource Mint}" WidthRequest="44" HeightRequest="44" Stroke="Transparent" StrokeShape="RoundRectangle 22">
                                 <Path Stroke="{StaticResource TealDark}" StrokeThickness="2" StrokeLineCap="Round" StrokeLineJoin="Round" Data="M10,26 L10,18 L28,18 L28,26 M28,21 L34,21 L38,27 L38,31 L34,31 M18,31 L30,31 M15,31 A3,3 0 1 0 15,37 A3,3 0 1 0 15,31 M33,31 A3,3 0 1 0 33,37 A3,3 0 1 0 33,31" />
                             </Border>
                             <VerticalStackLayout Grid.Column="1" Spacing="7">
                                 <Label Text="{Binding ActiveOrder.StatusDescription}" FontFamily="OpenSansSemibold" FontSize="15" />
-                                <Label Text="{Binding ActiveOrder.StatusSubtitle}" FontSize="12" TextColor="{StaticResource Gray3}" />
+                                <Label Text="{Binding ActiveOrder.StatusSubtitle}" FontSize="12" TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
                                 <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="6">
                                     <BoxView HeightRequest="5" CornerRadius="3" Color="{StaticResource TealDark}" />
                                     <BoxView Grid.Column="1" HeightRequest="5" CornerRadius="3" Color="{StaticResource TealDark}" />
@@ -263,7 +263,7 @@
                                 <Grid.Behaviors>
                                     <behaviors:TapFeedbackBehavior />
                                 </Grid.Behaviors>
-                                <Border BackgroundColor="White" Stroke="{StaticResource CardStroke}" StrokeShape="RoundRectangle 22">
+                                <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}" Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" StrokeShape="RoundRectangle 22">
                                     <Grid RowDefinitions="96,Auto">
                                         <Grid BackgroundColor="#0AA37F">
                                             <Image Source="{Binding FullLogoUrl}" Aspect="AspectFill" IsVisible="{Binding HasLogo}" />
@@ -276,7 +276,7 @@
                                                 <Label Grid.Column="1" Text="{Binding RatingDisplay}" FontSize="12" FontFamily="OpenSansSemibold" />
                                             </Grid>
                                             <Label Text="{Binding Name}" FontFamily="OpenSansSemibold" FontSize="14" LineBreakMode="TailTruncation" />
-                                            <Label Text="{Binding StartingFromText}" FontSize="12" TextColor="{StaticResource Gray3}" />
+                                            <Label Text="{Binding StartingFromText}" FontSize="12" TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
                                         </VerticalStackLayout>
                                     </Grid>
                                 </Border>
@@ -322,7 +322,7 @@
                         </Border>
                         <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                             <Label Text="{Binding ReorderTitle}" FontFamily="OpenSansSemibold" FontSize="14" />
-                            <Label Text="{Binding ReorderSubtitle}" FontSize="12" TextColor="{StaticResource Gray3}" />
+                            <Label Text="{Binding ReorderSubtitle}" FontSize="12" TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
                         </VerticalStackLayout>
                         <Border Grid.Column="2" BackgroundColor="{StaticResource Mint}" Stroke="Transparent" StrokeShape="RoundRectangle 18" Padding="14,8" VerticalOptions="Center">
                             <Grid>

@@ -9,7 +9,7 @@
              x:DataType="vm:OrdersViewModel"
              Title="My Orders"
              Shell.NavBarIsVisible="False"
-             BackgroundColor="{StaticResource Bg}">
+             BackgroundColor="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}">
 
     <Grid>
     <RefreshView Command="{Binding LoadCommand}"
@@ -26,7 +26,7 @@
                                FontSize="20" />
                         <Label Text="{Binding Orders_.Count, StringFormat='{0} total orders'}"
                                FontSize="13"
-                               TextColor="{StaticResource Gray3}" />
+                               TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
                     </VerticalStackLayout>
 
                     <Border BackgroundColor="#FFF4F3"
@@ -44,7 +44,7 @@
                             StrokeShape="RoundRectangle 22"
                             Padding="4">
                         <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
-                            <Border BackgroundColor="White" Stroke="Transparent" StrokeShape="RoundRectangle 18" Padding="14,10">
+                            <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}" Stroke="Transparent" StrokeShape="RoundRectangle 18" Padding="14,10">
                                 <Border.Behaviors>
                                     <behaviors:TapFeedbackBehavior />
                                 </Border.Behaviors>
@@ -60,7 +60,7 @@
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Command="{Binding SetStatusTabCommand}" CommandParameter="Completed" />
                                 </Border.GestureRecognizers>
-                                <Label Text="Completed" HorizontalTextAlignment="Center" FontSize="13" TextColor="{StaticResource Gray5}" />
+                                <Label Text="Completed" HorizontalTextAlignment="Center" FontSize="13" TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}" />
                             </Border>
                             <Border Grid.Column="2" BackgroundColor="Transparent" Stroke="Transparent" StrokeShape="RoundRectangle 18" Padding="14,10">
                                 <Border.Behaviors>
@@ -69,7 +69,7 @@
                                 <Border.GestureRecognizers>
                                     <TapGestureRecognizer Command="{Binding SetStatusTabCommand}" CommandParameter="Cancelled" />
                                 </Border.GestureRecognizers>
-                                <Label Text="Cancelled" HorizontalTextAlignment="Center" FontSize="13" TextColor="{StaticResource Gray5}" />
+                                <Label Text="Cancelled" HorizontalTextAlignment="Center" FontSize="13" TextColor="{AppThemeBinding Light={StaticResource LightTextPrimary}, Dark={StaticResource DarkTextPrimary}}" />
                             </Border>
                         </Grid>
                     </Border>
@@ -99,7 +99,7 @@
                            HorizontalTextAlignment="Center" />
                     <Label Text="Browse stores and place your first laundry order."
                            FontSize="13"
-                           TextColor="{StaticResource Gray3}"
+                           TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}"
                            HorizontalTextAlignment="Center" />
                 </VerticalStackLayout>
             </CollectionView.EmptyView>
@@ -114,8 +114,8 @@
                             <TapGestureRecognizer Command="{Binding Source={x:Reference ThisPage}, Path=BindingContext.SelectOrderCommand}"
                                                   CommandParameter="{Binding .}" />
                         </Grid.GestureRecognizers>
-                        <Border BackgroundColor="White"
-                                Stroke="{StaticResource CardStroke}"
+                        <Border BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
+                                Stroke="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}"
                                 StrokeShape="RoundRectangle 24"
                                 Padding="16">
                             <VerticalStackLayout Spacing="12">
@@ -143,10 +143,10 @@
                                                LineBreakMode="TailTruncation" />
                                         <Label Text="{Binding OrderNumber, StringFormat='#{0}'}"
                                                FontSize="12"
-                                               TextColor="{StaticResource Gray3}" />
+                                               TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
                                         <Label Text="{Binding CreatedAt, StringFormat='{0:MMM d, h:mm tt}'}"
                                                FontSize="12"
-                                               TextColor="{StaticResource Gray3}" />
+                                               TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
                                     </VerticalStackLayout>
                                     <Border Grid.Column="2"
                                             BackgroundColor="{StaticResource Mint}"
@@ -161,7 +161,7 @@
                                     </Border>
                                 </Grid>
 
-                                <BoxView HeightRequest="1" Color="{StaticResource CardStroke}" />
+                                <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource LightBorder}, Dark={StaticResource DarkBorder}}" />
 
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                     <VerticalStackLayout Spacing="2">
@@ -170,7 +170,7 @@
                                                FontSize="16" />
                                         <Label Text="Tap card to view details"
                                                FontSize="12"
-                                               TextColor="{StaticResource Gray3}" />
+                                               TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}" />
                                     </VerticalStackLayout>
                                     <Border Grid.Column="1"
                                             BackgroundColor="{StaticResource Teal}"
