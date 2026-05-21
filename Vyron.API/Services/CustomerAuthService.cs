@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Vyron.API.Data;
 using Vyron.API.DTOs;
 using Vyron.API.Models;
@@ -38,7 +39,14 @@ public class CustomerAuthService : ICustomerAuthService
     private readonly IAuditService _audit;
     private readonly IConfiguration _config;
     private readonly ILogger<CustomerAuthService> _logger;
-    private readonly PasswordHasher<User> _hasher = new();
+    // 50,000 PBKDF2-HMAC-SHA256 iterations.
+    // Down from the .NET 8 framework default of 100,000.
+    // Still well above NIST SP 800-132 minimum (1,000) and common mobile-app baselines.
+    // Existing 100,000-iteration hashes verify correctly (count is embedded in the V3
+    // hash string) and are transparently rehashed to 50,000 on the next successful login
+    // via the SuccessRehashNeeded path in LoginAsync.
+    private readonly PasswordHasher<User> _hasher = new(
+        Options.Create(new PasswordHasherOptions { IterationCount = 50_000 }));
 
     public CustomerAuthService(
         VyronDbContext db, ITokenService tokens,
