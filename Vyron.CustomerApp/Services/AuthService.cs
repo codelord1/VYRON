@@ -105,6 +105,9 @@ public class AuthService : IAuthService
     // ── NEW: password-based login ──────────────────────────────────
     public async Task<(bool Ok, string? Error)> LoginAsync(string phone, string password, bool rememberMe = false)
     {
+#if DEBUG
+        System.Diagnostics.Debug.WriteLine($"[VYRON LOGIN CLIENT] Phone sent to API: '{phone}'");
+#endif
         var (response, error) = await _api.PostAsync<CustomerLoginResponse>("api/customer-auth/login",
             new CustomerLoginRequest(phone, password));
 
