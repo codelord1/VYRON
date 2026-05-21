@@ -49,8 +49,8 @@ public partial class LoginViewModel : BaseViewModel
         if (string.IsNullOrWhiteSpace(LocalPhone))
         { SetError("Please enter your phone number."); return; }
 
-        var phone = PhoneHelper.Normalize(LocalPhone.Trim(), SelectedCountry.DialCode);
-        if (!PhoneHelper.IsValid(phone))
+        var phone = PhoneHelper.NormalizeForApi(LocalPhone.Trim(), SelectedCountry.DialCode);
+        if (!PhoneHelper.IsValidE164(phone, SelectedCountry.DialCode))
         { SetError("Please enter a valid phone number (digits only, e.g. 8012345678)."); return; }
 
         if (string.IsNullOrWhiteSpace(Password))
@@ -122,8 +122,8 @@ public partial class SignupViewModel : BaseViewModel
         if (string.IsNullOrWhiteSpace(LocalPhone))
         { SetError("Please enter your phone number."); return; }
 
-        var phone = PhoneHelper.Normalize(LocalPhone.Trim(), SelectedCountry.DialCode);
-        if (!PhoneHelper.IsValid(phone))
+        var phone = PhoneHelper.NormalizeForApi(LocalPhone.Trim(), SelectedCountry.DialCode);
+        if (!PhoneHelper.IsValidE164(phone, SelectedCountry.DialCode))
         { SetError("Please enter a valid phone number (digits only, e.g. 8012345678)."); return; }
 
         IsBusy = true;
@@ -349,8 +349,8 @@ public partial class ForgotPasswordViewModel : BaseViewModel
         if (string.IsNullOrWhiteSpace(LocalPhone))
         { SetError("Please enter your phone number."); return; }
 
-        var phone = PhoneHelper.Normalize(LocalPhone.Trim(), SelectedCountry.DialCode);
-        if (!PhoneHelper.IsValid(phone))
+        var phone = PhoneHelper.NormalizeForApi(LocalPhone.Trim(), SelectedCountry.DialCode);
+        if (!PhoneHelper.IsValidE164(phone, SelectedCountry.DialCode))
         { SetError("Please enter a valid phone number."); return; }
 
         IsBusy = true;
