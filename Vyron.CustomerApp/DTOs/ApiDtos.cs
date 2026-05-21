@@ -409,7 +409,7 @@ public class OrderDto
         : PaymentMethod;
     public bool HasPickupRider => Rider != null;
     public bool HasDeliveryRider => DeliveryRider != null;
-    public bool HasItems => Items.Count > 0;
+    public bool HasItems => (Items?.Count ?? 0) > 0;
 
     public string StatusEmoji => "•";
 

@@ -61,30 +61,34 @@ public partial class TrackViewModel : BaseViewModel
 
     public async Task InitAsync() => await LoadAsync();
 
-    partial void OnOrderIdChanged(string value)
-    {
-        if (Guid.TryParse(value, out _))
-            MainThread.BeginInvokeOnMainThread(async () => await LoadAsync());
-    }
+    // NOTE: OnOrderIdChanged does NOT trigger a load.
+    // TrackPage.OnAppearing calls InitAsync() after the QueryProperty is set,
+    // so a second BeginInvokeOnMainThread call here would race with the
+    // OnAppearing load and corrupt the RefreshView IsRefreshing state on Android.
+    // All loading is handled by InitAsync (OnAppearing) and the pull-to-refresh command.
 
     [RelayCommand]
     private async Task LoadAsync()
     {
-        if (IsBusy)
-        {
-            IsRefreshing = false;
-            return;
-        }
+        if (IsBusy) return;   // guard: only one load at a time; do not touch IsRefreshing here
 
         IsBusy = true;
         IsRefreshing = true;
         try
         {
             ClearMessages();
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine(
+                $"[TRACK] LoadAsync — OrderId='{OrderId}'");
+#endif
             OrderDto? active = null;
             if (Guid.TryParse(OrderId, out var id))
             {
                 var (order, error) = await _orders.GetOrderAsync(id);
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine(
+                    $"[TRACK] GetOrderAsync result: order={(order?.OrderNumber ?? "null")}, error={error}");
+#endif
                 if (error == "SESSION_EXPIRED")
                 {
                     await HandleUnauthorized();
@@ -93,7 +97,7 @@ public partial class TrackViewModel : BaseViewModel
                 if (error != null)
                 {
                     SetError(ApiErrorHelper.FriendlyContextMessage(error, "orders"));
-                    active = ActiveOrder;
+                    active = ActiveOrder;   // keep showing previous data
                 }
                 else
                 {
@@ -102,6 +106,7 @@ public partial class TrackViewModel : BaseViewModel
             }
             else
             {
+                // No specific order requested — show the first active order (fallback path)
                 var (orders, error) = await _orders.GetMyOrdersAsync();
                 if (error == "SESSION_EXPIRED")
                 {
@@ -115,21 +120,38 @@ public partial class TrackViewModel : BaseViewModel
                 }
                 else
                 {
-                    active = orders?.FirstOrDefault(o => ActiveStatuses.Contains(o.Status));
+                    active = orders?.FirstOrDefault(o => ActiveStatuses.Contains(o.Status ?? ""));
                 }
             }
-            ActiveOrder = active;
+
+            ActiveOrder    = active;
             HasActiveOrder = active != null;
-            ProgressSteps = active != null ? BuildProgressSteps(active) : new();
+
+            if (active != null)
+            {
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine(
+                    $"[TRACK] Building progress steps for status='{active.Status}', " +
+                    $"historyCount={active.StatusHistory?.Count ?? -1}");
+#endif
+                ProgressSteps = BuildProgressSteps(active);
+            }
+            else
+            {
+                ProgressSteps = new();
+            }
         }
         catch (Exception ex)
         {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[TRACK ERROR] {ex}");
+#endif
             SetError(ApiErrorHelper.ForException(ex));
         }
         finally
         {
-            IsBusy = false;
-            IsRefreshing = false;
+            IsBusy        = false;
+            IsRefreshing  = false;
         }
     }
 
@@ -157,7 +179,7 @@ public partial class TrackViewModel : BaseViewModel
         // Build a lookup of timestamps from status history.
         // GroupBy deduplicates keys (e.g. RiderAssigned re-assignments); keep the earliest
         // occurrence so the timeline shows when each status was *first* reached.
-        var tsLookup = order.StatusHistory
+        var tsLookup = (order.StatusHistory ?? new List<StatusHistoryDto>())
             .GroupBy(h => h.Status)
             .ToDictionary(
                 g => g.Key,

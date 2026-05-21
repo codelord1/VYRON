@@ -16,6 +16,17 @@ public partial class TrackPage : ContentPage
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-        await _vm.InitAsync();
+        try
+        {
+            await _vm.InitAsync();
+        }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[TRACKPAGE APPEARING ERROR] {ex}");
+#endif
+            // Exception already handled inside LoadAsync/SetError.
+            // This guard prevents async void from propagating to the Android looper.
+        }
     }
 }
