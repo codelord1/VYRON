@@ -16,26 +16,24 @@ public partial class ServiceSelectionViewModel : BaseViewModel
     [ObservableProperty] private string _storeId = "";
     [ObservableProperty] private StoreDetailDto? _store;
     [ObservableProperty] private string _serviceSearchText = "";
-    [ObservableProperty] private string _selectedCategory = "All";
+    [ObservableProperty] private string _selectedCategory  = "All";
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsOverlayVisible))]
     [NotifyPropertyChangedFor(nameof(IsNotNavigating))]
     private bool _isNavigating;
     [ObservableProperty] private string _loaderText = "Opening Order Now";
 
-    // Service cards with IsSelected state
+    // ── Service data ─────────────────────────────────────────────────
+    // Full flat list — used for filtering
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasDraftItems))]
     private ObservableCollection<ServiceCardViewModel> _serviceCards = new();
 
+    // Grouped list exposed to the CollectionView (IsGrouped=True)
     [ObservableProperty]
-    private ObservableCollection<ServiceCardViewModel> _filteredServiceCards = new();
+    private ObservableCollection<ServiceGroup> _groupedServiceCards = new();
 
-    // Expose the draft's item collection directly for XAML binding
-    public ObservableCollection<OrderDraftItem> DraftItems => _draft.Items;
-
-    // Computed summary (refreshed whenever cart changes)
-    [ObservableProperty] private string _estimateSummary = "";
+    // ── Cart totals ──────────────────────────────────────────────────
+    [ObservableProperty] private string  _estimateSummary = "";
     [ObservableProperty] private decimal _totalLaundryCost;
     [ObservableProperty] private decimal _pickupFee;
     [ObservableProperty] private decimal _deliveryFee;
@@ -43,59 +41,66 @@ public partial class ServiceSelectionViewModel : BaseViewModel
     [ObservableProperty] private decimal _amountDueNow;
     [ObservableProperty] private decimal _balanceDueLater;
 
-    public bool HasDraftItems => _draft.HasItems;
+    // ── Computed ─────────────────────────────────────────────────────
+    public bool HasDraftItems   => _draft.HasItems;
+    public bool HasServices     => ServiceCards.Count > 0;
     public bool HasServiceSearch => !string.IsNullOrWhiteSpace(ServiceSearchText);
-    public bool IsServiceSearchEmpty => HasServices && FilteredServiceCards.Count == 0 && !IsBusy;
-    public bool HasServices => ServiceCards.Count > 0;
+    public bool IsServiceSearchEmpty => HasServices && GroupedServiceCards.Count == 0 && !IsBusy;
     public bool IsServicesEmpty => !IsBusy && Store != null && !HasServices;
-    public bool HasLoadError => !IsBusy && !string.IsNullOrWhiteSpace(ErrorMessage) && Store == null;
+    public bool HasLoadError    => !IsBusy && !string.IsNullOrWhiteSpace(ErrorMessage) && Store == null;
     public bool IsOverlayVisible => IsBusy || IsNavigating;
     public bool IsNotNavigating => !IsNavigating;
-    public string StorePickSubtitle => $"Top picks from {Store?.Name ?? "this store"}";
+    public bool CanContinue     => HasDraftItems && !IsBusy && !IsNavigating;
+    public int  SelectedServiceCount => _draft.Items.Count;
+
+    /// <summary>Subtitle shown under the "Build your basket" title — "StoreName — Area".</summary>
+    public string StoreSubtitleText
+    {
+        get
+        {
+            if (Store == null) return "";
+            var area = Store.Area;
+            return string.IsNullOrWhiteSpace(area) ? Store.Name : $"{Store.Name} — {area}";
+        }
+    }
+
+    /// <summary>CTA button text: shows total when cart has items.</summary>
+    public string CtaButtonText => HasDraftItems
+        ? $"Continue  ·  ₦{TotalEstimate:N0}"
+        : "Select a service to continue";
+
     public string HeroLocationText
     {
         get
         {
-            if (Store == null)
-                return "Pickup details coming soon";
-
+            if (Store == null) return "Pickup details coming soon";
             var location = string.Join(", ", new[] { Store.Area, Store.City, Store.State }
                 .Where(x => !string.IsNullOrWhiteSpace(x)));
             return string.IsNullOrWhiteSpace(location) ? "Store location available at checkout" : location;
         }
     }
-    public int SelectedServiceCount => _draft.Items.Count;
-    public string SelectedSummaryText => SelectedServiceCount == 0
-        ? "Choose a service to continue"
-        : $"{SelectedServiceCount} service{(SelectedServiceCount == 1 ? "" : "s")} selected";
-    public string SelectedPriceSummaryText => SelectedServiceCount switch
-    {
-        0 => "Add a service to build your estimate",
-        1 => $"From {_draft.Items[0].PriceDisplay}",
-        _ => $"Laundry subtotal: ₦{_draft.TotalLaundryCost:N0}"
-    };
-    public bool CanContinue => HasDraftItems && !IsBusy && !IsNavigating;
-    public bool IsAllCategorySelected => SelectedCategory == "All";
-    public bool IsWashCategorySelected => SelectedCategory == "Wash";
-    public bool IsIronCategorySelected => SelectedCategory == "Iron";
+
+    // ── Category chip state (kept for compatibility / optional chip UI) ──
+    public bool IsAllCategorySelected      => SelectedCategory == "All";
+    public bool IsWashCategorySelected     => SelectedCategory == "Wash";
+    public bool IsIronCategorySelected     => SelectedCategory == "Iron";
     public bool IsDryCleanCategorySelected => SelectedCategory == "Dry Clean";
-    public bool IsExpressCategorySelected => SelectedCategory == "Express";
+    public bool IsExpressCategorySelected  => SelectedCategory == "Express";
 
     public ServiceSelectionViewModel(StoreService stores, OrderDraftService draft)
     {
         _stores = stores;
         _draft  = draft;
-        // Refresh totals + selected state whenever items are added or removed
+        // Refresh totals + card DraftItem refs whenever items are added or removed
         _draft.Items.CollectionChanged += (_, e) =>
         {
-            // Subscribe to each newly added item so weight/pieces changes also refresh totals
             if (e.NewItems != null)
                 foreach (Services.OrderDraftItem item in e.NewItems)
                     item.PropertyChanged += (_, _) => RefreshTotals();
             RefreshTotals();
-            UpdateSelectedCards();
+            SyncAllCardDraftItems();
             OnPropertyChanged(nameof(HasDraftItems));
-            NotifySelectionSummaryChanged();
+            NotifyCtaChanged();
         };
     }
 
@@ -113,6 +118,10 @@ public partial class ServiceSelectionViewModel : BaseViewModel
         else if (e.PropertyName is nameof(ErrorMessage))
         {
             base.OnPropertyChanged(new System.ComponentModel.PropertyChangedEventArgs(nameof(HasLoadError)));
+        }
+        else if (e.PropertyName is nameof(TotalEstimate))
+        {
+            base.OnPropertyChanged(new System.ComponentModel.PropertyChangedEventArgs(nameof(CtaButtonText)));
         }
     }
 
@@ -142,20 +151,20 @@ public partial class ServiceSelectionViewModel : BaseViewModel
         {
             Store = data;
             _draft.SetStore(id, Store.Name, Store.PickupFee, Store.DeliveryFee);
-            // Build service card wrappers
             ServiceCards.Clear();
             foreach (var svc in Store.Services.Where(s => s.IsActive))
                 ServiceCards.Add(new ServiceCardViewModel(svc));
-            ApplyServiceFilter();
+            SyncAllCardDraftItems();
+            RebuildGroups();
             RefreshTotals();
             OnPropertyChanged(nameof(HasServices));
             OnPropertyChanged(nameof(IsServicesEmpty));
-            OnPropertyChanged(nameof(StorePickSubtitle));
+            OnPropertyChanged(nameof(StoreSubtitleText));
             OnPropertyChanged(nameof(HeroLocationText));
         }
     }
 
-    partial void OnServiceSearchTextChanged(string value) => ApplyServiceFilter();
+    partial void OnServiceSearchTextChanged(string value) => RebuildGroups();
     partial void OnSelectedCategoryChanged(string value)
     {
         OnPropertyChanged(nameof(IsAllCategorySelected));
@@ -163,44 +172,103 @@ public partial class ServiceSelectionViewModel : BaseViewModel
         OnPropertyChanged(nameof(IsIronCategorySelected));
         OnPropertyChanged(nameof(IsDryCleanCategorySelected));
         OnPropertyChanged(nameof(IsExpressCategorySelected));
-        ApplyServiceFilter();
+        RebuildGroups();
     }
 
-    private void ApplyServiceFilter()
-    {
-        var term = ServiceSearchText?.Trim();
-        var source = ServiceCards.AsEnumerable();
-        if (!string.IsNullOrWhiteSpace(term))
-        {
-            source = source.Where(card =>
-                Contains(card.Service.Name, term) ||
-                Contains(card.Service.Description, term) ||
-                Contains(card.Service.ServiceType, term) ||
-                Contains(card.Service.PricingMode, term));
-        }
-        if (SelectedCategory != "All")
-            source = source.Where(card => card.Category == SelectedCategory);
+    // ── Grouping / filtering ─────────────────────────────────────────
 
-        FilteredServiceCards.Clear();
-        foreach (var card in source)
-            FilteredServiceCards.Add(card);
+    private void RebuildGroups()
+    {
+        var term   = ServiceSearchText?.Trim();
+        var source = ServiceCards.AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(term))
+            source = source.Where(c =>
+                Contains(c.Service.Name,        term) ||
+                Contains(c.Service.Description, term) ||
+                Contains(c.Service.ServiceType, term) ||
+                Contains(c.Service.PricingMode, term));
+
+        if (SelectedCategory != "All")
+            source = source.Where(c => c.Category == SelectedCategory);
+
+        var groups = source
+            .GroupBy(c => MapToGroupName(c.Category))
+            .OrderBy(g => GroupOrder(g.Key))
+            .Select(g => new ServiceGroup(g.Key, g));
+
+        GroupedServiceCards.Clear();
+        foreach (var g in groups)
+            GroupedServiceCards.Add(g);
 
         OnPropertyChanged(nameof(HasServiceSearch));
         OnPropertyChanged(nameof(IsServiceSearchEmpty));
     }
 
+    private static string MapToGroupName(string category) => category switch
+    {
+        "Wash"      => "Wash & Clean",
+        "Iron"      => "Ironing",
+        "Dry Clean" => "Dry Cleaning",
+        "Express"   => "Add-ons",
+        _           => "Services"
+    };
+
+    private static int GroupOrder(string groupName) => groupName switch
+    {
+        "Wash & Clean" => 0,
+        "Ironing"      => 1,
+        "Dry Cleaning" => 2,
+        "Services"     => 3,
+        "Add-ons"      => 4,
+        _              => 5
+    };
+
     private static bool Contains(string? value, string term) =>
         !string.IsNullOrWhiteSpace(value) &&
         value.Contains(term, StringComparison.OrdinalIgnoreCase);
 
-    /// <summary>Add a service to the cart (or increment quantity if already added).</summary>
+    // ── Stepper commands (tap −/+ on service card) ────────────────────
+
+    /// <summary>Increment: add service if not in cart, or bump quantity by one step.</summary>
+    [RelayCommand]
+    private void IncrementService(ServiceCardViewModel card)
+    {
+        if (card == null) return;
+        _draft.AddService(card.Service);   // handles first-add and increment in one call
+        SyncCardDraftItem(card);
+        RefreshTotals();
+        ClearMessages();
+    }
+
+    /// <summary>Decrement: reduce quantity by one step; remove from cart when it hits zero.</summary>
+    [RelayCommand]
+    private void DecrementService(ServiceCardViewModel card)
+    {
+        if (card == null) return;
+        _draft.DecrementService(card.Service.Id);   // removes item when qty would hit zero
+        SyncCardDraftItem(card);
+        RefreshTotals();
+    }
+
+    // Keep AddService / RemoveItem for any external callers (e.g. reorder flow)
     [RelayCommand]
     private void AddService(ServiceCardViewModel card)
     {
+        if (card == null) return;
         _draft.AddService(card.Service);
-        card.IsSelected = true;
+        SyncCardDraftItem(card);
         RefreshTotals();
         ClearMessages();
+    }
+
+    [RelayCommand]
+    private void RemoveItem(OrderDraftItem item)
+    {
+        if (item == null) return;
+        _draft.RemoveItem(item);
+        SyncAllCardDraftItems();
+        RefreshTotals();
     }
 
     [RelayCommand]
@@ -210,20 +278,19 @@ public partial class ServiceSelectionViewModel : BaseViewModel
             SelectedCategory = category;
     }
 
-    /// <summary>Remove an item from the cart.</summary>
-    [RelayCommand]
-    private void RemoveItem(OrderDraftItem item)
+    // ── Draft sync helpers ───────────────────────────────────────────
+
+    /// <summary>Update one card's DraftItem reference from the current draft state.</summary>
+    private void SyncCardDraftItem(ServiceCardViewModel card)
     {
-        _draft.RemoveItem(item);
-        RefreshTotals();
-        UpdateSelectedCards();
+        card.DraftItem = _draft.Items.FirstOrDefault(i => i.ServiceId == card.Service.Id);
     }
 
-    /// <summary>Sync IsSelected on all service cards from the draft.</summary>
-    private void UpdateSelectedCards()
+    /// <summary>Sync DraftItem references for every card (called after bulk changes).</summary>
+    private void SyncAllCardDraftItems()
     {
         foreach (var card in ServiceCards)
-            card.IsSelected = _draft.ContainsService(card.Service.Id);
+            SyncCardDraftItem(card);
     }
 
     private void RefreshTotals()
@@ -235,26 +302,31 @@ public partial class ServiceSelectionViewModel : BaseViewModel
         AmountDueNow     = _draft.AmountDueNow;
         BalanceDueLater  = _draft.BalanceDueLater;
         EstimateSummary  = _draft.Breakdown;
-        NotifySelectionSummaryChanged();
+        NotifyCtaChanged();
     }
+
+    private void NotifyCtaChanged()
+    {
+        OnPropertyChanged(nameof(SelectedServiceCount));
+        OnPropertyChanged(nameof(CanContinue));
+        OnPropertyChanged(nameof(HasDraftItems));
+        OnPropertyChanged(nameof(CtaButtonText));
+    }
+
+    // ── Navigation ───────────────────────────────────────────────────
 
     [RelayCommand]
     private async Task ContinueAsync()
     {
-        if (IsBusy || IsNavigating)
-            return;
+        if (IsBusy || IsNavigating) return;
 
-        if (!_draft.HasItems) { SetError("Please add at least one service."); return; }
+        if (!_draft.HasItems)
+        { SetError("Please add at least one service."); return; }
         if (_draft.Items.Any(i => !i.IsValid))
-        {
-            SetError("Please check the selected services. Weight, pieces, and prices must be valid.");
-            return;
-        }
+        { SetError("Please check the selected services. Weight, pieces, and prices must be valid."); return; }
         if (_draft.TotalEstimate <= 0 || _draft.PickupFee < 0 || _draft.DeliveryFee < 0)
-        {
-            SetError("The order estimate is not valid yet. Please review your services and fees.");
-            return;
-        }
+        { SetError("The order estimate is not valid yet. Please review your services and fees."); return; }
+
         TapFeedback.HapticClick();
         LoaderText = "Opening Order Now";
         IsNavigating = true;
@@ -281,14 +353,6 @@ public partial class ServiceSelectionViewModel : BaseViewModel
 
     [RelayCommand]
     private async Task BrowseStoresAsync() => await Shell.Current.GoToAsync("..");
-
-    private void NotifySelectionSummaryChanged()
-    {
-        OnPropertyChanged(nameof(SelectedServiceCount));
-        OnPropertyChanged(nameof(SelectedSummaryText));
-        OnPropertyChanged(nameof(SelectedPriceSummaryText));
-        OnPropertyChanged(nameof(CanContinue));
-    }
 }
 
 // ─── CREATE ORDER ────────────────────────────────────────────────

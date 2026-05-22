@@ -28,6 +28,10 @@ public partial class OrderDraftItem : ObservableObject
     [NotifyPropertyChangedFor(nameof(LineTotal), nameof(LineTotalDisplay), nameof(QtyDisplay), nameof(LineSummary))]
     private int _pieces = 1;
 
+    /// <summary>Optional per-service note entered on the service card (e.g. "separate whites").</summary>
+    [ObservableProperty]
+    private string _notes = "";
+
     // ── String wrappers for Entry two-way binding ─────────────────
     // Using string intermediaries avoids decimal/int ↔ string coercion problems in MAUI Entry.
 
@@ -242,6 +246,31 @@ public class OrderDraftService
         }
     }
 
+    /// <summary>
+    /// Decrement a service quantity by one step (0.5 kg for PerKg, 1 piece for PerItem / Fixed).
+    /// The item is removed from the cart when it would drop below the minimum unit.
+    /// Returns true if the item remains in the cart, false if it was removed.
+    /// </summary>
+    public bool DecrementService(Guid serviceId)
+    {
+        var item = Items.FirstOrDefault(i => i.ServiceId == serviceId);
+        if (item == null) return false;
+
+        if (item.IsPerKg && item.Weight > 0.5m)
+        {
+            item.Weight = Math.Round(item.Weight - 0.5m, 1);
+            return true;
+        }
+        if (item.IsPerItem && item.Pieces > 1)
+        {
+            item.Pieces--;
+            return true;
+        }
+        // Would drop to zero — remove item entirely
+        Items.Remove(item);
+        return false;
+    }
+
     public void LoadReorderDraft(ReorderDraftDto draft, ServiceSummaryDto service)
     {
         StoreId = draft.StoreId;
@@ -305,6 +334,16 @@ public class OrderDraftService
         string paymentMethod, string? notes = null)
     {
         var primary = Items.FirstOrDefault();
+
+        // Merge global notes with any per-service notes captured on the service card
+        var itemNoteParts = Items
+            .Where(i => !string.IsNullOrWhiteSpace(i.Notes))
+            .Select(i => $"{i.ServiceName}: {i.Notes.Trim()}");
+        var combinedParts = new[] { notes?.Trim() ?? "" }
+            .Concat(itemNoteParts)
+            .Where(s => !string.IsNullOrWhiteSpace(s));
+        var combinedNotes = string.Join("; ", combinedParts);
+
         return new CreateOrderRequest
         {
             StoreId              = StoreId,
@@ -316,7 +355,7 @@ public class OrderDraftService
             RequestedPickupDate  = pickupDate,
             RequestedPickupSlot  = pickupSlot,
             PaymentMethod        = paymentMethod,
-            SpecialInstructions  = notes,
+            SpecialInstructions  = string.IsNullOrWhiteSpace(combinedNotes) ? null : combinedNotes,
             Items                = Items.Select(i => i.ToRequest()).ToList()
         };
     }

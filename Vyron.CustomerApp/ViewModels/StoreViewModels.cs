@@ -65,8 +65,68 @@ public partial class ServiceCardViewModel : ObservableObject
         _           => "👕"
     };
 
-    [ObservableProperty]
-    private bool _isSelected;
+    // ── Draft linkage ─────────────────────────────────────────────────
+    // When the service is added to the cart an OrderDraftItem reference is set here.
+    // All quantity / total display binds through this reference so the card reacts
+    // live as the user taps +/−.
+    private Services.OrderDraftItem? _draftItem;
+    public Services.OrderDraftItem? DraftItem
+    {
+        get => _draftItem;
+        set
+        {
+            if (_draftItem != null)
+                _draftItem.PropertyChanged -= OnDraftItemPropertyChanged;
+
+            if (SetProperty(ref _draftItem, value))
+            {
+                if (_draftItem != null)
+                    _draftItem.PropertyChanged += OnDraftItemPropertyChanged;
+
+                OnPropertyChanged(nameof(IsSelected));
+                OnPropertyChanged(nameof(CounterLabel));
+                OnPropertyChanged(nameof(LineTotalDisplay));
+            }
+        }
+    }
+
+    /// <summary>True when this service has been added to the cart (qty > 0).</summary>
+    public bool IsSelected => _draftItem != null;
+
+    /// <summary>
+    /// Qty shown in the −/n/+ stepper.
+    /// PerKg: weight as a compact decimal string ("1", "1.5", "2").
+    /// PerItem / Fixed: piece count.
+    /// Shows "0" when not in cart.
+    /// </summary>
+    public string CounterLabel
+    {
+        get
+        {
+            if (_draftItem == null) return "0";
+            if (_draftItem.IsPerKg)
+            {
+                var w = _draftItem.Weight;
+                return w == Math.Floor(w) ? ((int)w).ToString() : w.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
+            }
+            return _draftItem.Pieces.ToString();
+        }
+    }
+
+    /// <summary>Line total string (e.g. "₦3,000") forwarded from the draft item; empty when not selected.</summary>
+    public string LineTotalDisplay => _draftItem?.LineTotalDisplay ?? "";
+
+    private void OnDraftItemPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(Services.OrderDraftItem.Weight)
+                           or nameof(Services.OrderDraftItem.Pieces)
+                           or nameof(Services.OrderDraftItem.LineTotal)
+                           or nameof(Services.OrderDraftItem.LineTotalDisplay))
+        {
+            OnPropertyChanged(nameof(CounterLabel));
+            OnPropertyChanged(nameof(LineTotalDisplay));
+        }
+    }
 
     public ServiceCardViewModel(ServiceSummaryDto svc) => Service = svc;
 
@@ -83,6 +143,18 @@ public partial class ServiceCardViewModel : ObservableObject
             return "Wash";
         return "All";
     }
+}
+
+// ─── SERVICE GROUP (grouped CollectionView section header) ──────────
+/// <summary>
+/// A named section of <see cref="ServiceCardViewModel"/> items.
+/// Used as the ItemsSource for the grouped CollectionView on ServiceSelectionPage.
+/// </summary>
+public class ServiceGroup : List<ServiceCardViewModel>
+{
+    public string GroupName { get; }
+    public ServiceGroup(string groupName, IEnumerable<ServiceCardViewModel> items) : base(items)
+        => GroupName = groupName;
 }
 
 public partial class HomeViewModel : BaseViewModel
