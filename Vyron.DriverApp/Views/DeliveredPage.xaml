@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.DriverApp.ViewModels"
+             x:Class="Vyron.DriverApp.Views.DeliveredPage"
+             x:DataType="vm:DeliveredViewModel">
+    <Grid RowDefinitions="*,Auto">
+        <ScrollView>
+            <VerticalStackLayout Padding="22,24,22,126" Spacing="15">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                    <Border WidthRequest="42" HeightRequest="42" Stroke="Transparent" StrokeShape="RoundRectangle 21" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderCardDark}}">
+                        <Label Text="←" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center" />
+                        <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding GoBackCommand}" /></Border.GestureRecognizers>
+                    </Border>
+                    <Label Grid.Column="1" Text="Delivery" FontFamily="OpenSansSemibold" FontSize="20" VerticalOptions="Center" />
+                </Grid>
+                <Border Stroke="Transparent" StrokeShape="RoundRectangle 26" Padding="22" BackgroundColor="{StaticResource RiderDeep}">
+                    <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+                        <Border WidthRequest="56" HeightRequest="56" Stroke="Transparent" StrokeShape="RoundRectangle 28" BackgroundColor="#2C8B76">
+                            <Label Text="✓" TextColor="White" FontFamily="OpenSansSemibold" FontSize="24" HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                        <Label Text="Delivered successfully" TextColor="White" FontFamily="OpenSansSemibold" FontSize="20" />
+                        <Label Text="Order #VY-2841 · 11:24 AM" TextColor="#C7F3E7" FontSize="12" />
+                        <Label Text="+ ₦1,850" TextColor="White" FontFamily="OpenSansSemibold" FontSize="25" />
+                        <Label Text="added to today's earnings" TextColor="#C7F3E7" FontSize="12" />
+                    </VerticalStackLayout>
+                </Border>
+                <Label Text="Delivered to" FontFamily="OpenSansSemibold" />
+                <Border Style="{StaticResource RiderCard}">
+                    <Grid ColumnDefinitions="40,*,Auto" ColumnSpacing="10">
+                        <Border WidthRequest="38" HeightRequest="38" Stroke="Transparent" StrokeShape="RoundRectangle 19" BackgroundColor="{StaticResource RiderMint}">
+                            <Label Text="⌖" HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1">
+                            <Label Text="Adaeze Nwosu" FontFamily="OpenSansSemibold" />
+                            <Label Text="Block 4, Magodo Phase 2, Lagos" Style="{StaticResource RiderMutedLabel}" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="2" Text="☎" WidthRequest="42" HeightRequest="42" Padding="0" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderInputDark}}" TextColor="{AppThemeBinding Light={StaticResource RiderInk}, Dark={StaticResource RiderTextDark}}" />
+                    </Grid>
+                </Border>
+                <Label Text="Proof of delivery" FontFamily="OpenSansSemibold" />
+                <Grid ColumnDefinitions="84,84,84" ColumnSpacing="13">
+                    <Border HeightRequest="92" Stroke="Transparent" StrokeShape="RoundRectangle 20" BackgroundColor="#075C56"><Label Text="Bag · 1.2MB" TextColor="White" FontSize="10" FontFamily="OpenSansSemibold" VerticalOptions="End" Margin="8" /></Border>
+                    <Border Grid.Column="1" HeightRequest="92" Stroke="Transparent" StrokeShape="RoundRectangle 20" BackgroundColor="#075C56"><Label Text="Bag · 1.2MB" TextColor="White" FontSize="10" FontFamily="OpenSansSemibold" VerticalOptions="End" Margin="8" /></Border>
+                    <Border Grid.Column="2" HeightRequest="92" StrokeDashArray="4,3" Stroke="{AppThemeBinding Light={StaticResource RiderBorder}, Dark={StaticResource RiderBorderDark}}" StrokeShape="RoundRectangle 20"><VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center"><Label Text="▣" /><Label Text="Add" FontSize="12" /></VerticalStackLayout></Border>
+                </Grid>
+                <Label Text="Delivery notes" FontFamily="OpenSansSemibold" />
+                <Border Style="{StaticResource RiderCard}">
+                    <Label Text="Handed over to customer at door. Customer confirmed all items received." />
+                </Border>
+                <Border Style="{StaticResource RiderCard}" BackgroundColor="{AppThemeBinding Light=#E4FFF3, Dark={StaticResource RiderDeep}}" Stroke="#B8F1D7">
+                    <HorizontalStackLayout Spacing="9">
+                        <Label Text="⌁" TextColor="{StaticResource RiderPrimaryDark}" />
+                        <Label Text="Customer confirmed via SMS at 11:23 AM" TextColor="{StaticResource RiderPrimaryDark}" FontFamily="OpenSansSemibold" FontSize="12" />
+                    </HorizontalStackLayout>
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+        <Border Grid.Row="1" Padding="22,12,22,20" Stroke="{AppThemeBinding Light={StaticResource RiderBorder}, Dark={StaticResource RiderBorderDark}}" BackgroundColor="{AppThemeBinding Light=White, Dark={StaticResource RiderPageDark}}">
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="9">
+                <Button Text="View order" Command="{Binding ViewOrderCommand}" Style="{StaticResource RiderOutlineButton}" />
+                <Button Grid.Column="1" Text="Next job →" Command="{Binding NextJobCommand}" />
+            </Grid>
+        </Border>
+    </Grid>
+</ContentPage>

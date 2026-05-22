@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.DriverApp.ViewModels"
+             x:Class="Vyron.DriverApp.Views.RiderHomePage"
+             x:DataType="vm:RiderHomeViewModel">
+    <ScrollView>
+        <VerticalStackLayout Padding="22,24,22,110" Spacing="16">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="11">
+                <Border WidthRequest="44" HeightRequest="44" Stroke="Transparent" StrokeShape="RoundRectangle 22" BackgroundColor="#006B63">
+                    <Label Text="{Binding Initials}" TextColor="White" FontFamily="OpenSansSemibold" FontSize="17" HorizontalOptions="Center" VerticalOptions="Center" />
+                </Border>
+                <VerticalStackLayout Grid.Column="1" Spacing="0" VerticalOptions="Center">
+                    <Label Text="Hello," Style="{StaticResource RiderMutedLabel}" FontSize="13" />
+                    <Label Text="{Binding RiderName}" FontFamily="OpenSansSemibold" FontSize="17" />
+                </VerticalStackLayout>
+                <Border Grid.Column="2" WidthRequest="44" HeightRequest="44" Stroke="Transparent" StrokeShape="RoundRectangle 22"
+                        BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderCardDark}}">
+                    <Grid>
+                        <Label Text="🔔" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+                        <Ellipse WidthRequest="8" HeightRequest="8" Fill="{StaticResource RiderPrimary}" HorizontalOptions="End" VerticalOptions="Start" Margin="0,8,8,0" />
+                    </Grid>
+                    <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding OpenNotificationsCommand}" /></Border.GestureRecognizers>
+                </Border>
+            </Grid>
+            <Border Stroke="Transparent" StrokeShape="RoundRectangle 24" Padding="17" BackgroundColor="{StaticResource RiderDeep}">
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Spacing="5">
+                        <HorizontalStackLayout Spacing="7">
+                            <Ellipse WidthRequest="8" HeightRequest="8" Fill="{StaticResource RiderPrimary}" VerticalOptions="Center" />
+                            <Label Text="YOU'RE ONLINE" TextColor="#8BFFD8" FontFamily="OpenSansSemibold" FontSize="12" />
+                        </HorizontalStackLayout>
+                        <Label Text="Accepting nearby jobs" TextColor="White" FontFamily="OpenSansSemibold" FontSize="19" />
+                        <Label Text="Ikeja - 3 jobs in 2km" TextColor="#B8D7D1" FontSize="12" />
+                    </VerticalStackLayout>
+                    <Switch Grid.Column="1" IsToggled="{Binding IsOnline}" OnColor="{StaticResource RiderPrimary}" ThumbColor="White" VerticalOptions="Center" />
+                </Grid>
+            </Border>
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                <Border BackgroundColor="{StaticResource RiderMint}" Stroke="Transparent" StrokeShape="RoundRectangle 22" Padding="16" MinimumHeightRequest="118">
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="TODAY" TextColor="#267868" FontSize="12" />
+                        <Label Text="₦12,450" FontFamily="OpenSansSemibold" FontSize="25" TextColor="{StaticResource RiderInk}" />
+                        <Label Text="+18% vs avg" TextColor="#267868" FontSize="12" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Column="1" Style="{StaticResource RiderCard}" MinimumHeightRequest="118">
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="JOBS DONE" Style="{StaticResource RiderMutedLabel}" />
+                        <Label Text="7" FontFamily="OpenSansSemibold" FontSize="25" />
+                        <Label Text="of 10 goal" Style="{StaticResource RiderMutedLabel}" />
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+            <Border Style="{StaticResource RiderCard}">
+                <Grid ColumnDefinitions="*,*">
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Active assigned" Style="{StaticResource RiderMutedLabel}" FontSize="13" />
+                        <Label Text="3 orders" FontFamily="OpenSansSemibold" FontSize="20" />
+                        <Label Text="▣ 2 pickups pending" Style="{StaticResource RiderMutedLabel}" />
+                    </VerticalStackLayout>
+                    <VerticalStackLayout Grid.Column="1" Spacing="5" HorizontalOptions="End">
+                        <Label Text="Success rate" Style="{StaticResource RiderMutedLabel}" FontSize="13" />
+                        <Label Text="98%" FontFamily="OpenSansSemibold" FontSize="20" HorizontalTextAlignment="End" />
+                        <Label Text="▱ 1 in transit" Style="{StaticResource RiderMutedLabel}" />
+                    </VerticalStackLayout>
+                </Grid>
+            </Border>
+            <Label Text="Quick actions" FontFamily="OpenSansSemibold" />
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+                <Border BackgroundColor="{StaticResource RiderMint}" Stroke="Transparent" StrokeShape="RoundRectangle 22" Padding="16" MinimumHeightRequest="112">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="📦" FontSize="18" />
+                        <Label Text="Assigned" FontFamily="OpenSansSemibold" />
+                        <Label Text="3 jobs" Style="{StaticResource RiderMutedLabel}" />
+                    </VerticalStackLayout>
+                    <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding OpenOrdersCommand}" /></Border.GestureRecognizers>
+                </Border>
+                <Border Grid.Column="1" Style="{StaticResource RiderCard}" MinimumHeightRequest="112">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="📍" FontSize="18" />
+                        <Label Text="Pickups" FontFamily="OpenSansSemibold" />
+                        <Label Text="2 pending" Style="{StaticResource RiderMutedLabel}" />
+                    </VerticalStackLayout>
+                    <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding OpenMapCommand}" /></Border.GestureRecognizers>
+                </Border>
+                <Border Grid.Row="1" Style="{StaticResource RiderCard}" MinimumHeightRequest="112">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="🚚" FontSize="18" />
+                        <Label Text="Deliveries" FontFamily="OpenSansSemibold" />
+                        <Label Text="1 active" Style="{StaticResource RiderMutedLabel}" />
+                    </VerticalStackLayout>
+                    <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding OpenOrdersCommand}" /></Border.GestureRecognizers>
+                </Border>
+                <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource RiderCard}" MinimumHeightRequest="112">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="💰" FontSize="18" />
+                        <Label Text="Earnings" FontFamily="OpenSansSemibold" />
+                        <Label Text="₦12,450" Style="{StaticResource RiderMutedLabel}" />
+                    </VerticalStackLayout>
+                    <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding OpenEarningsCommand}" /></Border.GestureRecognizers>
+                </Border>
+            </Grid>
+            <Button Text="Support" Command="{Binding OpenSupportCommand}" Style="{StaticResource RiderOutlineButton}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

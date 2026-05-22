@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.DriverApp.ViewModels"
+             xmlns:model="clr-namespace:Vyron.DriverApp.Models"
+             x:Class="Vyron.DriverApp.Views.EarningsPage"
+             x:DataType="vm:EarningsViewModel">
+    <ScrollView>
+        <VerticalStackLayout Padding="22,24,22,36" Spacing="16">
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Text="Earnings" Style="{StaticResource RiderTitle}" FontSize="20" />
+                <Label Grid.Column="1" Text="Withdraw" FontFamily="OpenSansSemibold" VerticalOptions="Center">
+                    <Label.GestureRecognizers><TapGestureRecognizer Command="{Binding WithdrawCommand}" /></Label.GestureRecognizers>
+                </Label>
+            </Grid>
+            <Border Stroke="Transparent" StrokeShape="RoundRectangle 26" Padding="20" BackgroundColor="#062D27">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="TODAY" TextColor="#A9C3BD" FontFamily="OpenSansSemibold" FontSize="12" />
+                    <Label Text="₦12,450" TextColor="White" FontFamily="OpenSansSemibold" FontSize="36" />
+                    <Label Text="↗ 18% vs yesterday" TextColor="#39E1A1" FontSize="12" />
+                    <BoxView HeightRequest="1" Color="#24554C" />
+                    <Grid ColumnDefinitions="*,*,*">
+                        <VerticalStackLayout><Label Text="THIS WEEK" TextColor="#A9C3BD" FontSize="11" /><Label Text="₦68,200" TextColor="White" FontFamily="OpenSansSemibold" /></VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1"><Label Text="JOBS" TextColor="#A9C3BD" FontSize="11" /><Label Text="42" TextColor="White" FontFamily="OpenSansSemibold" /></VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="2"><Label Text="PENDING PAYOUT" TextColor="#A9C3BD" FontSize="11" /><Label Text="₦8,500" TextColor="White" FontFamily="OpenSansSemibold" /></VerticalStackLayout>
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Text="Breakdown" FontFamily="OpenSansSemibold" />
+                <Label Grid.Column="1" Text="This week ⌄" Style="{StaticResource RiderMutedLabel}" FontSize="12" />
+            </Grid>
+            <Border Style="{StaticResource RiderCard}">
+                <VerticalStackLayout Spacing="13">
+                    <Grid ColumnDefinitions="*,Auto"><Label Text="Delivery fees" Style="{StaticResource RiderMutedLabel}" FontSize="14" /><Label Grid.Column="1" Text="₦52,400" FontFamily="OpenSansSemibold" /></Grid>
+                    <Grid ColumnDefinitions="*,Auto"><Label Text="Tips" Style="{StaticResource RiderMutedLabel}" FontSize="14" /><Label Grid.Column="1" Text="₦3,200" FontFamily="OpenSansSemibold" /></Grid>
+                    <Grid ColumnDefinitions="*,Auto"><Label Text="Bonuses" Style="{StaticResource RiderMutedLabel}" FontSize="14" /><Label Grid.Column="1" Text="₦8,000" FontFamily="OpenSansSemibold" /></Grid>
+                    <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource RiderBorder}, Dark={StaticResource RiderBorderDark}}" />
+                    <Grid ColumnDefinitions="*,Auto"><Label Text="Total" FontFamily="OpenSansSemibold" /><Label Grid.Column="1" Text="₦63,600" FontFamily="OpenSansSemibold" FontSize="16" /></Grid>
+                </VerticalStackLayout>
+            </Border>
+            <Label Text="Payout history" FontFamily="OpenSansSemibold" />
+            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Payouts}" Spacing="10">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate x:DataType="model:PayoutRow">
+                        <Border Style="{StaticResource RiderCard}">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <VerticalStackLayout><Label Text="{Binding Amount}" FontFamily="OpenSansSemibold" /><Label Text="{Binding Subtitle}" Style="{StaticResource RiderMutedLabel}" /></VerticalStackLayout>
+                                <Border Grid.Column="1" Style="{StaticResource RiderChip}" Stroke="Transparent" BackgroundColor="{AppThemeBinding Light=#E8FFF5, Dark={StaticResource RiderDeep}}">
+                                    <HorizontalStackLayout Spacing="6"><Ellipse WidthRequest="6" HeightRequest="6" Fill="{StaticResource RiderPrimary}" VerticalOptions="Center" /><Label Text="{Binding Status}" FontSize="11" TextColor="{StaticResource RiderPrimaryDark}" /></HorizontalStackLayout>
+                                </Border>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.DriverApp.ViewModels"
+             x:Class="Vyron.DriverApp.Views.RiderOnboardingPage"
+             x:DataType="vm:RiderOnboardingViewModel">
+    <Grid RowDefinitions="*,Auto">
+        <ScrollView>
+            <VerticalStackLayout Padding="26,30,26,24" Spacing="18">
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label Text="Step 2 of 3" Style="{StaticResource RiderMutedLabel}" FontSize="13" />
+                    <Label Grid.Column="1" Text="66%" FontFamily="OpenSansSemibold" FontSize="13" />
+                </Grid>
+                <Grid HeightRequest="5" BackgroundColor="{StaticResource RiderSoft}">
+                    <BoxView WidthRequest="188" HorizontalOptions="Start" Color="{StaticResource RiderPrimary}" />
+                </Grid>
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Complete your profile" FontSize="26" FontFamily="OpenSansSemibold" />
+                    <Label Text="A few details so customers can recognize you" Style="{StaticResource RiderMutedLabel}" FontSize="15" />
+                </VerticalStackLayout>
+                <Grid ColumnDefinitions="84,*" ColumnSpacing="12">
+                    <Border WidthRequest="78" HeightRequest="78" StrokeDashArray="4,3" Stroke="{AppThemeBinding Light={StaticResource RiderBorder}, Dark={StaticResource RiderBorderDark}}" StrokeShape="RoundRectangle 20" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderInputDark}}">
+                        <Grid>
+                            <Label Text="▣" FontSize="22" HorizontalOptions="Center" VerticalOptions="Center" />
+                            <Border WidthRequest="24" HeightRequest="24" HorizontalOptions="End" VerticalOptions="End" Stroke="Transparent" StrokeShape="RoundRectangle 12" BackgroundColor="{StaticResource RiderPrimary}">
+                                <Label Text="+" TextColor="White" HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
+                        </Grid>
+                    </Border>
+                    <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                        <Label Text="Profile photo" FontFamily="OpenSansSemibold" />
+                        <Label Text="Clear face, no cap or sunglasses" Style="{StaticResource RiderMutedLabel}" />
+                    </VerticalStackLayout>
+                </Grid>
+                <VerticalStackLayout Spacing="7">
+                    <Label Text="FULL NAME" Style="{StaticResource RiderMutedLabel}" CharacterSpacing="1" />
+                    <Border Style="{StaticResource RiderCard}" Padding="16,6" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderInputDark}}" Stroke="Transparent">
+                        <Entry Text="{Binding FullName}" HeightRequest="40" />
+                    </Border>
+                </VerticalStackLayout>
+                <VerticalStackLayout Spacing="7">
+                    <Label Text="PHONE NUMBER" Style="{StaticResource RiderMutedLabel}" CharacterSpacing="1" />
+                    <Border Style="{StaticResource RiderCard}" Padding="16,6" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderInputDark}}" Stroke="Transparent">
+                        <Entry Text="{Binding PhoneNumber}" HeightRequest="40" Keyboard="Telephone" />
+                    </Border>
+                </VerticalStackLayout>
+                <Label Text="VEHICLE TYPE" Style="{StaticResource RiderMutedLabel}" CharacterSpacing="1" />
+                <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="7">
+                    <Border Stroke="{StaticResource RiderPrimary}" StrokeThickness="2" StrokeShape="RoundRectangle 18" BackgroundColor="{StaticResource RiderMint}" Padding="5" HeightRequest="78">
+                        <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="3">
+                            <Label Text="🛵" HorizontalOptions="Center" FontSize="18" />
+                            <Label Text="Bike" HorizontalOptions="Center" FontFamily="OpenSansSemibold" FontSize="11" />
+                        </VerticalStackLayout>
+                        <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding SelectVehicleCommand}" CommandParameter="Bike" /></Border.GestureRecognizers>
+                    </Border>
+                    <Border Grid.Column="1" Style="{StaticResource RiderCard}" Padding="5" HeightRequest="78" StrokeShape="RoundRectangle 18">
+                        <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="3">
+                            <Label Text="🚲" HorizontalOptions="Center" FontSize="18" />
+                            <Label Text="Bicycle" HorizontalOptions="Center" FontFamily="OpenSansSemibold" FontSize="11" />
+                        </VerticalStackLayout>
+                        <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding SelectVehicleCommand}" CommandParameter="Bicycle" /></Border.GestureRecognizers>
+                    </Border>
+                    <Border Grid.Column="2" Style="{StaticResource RiderCard}" Padding="5" HeightRequest="78" StrokeShape="RoundRectangle 18">
+                        <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="3">
+                            <Label Text="🚙" HorizontalOptions="Center" FontSize="18" />
+                            <Label Text="Car" HorizontalOptions="Center" FontFamily="OpenSansSemibold" FontSize="11" />
+                        </VerticalStackLayout>
+                        <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding SelectVehicleCommand}" CommandParameter="Car" /></Border.GestureRecognizers>
+                    </Border>
+                    <Border Grid.Column="3" Style="{StaticResource RiderCard}" Padding="5" HeightRequest="78" StrokeShape="RoundRectangle 18">
+                        <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="3">
+                            <Label Text="🚐" HorizontalOptions="Center" FontSize="18" />
+                            <Label Text="Van" HorizontalOptions="Center" FontFamily="OpenSansSemibold" FontSize="11" />
+                        </VerticalStackLayout>
+                        <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding SelectVehicleCommand}" CommandParameter="Van" /></Border.GestureRecognizers>
+                    </Border>
+                </Grid>
+                <VerticalStackLayout Spacing="7">
+                    <Label Text="VEHICLE PLATE NUMBER" Style="{StaticResource RiderMutedLabel}" CharacterSpacing="1" />
+                    <Border Style="{StaticResource RiderCard}" Padding="16,6" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderInputDark}}" Stroke="Transparent">
+                        <Entry Text="{Binding VehiclePlate}" HeightRequest="40" />
+                    </Border>
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+        </ScrollView>
+        <Border Grid.Row="1" Padding="24,12,24,20" Stroke="Transparent" BackgroundColor="{AppThemeBinding Light=White, Dark={StaticResource RiderPageDark}}">
+            <Button Text="Submit &amp; continue" Command="{Binding SubmitCommand}" />
+        </Border>
+    </Grid>
+</ContentPage>

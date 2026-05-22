@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.DriverApp.ViewModels"
+             xmlns:model="clr-namespace:Vyron.DriverApp.Models"
+             x:Class="Vyron.DriverApp.Views.RiderProfilePage"
+             x:Name="ProfilePage"
+             x:DataType="vm:ProfileViewModel">
+    <ScrollView>
+        <VerticalStackLayout Padding="22,24,22,36" Spacing="15">
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Text="Profile" Style="{StaticResource RiderTitle}" FontSize="20" />
+                <Border Grid.Column="1" WidthRequest="40" HeightRequest="40" Stroke="Transparent" StrokeShape="RoundRectangle 20" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderCardDark}}">
+                    <Label Text="⚙" HorizontalOptions="Center" VerticalOptions="Center" />
+                    <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding OpenSettingsCommand}" /></Border.GestureRecognizers>
+                </Border>
+            </Grid>
+            <Border Style="{StaticResource RiderCard}" Padding="20">
+                <VerticalStackLayout Spacing="14">
+                    <Grid ColumnDefinitions="70,*" ColumnSpacing="12">
+                        <Border WidthRequest="64" HeightRequest="64" Stroke="Transparent" StrokeShape="RoundRectangle 22" BackgroundColor="#006B63">
+                            <Label Text="CO" TextColor="White" FontFamily="OpenSansSemibold" FontSize="22" HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                            <Label Text="Chinedu Okafor" FontFamily="OpenSansSemibold" FontSize="18" />
+                            <Label Text="+234 803 412 8821" Style="{StaticResource RiderMutedLabel}" />
+                            <HorizontalStackLayout Spacing="8">
+                                <Border Style="{StaticResource RiderChip}" Stroke="Transparent" BackgroundColor="{AppThemeBinding Light=#E8FFF5, Dark={StaticResource RiderDeep}}"><Label Text="Verified" TextColor="{StaticResource RiderPrimaryDark}" FontSize="11" /></Border>
+                                <Label Text="★ 4.92" FontFamily="OpenSansSemibold" FontSize="12" VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+                    </Grid>
+                    <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource RiderBorder}, Dark={StaticResource RiderBorderDark}}" />
+                    <Grid ColumnDefinitions="*,*,*">
+                        <VerticalStackLayout HorizontalOptions="Center"><Label Text="284" FontFamily="OpenSansSemibold" FontSize="18" HorizontalOptions="Center" /><Label Text="JOBS" Style="{StaticResource RiderMutedLabel}" /></VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1" HorizontalOptions="Center"><Label Text="98%" FontFamily="OpenSansSemibold" FontSize="18" HorizontalOptions="Center" /><Label Text="ON-TIME" Style="{StaticResource RiderMutedLabel}" /></VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="2" HorizontalOptions="Center"><Label Text="4.92" FontFamily="OpenSansSemibold" FontSize="18" HorizontalOptions="Center" /><Label Text="RATING" Style="{StaticResource RiderMutedLabel}" /></VerticalStackLayout>
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+            <Label Text="Vehicle" FontFamily="OpenSansSemibold" />
+            <Border Style="{StaticResource RiderCard}">
+                <Grid ColumnDefinitions="42,*,Auto" ColumnSpacing="10">
+                    <Border WidthRequest="38" HeightRequest="38" Stroke="Transparent" StrokeShape="RoundRectangle 19" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderInputDark}}">
+                        <Label Text="🛵" HorizontalOptions="Center" VerticalOptions="Center" />
+                    </Border>
+                    <VerticalStackLayout Grid.Column="1">
+                        <Label Text="Bike · LAG-238-XK" FontFamily="OpenSansSemibold" />
+                        <Label Text="Honda CB125 · Insured till Dec 2026" Style="{StaticResource RiderMutedLabel}" />
+                    </VerticalStackLayout>
+                    <Label Grid.Column="2" Text="›" VerticalOptions="Center" FontSize="20" Style="{StaticResource RiderMutedLabel}" />
+                </Grid>
+            </Border>
+            <Label Text="Account" FontFamily="OpenSansSemibold" />
+            <Border Style="{StaticResource RiderCard}" Padding="0">
+                <VerticalStackLayout BindableLayout.ItemsSource="{Binding Options}" Spacing="0">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="model:RiderOptionRow">
+                            <Border Padding="14" Stroke="Transparent" BackgroundColor="Transparent">
+                                <Grid ColumnDefinitions="40,*,Auto" ColumnSpacing="10">
+                                    <Border WidthRequest="36" HeightRequest="36" Stroke="Transparent" StrokeShape="RoundRectangle 18" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderInputDark}}">
+                                        <Label Text="{Binding Icon}" HorizontalOptions="Center" VerticalOptions="Center" />
+                                    </Border>
+                                    <Label Grid.Column="1" Text="{Binding Title}" FontFamily="OpenSansSemibold" VerticalOptions="Center" />
+                                    <HorizontalStackLayout Grid.Column="2" Spacing="8" VerticalOptions="Center">
+                                        <Label Text="{Binding Value}" Style="{StaticResource RiderMutedLabel}" />
+                                        <Label Text=">" Style="{StaticResource RiderMutedLabel}" FontSize="16" />
+                                    </HorizontalStackLayout>
+                                </Grid>
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding Source={x:Reference ProfilePage}, Path=BindingContext.OpenOptionCommand}" CommandParameter="{Binding .}" />
+                                </Border.GestureRecognizers>
+                            </Border>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+            </Border>
+            <Label Text="Vyron Rider · v1.0.0" Style="{StaticResource RiderMutedLabel}" HorizontalOptions="Center" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

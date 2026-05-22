@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.DriverApp.ViewModels"
+             xmlns:model="clr-namespace:Vyron.DriverApp.Models"
+             x:Class="Vyron.DriverApp.Views.AssignedOrdersPage"
+             x:Name="OrdersPage"
+             x:DataType="vm:AssignedOrdersViewModel">
+    <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="22,24,22,12" RowSpacing="14">
+        <Grid ColumnDefinitions="*,Auto">
+            <Label Text="Assigned Orders" Style="{StaticResource RiderTitle}" FontSize="20" />
+            <Border Grid.Column="1" WidthRequest="40" HeightRequest="40" Stroke="Transparent" StrokeShape="RoundRectangle 20"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderCardDark}}">
+                <Label Text="▽" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+            </Border>
+        </Grid>
+        <Border Grid.Row="1" Style="{StaticResource RiderCard}" Padding="14,5" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderInputDark}}" Stroke="Transparent">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                <Label Text="⌕" FontSize="18" VerticalOptions="Center" />
+                <Entry Grid.Column="1" Text="{Binding SearchText}" Placeholder="Search order ID, customer, store" HeightRequest="42" />
+            </Grid>
+        </Border>
+        <ScrollView Grid.Row="2" Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+            <HorizontalStackLayout Spacing="8">
+                <Button Text="All" Command="{Binding SelectFilterCommand}" CommandParameter="All"
+                        HeightRequest="38" Padding="16,0" FontSize="12" CornerRadius="19"
+                        BorderColor="{AppThemeBinding Light={StaticResource RiderBorder}, Dark={StaticResource RiderBorderDark}}" BorderWidth="1"
+                        BackgroundColor="{AppThemeBinding Light=White, Dark={StaticResource RiderCardDark}}"
+                        TextColor="{AppThemeBinding Light={StaticResource RiderInk}, Dark={StaticResource RiderTextDark}}">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding SelectedFilter}" Value="All">
+                            <Setter Property="BackgroundColor" Value="{StaticResource RiderInk}" />
+                            <Setter Property="TextColor" Value="White" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+                <Button Text="Pickup" Command="{Binding SelectFilterCommand}" CommandParameter="Pickup"
+                        HeightRequest="38" Padding="16,0" FontSize="12" CornerRadius="19"
+                        BorderColor="{AppThemeBinding Light={StaticResource RiderBorder}, Dark={StaticResource RiderBorderDark}}" BorderWidth="1"
+                        BackgroundColor="{AppThemeBinding Light=White, Dark={StaticResource RiderCardDark}}"
+                        TextColor="{AppThemeBinding Light={StaticResource RiderInk}, Dark={StaticResource RiderTextDark}}">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding SelectedFilter}" Value="Pickup">
+                            <Setter Property="BackgroundColor" Value="{StaticResource RiderInk}" />
+                            <Setter Property="TextColor" Value="White" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+                <Button Text="Drop-off" Command="{Binding SelectFilterCommand}" CommandParameter="Drop-off"
+                        HeightRequest="38" Padding="16,0" FontSize="12" CornerRadius="19"
+                        BorderColor="{AppThemeBinding Light={StaticResource RiderBorder}, Dark={StaticResource RiderBorderDark}}" BorderWidth="1"
+                        BackgroundColor="{AppThemeBinding Light=White, Dark={StaticResource RiderCardDark}}"
+                        TextColor="{AppThemeBinding Light={StaticResource RiderInk}, Dark={StaticResource RiderTextDark}}">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding SelectedFilter}" Value="Drop-off">
+                            <Setter Property="BackgroundColor" Value="{StaticResource RiderInk}" />
+                            <Setter Property="TextColor" Value="White" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+                <Button Text="In Progress" Command="{Binding SelectFilterCommand}" CommandParameter="In Progress"
+                        HeightRequest="38" Padding="16,0" FontSize="12" CornerRadius="19"
+                        BorderColor="{AppThemeBinding Light={StaticResource RiderBorder}, Dark={StaticResource RiderBorderDark}}" BorderWidth="1"
+                        BackgroundColor="{AppThemeBinding Light=White, Dark={StaticResource RiderCardDark}}"
+                        TextColor="{AppThemeBinding Light={StaticResource RiderInk}, Dark={StaticResource RiderTextDark}}">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding SelectedFilter}" Value="In Progress">
+                            <Setter Property="BackgroundColor" Value="{StaticResource RiderInk}" />
+                            <Setter Property="TextColor" Value="White" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+                <Button Text="Completed" Command="{Binding SelectFilterCommand}" CommandParameter="Completed"
+                        HeightRequest="38" Padding="16,0" FontSize="12" CornerRadius="19"
+                        BorderColor="{AppThemeBinding Light={StaticResource RiderBorder}, Dark={StaticResource RiderBorderDark}}" BorderWidth="1"
+                        BackgroundColor="{AppThemeBinding Light=White, Dark={StaticResource RiderCardDark}}"
+                        TextColor="{AppThemeBinding Light={StaticResource RiderInk}, Dark={StaticResource RiderTextDark}}">
+                    <Button.Triggers>
+                        <DataTrigger TargetType="Button" Binding="{Binding SelectedFilter}" Value="Completed">
+                            <Setter Property="BackgroundColor" Value="{StaticResource RiderInk}" />
+                            <Setter Property="TextColor" Value="White" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+            </HorizontalStackLayout>
+        </ScrollView>
+        <CollectionView Grid.Row="3" ItemsSource="{Binding Jobs}" SelectionMode="None">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="model:RiderJobCard">
+                    <Border Style="{StaticResource RiderCard}" Margin="0,0,0,12" Padding="16">
+                        <VerticalStackLayout Spacing="11">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <VerticalStackLayout Spacing="2">
+                                    <Label Text="{Binding Id}" FontFamily="OpenSansSemibold" Style="{StaticResource RiderMutedLabel}" FontSize="13" />
+                                    <Label Text="{Binding Customer}" FontFamily="OpenSansSemibold" FontSize="16" />
+                                    <Label Text="{Binding Store}" Style="{StaticResource RiderMutedLabel}" FontSize="12" />
+                                </VerticalStackLayout>
+                                <Border Grid.Column="1" Style="{StaticResource RiderChip}" Stroke="Transparent" BackgroundColor="{AppThemeBinding Light=#D7FAE9, Dark={StaticResource RiderDeep}}">
+                                    <HorizontalStackLayout Spacing="5">
+                                        <Ellipse Fill="{StaticResource RiderPrimary}" WidthRequest="6" HeightRequest="6" VerticalOptions="Center" />
+                                        <Label Text="{Binding Status}" TextColor="{StaticResource RiderPrimaryDark}" FontFamily="OpenSansSemibold" FontSize="11" />
+                                    </HorizontalStackLayout>
+                                </Border>
+                            </Grid>
+                            <Grid ColumnDefinitions="22,*" RowDefinitions="Auto,Auto" RowSpacing="9">
+                                <Label Text="⌂" TextColor="{StaticResource RiderMuted}" VerticalOptions="Center" />
+                                <VerticalStackLayout Grid.Column="1" Spacing="0">
+                                    <Label Text="PICKUP" Style="{StaticResource RiderMutedLabel}" FontSize="11" />
+                                    <Label Text="{Binding PickupAddress}" FontSize="13" />
+                                </VerticalStackLayout>
+                                <Label Grid.Row="1" Text="⌖" TextColor="{StaticResource RiderPrimaryDark}" VerticalOptions="Center" />
+                                <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="0">
+                                    <Label Text="DROP-OFF" Style="{StaticResource RiderMutedLabel}" FontSize="11" />
+                                    <Label Text="{Binding DropoffAddress}" FontSize="13" />
+                                </VerticalStackLayout>
+                            </Grid>
+                            <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource RiderBorder}, Dark={StaticResource RiderBorderDark}}" />
+                            <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="7">
+                                <Label Text="⌁" Style="{StaticResource RiderMutedLabel}" />
+                                <Label Grid.Column="1" Text="{Binding Distance}" Style="{StaticResource RiderMutedLabel}" />
+                                <Label Grid.Column="2" Text="{Binding Eta}" Style="{StaticResource RiderMutedLabel}" />
+                                <Button Grid.Column="3" Text="View job >" Command="{Binding Source={x:Reference OrdersPage}, Path=BindingContext.ViewJobCommand}" CommandParameter="{Binding .}"
+                                        HeightRequest="34" Padding="10,0" FontSize="12" CornerRadius="17"
+                                        BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderInputDark}}"
+                                        TextColor="{AppThemeBinding Light={StaticResource RiderInk}, Dark={StaticResource RiderTextDark}}" />
+                            </Grid>
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+</ContentPage>

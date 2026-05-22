@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.DriverApp.ViewModels"
+             x:Class="Vyron.DriverApp.Views.RiderMapPage"
+             x:DataType="vm:RiderMapViewModel">
+    <Grid>
+        <Grid BackgroundColor="{AppThemeBinding Light=#DFF1EF, Dark=#062521}" RowDefinitions="*,Auto">
+            <Grid>
+                <Grid RowDefinitions="*,*,*,*,*" ColumnDefinitions="*,*,*,*,*">
+                    <BoxView Grid.RowSpan="5" Grid.Column="1" WidthRequest="1" Color="#AECBC6" />
+                    <BoxView Grid.RowSpan="5" Grid.Column="3" WidthRequest="1" Color="#AECBC6" />
+                    <BoxView Grid.Row="1" Grid.ColumnSpan="5" HeightRequest="1" Color="#AECBC6" />
+                    <BoxView Grid.Row="3" Grid.ColumnSpan="5" HeightRequest="1" Color="#AECBC6" />
+                </Grid>
+                <Path Stroke="{StaticResource RiderPrimary}" StrokeDashArray="2,2" StrokeThickness="4" Data="M196,520 L252,286 L278,164" />
+                <Border Margin="20,24,0,0" WidthRequest="42" HeightRequest="42" HorizontalOptions="Start" VerticalOptions="Start"
+                        Stroke="Transparent" StrokeShape="RoundRectangle 21" BackgroundColor="{AppThemeBinding Light=White, Dark={StaticResource RiderCardDark}}">
+                    <Label Text="←" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center" />
+                    <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding GoBackCommand}" /></Border.GestureRecognizers>
+                </Border>
+                <Border Margin="0,25,0,0" Padding="14,8" HorizontalOptions="Center" VerticalOptions="Start" Stroke="Transparent" StrokeShape="RoundRectangle 19" BackgroundColor="{AppThemeBinding Light=White, Dark={StaticResource RiderCardDark}}">
+                    <HorizontalStackLayout Spacing="6">
+                        <Ellipse WidthRequest="6" HeightRequest="6" Fill="{StaticResource RiderMint}" VerticalOptions="Center" />
+                        <Label Text="Live navigation" FontFamily="OpenSansSemibold" FontSize="12" />
+                    </HorizontalStackLayout>
+                </Border>
+                <Border Margin="0,86,38,0" WidthRequest="42" HeightRequest="42" HorizontalOptions="End" VerticalOptions="Start" Stroke="White" StrokeThickness="2" StrokeShape="RoundRectangle 21" BackgroundColor="#17201F">
+                    <Label Text="⌖" TextColor="White" HorizontalOptions="Center" VerticalOptions="Center" />
+                </Border>
+            </Grid>
+            <Border Grid.Row="1" Margin="0" Padding="22,20,22,22" Stroke="Transparent" StrokeShape="RoundRectangle 28,28,0,0"
+                    BackgroundColor="{AppThemeBinding Light=White, Dark={StaticResource RiderCardDark}}">
+                <VerticalStackLayout Spacing="12">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <VerticalStackLayout Spacing="3">
+                            <Label Text="CURRENT JOB" Style="{StaticResource RiderMutedLabel}" FontFamily="OpenSansSemibold" />
+                            <Label Text="#VY-2841 · Adaeze Nwosu" FontFamily="OpenSansSemibold" FontSize="18" />
+                        </VerticalStackLayout>
+                        <Border Grid.Column="1" Style="{StaticResource RiderChip}" Stroke="Transparent" BackgroundColor="{StaticResource RiderMint}">
+                            <Label Text="To store" TextColor="{StaticResource RiderDeep}" FontSize="11" FontFamily="OpenSansSemibold" />
+                        </Border>
+                    </Grid>
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                        <Border Style="{StaticResource RiderCard}" Padding="11" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderInputDark}}" Stroke="Transparent"><VerticalStackLayout><Label Text="ETA" Style="{StaticResource RiderMutedLabel}" /><Label Text="8 min" FontFamily="OpenSansSemibold" /></VerticalStackLayout></Border>
+                        <Border Grid.Column="1" Style="{StaticResource RiderCard}" Padding="11" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderInputDark}}" Stroke="Transparent"><VerticalStackLayout><Label Text="DISTANCE" Style="{StaticResource RiderMutedLabel}" /><Label Text="2.1 km" FontFamily="OpenSansSemibold" /></VerticalStackLayout></Border>
+                        <Border Grid.Column="2" Style="{StaticResource RiderCard}" Padding="11" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderInputDark}}" Stroke="Transparent"><VerticalStackLayout><Label Text="EARNINGS" Style="{StaticResource RiderMutedLabel}" /><Label Text="₦1,850" FontFamily="OpenSansSemibold" /></VerticalStackLayout></Border>
+                    </Grid>
+                    <Border Style="{StaticResource RiderCard}" Padding="12" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderInputDark}}" Stroke="Transparent">
+                        <Grid ColumnDefinitions="36,*" ColumnSpacing="9">
+                            <Border WidthRequest="34" HeightRequest="34" Stroke="Transparent" StrokeShape="RoundRectangle 17" BackgroundColor="{StaticResource RiderMint}">
+                                <Label Text="⌖" HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
+                            <VerticalStackLayout Grid.Column="1">
+                                <Label Text="NEXT STOP" Style="{StaticResource RiderMutedLabel}" />
+                                <Label Text="BrightWash · Allen Avenue, Ikeja" FontFamily="OpenSansSemibold" />
+                            </VerticalStackLayout>
+                        </Grid>
+                    </Border>
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Button Text="Navigate" Style="{StaticResource RiderOutlineButton}" />
+                        <Button Grid.Column="1" Text="Arrived at store" Command="{Binding ArriveCommand}" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+    </Grid>
+</ContentPage>

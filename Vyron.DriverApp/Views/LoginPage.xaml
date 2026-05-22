@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.DriverApp.ViewModels"
+             x:Class="Vyron.DriverApp.Views.LoginPage"
+             x:DataType="vm:LoginViewModel">
+    <ScrollView>
+        <VerticalStackLayout Padding="26,30,26,24" Spacing="18">
+            <HorizontalStackLayout Spacing="9">
+                <Border WidthRequest="38" HeightRequest="38" Stroke="Transparent" StrokeShape="RoundRectangle 11" BackgroundColor="{StaticResource RiderPrimary}">
+                    <Label Text="V" TextColor="White" FontSize="22" FontFamily="OpenSansSemibold" HorizontalOptions="Center" VerticalOptions="Center" />
+                </Border>
+                <Label Text="vyron" FontFamily="OpenSansSemibold" FontSize="27" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+            <Border Style="{StaticResource RiderCard}" BackgroundColor="{AppThemeBinding Light={StaticResource RiderMint}, Dark={StaticResource RiderDeep}}" Stroke="Transparent" Margin="0,8,0,6">
+                <Grid ColumnDefinitions="72,*" ColumnSpacing="14">
+                    <Label Text="🛵" FontSize="38" VerticalOptions="Center" HorizontalOptions="Center" />
+                    <VerticalStackLayout Grid.Column="1" Spacing="0" VerticalOptions="Center">
+                        <Label Text="RIDER PORTAL" FontSize="11" CharacterSpacing="1" />
+                        <Label Text="Deliver smarter,&#10;earn more" FontSize="18" FontFamily="OpenSansSemibold" />
+                    </VerticalStackLayout>
+                </Grid>
+            </Border>
+            <VerticalStackLayout Spacing="5">
+                <Label Text="Welcome back" FontSize="27" FontFamily="OpenSansSemibold" />
+                <Label Text="Sign in to start picking up jobs" Style="{StaticResource RiderMutedLabel}" FontSize="15" />
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="9">
+                <Label Text="PHONE OR EMAIL" Style="{StaticResource RiderMutedLabel}" CharacterSpacing="1" />
+                <Border Style="{StaticResource RiderCard}" Padding="16,6" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderInputDark}}" Stroke="Transparent">
+                    <Entry Text="{Binding PhoneOrEmail}" HeightRequest="42" Keyboard="Telephone" />
+                </Border>
+            </VerticalStackLayout>
+            <VerticalStackLayout Spacing="9">
+                <Label Text="PASSWORD" Style="{StaticResource RiderMutedLabel}" CharacterSpacing="1" />
+                <Border Style="{StaticResource RiderCard}" Padding="16,6" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderInputDark}}" Stroke="Transparent">
+                    <Entry Text="{Binding Password}" Placeholder="Password" IsPassword="True" HeightRequest="42" />
+                </Border>
+            </VerticalStackLayout>
+            <Grid ColumnDefinitions="*,Auto">
+                <HorizontalStackLayout Spacing="7">
+                    <CheckBox IsChecked="{Binding KeepSignedIn}" Color="{StaticResource RiderPrimary}" />
+                    <Label Text="Keep me signed in" Style="{StaticResource RiderMutedLabel}" VerticalOptions="Center" FontSize="13" />
+                </HorizontalStackLayout>
+                <Label Grid.Column="1" Text="Forgot password?" FontFamily="OpenSansSemibold" FontSize="13" VerticalOptions="Center" />
+            </Grid>
+            <Border Style="{StaticResource RiderCard}" Padding="12" BackgroundColor="{StaticResource RiderDanger}" Stroke="#FFC9D0" IsVisible="{Binding HasError}">
+                <HorizontalStackLayout Spacing="10">
+                    <Label Text="!" TextColor="{StaticResource RiderDangerText}" FontFamily="OpenSansSemibold" />
+                    <Label Text="{Binding ErrorMessage}" TextColor="{StaticResource RiderDangerText}" FontSize="13" />
+                </HorizontalStackLayout>
+            </Border>
+            <Button Text="Log in" Command="{Binding LoginCommand}" />
+            <HorizontalStackLayout HorizontalOptions="Center" Spacing="4">
+                <Label Text="New to Vyron?" Style="{StaticResource RiderMutedLabel}" FontSize="13" />
+                <Label Text="Apply as a rider" FontFamily="OpenSansSemibold" FontSize="13">
+                    <Label.GestureRecognizers><TapGestureRecognizer Command="{Binding ApplyCommand}" /></Label.GestureRecognizers>
+                </Label>
+            </HorizontalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

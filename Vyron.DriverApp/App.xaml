@@ -4,23 +4,114 @@
              x:Class="Vyron.DriverApp.App">
     <Application.Resources>
         <ResourceDictionary>
-            <Color x:Key="Teal">#00C9A7</Color>
-            <Color x:Key="TealDark">#007A58</Color>
-            <Color x:Key="Dark">#0A0A0A</Color>
-            <Color x:Key="Bg">#F4F4F0</Color>
-            <Color x:Key="Gray3">#B0AFA8</Color>
-            <Color x:Key="Gray5">#2C2C2A</Color>
+            <Color x:Key="RiderPrimary">#00B884</Color>
+            <Color x:Key="RiderPrimaryDark">#009B72</Color>
+            <Color x:Key="RiderDeep">#003F32</Color>
+            <Color x:Key="RiderInk">#061A17</Color>
+            <Color x:Key="RiderMuted">#64706D</Color>
+            <Color x:Key="RiderBorder">#E6ECEA</Color>
+            <Color x:Key="RiderSoft">#EEF5F2</Color>
+            <Color x:Key="RiderMint">#C8F8E4</Color>
+            <Color x:Key="RiderWarning">#FFF5D9</Color>
+            <Color x:Key="RiderDanger">#FFEEF0</Color>
+            <Color x:Key="RiderDangerText">#E01837</Color>
+            <Color x:Key="RiderPageLight">#F7FAF9</Color>
+            <Color x:Key="RiderPageDark">#031714</Color>
+            <Color x:Key="RiderCardLight">#FFFFFF</Color>
+            <Color x:Key="RiderCardDark">#0A2923</Color>
+            <Color x:Key="RiderTextDark">#F4FFFB</Color>
+            <Color x:Key="RiderMutedDark">#A9C3BD</Color>
+            <Color x:Key="RiderBorderDark">#1C4B41</Color>
+            <Color x:Key="RiderInputDark">#08231E</Color>
+            <Color x:Key="Teal">#00B884</Color>
+            <Color x:Key="TealDark">#009B72</Color>
+            <Color x:Key="Dark">#061A17</Color>
+            <Color x:Key="Bg">#F7FAF9</Color>
+            <Color x:Key="Gray3">#64706D</Color>
+            <Color x:Key="Gray5">#061A17</Color>
+
+            <Style TargetType="ContentPage">
+                <Setter Property="BackgroundColor"
+                        Value="{AppThemeBinding Light={StaticResource RiderPageLight}, Dark={StaticResource RiderPageDark}}" />
+                <Setter Property="Shell.NavBarIsVisible" Value="False" />
+            </Style>
 
             <Style TargetType="Label">
-                <Setter Property="TextColor" Value="{StaticResource Gray5}" />
+                <Setter Property="TextColor"
+                        Value="{AppThemeBinding Light={StaticResource RiderInk}, Dark={StaticResource RiderTextDark}}" />
                 <Setter Property="FontFamily" Value="OpenSansRegular" />
             </Style>
             <Style TargetType="Button">
                 <Setter Property="FontFamily" Value="OpenSansSemibold" />
-                <Setter Property="CornerRadius" Value="12" />
-                <Setter Property="HeightRequest" Value="48" />
-                <Setter Property="BackgroundColor" Value="{StaticResource Teal}" />
-                <Setter Property="TextColor" Value="{StaticResource Dark}" />
+                <Setter Property="CornerRadius" Value="27" />
+                <Setter Property="HeightRequest" Value="56" />
+                <Setter Property="BackgroundColor" Value="{StaticResource RiderPrimary}" />
+                <Setter Property="TextColor" Value="White" />
+                <Setter Property="Padding" Value="18,0" />
+                <Setter Property="FontSize" Value="14" />
+            </Style>
+            <Style TargetType="Entry">
+                <Setter Property="TextColor"
+                        Value="{AppThemeBinding Light={StaticResource RiderInk}, Dark={StaticResource RiderTextDark}}" />
+                <Setter Property="PlaceholderColor"
+                        Value="{AppThemeBinding Light={StaticResource RiderMuted}, Dark={StaticResource RiderMutedDark}}" />
+                <Setter Property="BackgroundColor" Value="Transparent" />
+            </Style>
+            <Style TargetType="Editor">
+                <Setter Property="TextColor"
+                        Value="{AppThemeBinding Light={StaticResource RiderInk}, Dark={StaticResource RiderTextDark}}" />
+                <Setter Property="PlaceholderColor"
+                        Value="{AppThemeBinding Light={StaticResource RiderMuted}, Dark={StaticResource RiderMutedDark}}" />
+                <Setter Property="BackgroundColor" Value="Transparent" />
+            </Style>
+            <Style x:Key="RiderCard" TargetType="Border">
+                <Setter Property="Padding" Value="18" />
+                <Setter Property="StrokeShape" Value="RoundRectangle 24" />
+                <Setter Property="Stroke"
+                        Value="{AppThemeBinding Light={StaticResource RiderBorder}, Dark={StaticResource RiderBorderDark}}" />
+                <Setter Property="BackgroundColor"
+                        Value="{AppThemeBinding Light={StaticResource RiderCardLight}, Dark={StaticResource RiderCardDark}}" />
+            </Style>
+            <Style x:Key="RiderMutedLabel" TargetType="Label">
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="TextColor"
+                        Value="{AppThemeBinding Light={StaticResource RiderMuted}, Dark={StaticResource RiderMutedDark}}" />
+            </Style>
+            <Style x:Key="RiderTitle" TargetType="Label">
+                <Setter Property="FontFamily" Value="OpenSansSemibold" />
+                <Setter Property="FontSize" Value="23" />
+            </Style>
+            <Style x:Key="RiderChip" TargetType="Border">
+                <Setter Property="Padding" Value="12,8" />
+                <Setter Property="StrokeShape" Value="RoundRectangle 20" />
+                <Setter Property="Stroke"
+                        Value="{AppThemeBinding Light={StaticResource RiderBorder}, Dark={StaticResource RiderBorderDark}}" />
+                <Setter Property="BackgroundColor"
+                        Value="{AppThemeBinding Light={StaticResource RiderCardLight}, Dark={StaticResource RiderCardDark}}" />
+            </Style>
+            <Style x:Key="RiderIconBubble" TargetType="Border">
+                <Setter Property="WidthRequest" Value="40" />
+                <Setter Property="HeightRequest" Value="40" />
+                <Setter Property="Stroke" Value="Transparent" />
+                <Setter Property="StrokeShape" Value="RoundRectangle 20" />
+                <Setter Property="BackgroundColor"
+                        Value="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderInputDark}}" />
+            </Style>
+            <Style x:Key="RiderOutlineButton" TargetType="Button">
+                <Setter Property="BackgroundColor"
+                        Value="{AppThemeBinding Light=White, Dark={StaticResource RiderCardDark}}" />
+                <Setter Property="TextColor"
+                        Value="{AppThemeBinding Light={StaticResource RiderInk}, Dark={StaticResource RiderTextDark}}" />
+                <Setter Property="BorderColor"
+                        Value="{AppThemeBinding Light={StaticResource RiderBorder}, Dark={StaticResource RiderBorderDark}}" />
+                <Setter Property="BorderWidth" Value="1" />
+            </Style>
+            <Style TargetType="Shell">
+                <Setter Property="Shell.TabBarBackgroundColor"
+                        Value="{AppThemeBinding Light=White, Dark={StaticResource RiderCardDark}}" />
+                <Setter Property="Shell.TabBarForegroundColor" Value="{StaticResource RiderPrimaryDark}" />
+                <Setter Property="Shell.TabBarUnselectedColor"
+                        Value="{AppThemeBinding Light={StaticResource RiderMuted}, Dark={StaticResource RiderMutedDark}}" />
             </Style>
         </ResourceDictionary>
     </Application.Resources>

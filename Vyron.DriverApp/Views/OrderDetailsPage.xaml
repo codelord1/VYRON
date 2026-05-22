@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.DriverApp.ViewModels"
+             xmlns:model="clr-namespace:Vyron.DriverApp.Models"
+             x:Class="Vyron.DriverApp.Views.OrderDetailsPage"
+             x:DataType="vm:OrderDetailsViewModel">
+    <Grid RowDefinitions="*,Auto">
+        <ScrollView>
+            <VerticalStackLayout Padding="22,24,22,146" Spacing="15">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                    <Border WidthRequest="42" HeightRequest="42" Stroke="Transparent" StrokeShape="RoundRectangle 21" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderCardDark}}">
+                        <Label Text="←" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center" />
+                        <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding GoBackCommand}" /></Border.GestureRecognizers>
+                    </Border>
+                    <Label Grid.Column="1" Text="{Binding JobId, StringFormat='Job {0}'}" FontFamily="OpenSansSemibold" FontSize="20" VerticalOptions="Center" />
+                    <Border Grid.Column="2" Style="{StaticResource RiderChip}" Stroke="Transparent" BackgroundColor="{AppThemeBinding Light=#D7FAE9, Dark={StaticResource RiderDeep}}">
+                        <HorizontalStackLayout Spacing="5">
+                            <Ellipse WidthRequest="6" HeightRequest="6" Fill="{StaticResource RiderPrimary}" VerticalOptions="Center" />
+                            <Label Text="Awaiting pickup" FontSize="11" TextColor="{StaticResource RiderPrimaryDark}" FontFamily="OpenSansSemibold" />
+                        </HorizontalStackLayout>
+                    </Border>
+                </Grid>
+                <Border Style="{StaticResource RiderCard}">
+                    <Grid ColumnDefinitions="52,*,Auto" ColumnSpacing="12">
+                        <Border WidthRequest="48" HeightRequest="48" Stroke="Transparent" StrokeShape="RoundRectangle 24" BackgroundColor="#006B63">
+                            <Label Text="CO" TextColor="White" FontFamily="OpenSansSemibold" HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                            <Label Text="Adaeze Nwosu" FontFamily="OpenSansSemibold" FontSize="16" />
+                            <Label Text="Customer - ★ 4.9" Style="{StaticResource RiderMutedLabel}" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="2" Text="☎" Command="{Binding CallCustomerCommand}" WidthRequest="44" HeightRequest="44" Padding="0" BackgroundColor="{StaticResource RiderMint}" TextColor="{StaticResource RiderInk}" />
+                    </Grid>
+                </Border>
+                <Border Style="{StaticResource RiderCard}">
+                    <Grid ColumnDefinitions="52,*,Auto" ColumnSpacing="12">
+                        <Border WidthRequest="48" HeightRequest="48" Stroke="Transparent" StrokeShape="RoundRectangle 24" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderInputDark}}">
+                            <Label Text="⌂" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                            <Label Text="BrightWash Ikeja" FontFamily="OpenSansSemibold" FontSize="16" />
+                            <Label Text="Partner store - Opens 7am - 8pm" Style="{StaticResource RiderMutedLabel}" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="2" Text="☎" Command="{Binding CallStoreCommand}" WidthRequest="44" HeightRequest="44" Padding="0" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderInputDark}}" TextColor="{AppThemeBinding Light={StaticResource RiderInk}, Dark={StaticResource RiderTextDark}}" />
+                    </Grid>
+                </Border>
+                <Label Text="Route" FontFamily="OpenSansSemibold" />
+                <Border Style="{StaticResource RiderCard}">
+                    <VerticalStackLayout Spacing="12">
+                        <Grid HeightRequest="128" BackgroundColor="{AppThemeBinding Light=#E3F5F1, Dark={StaticResource RiderInputDark}}">
+                            <Grid BackgroundColor="Transparent" RowDefinitions="*,*,*" ColumnDefinitions="*,*,*,*">
+                                <BoxView Grid.RowSpan="3" Grid.Column="1" WidthRequest="1" Color="#B5D7D0" />
+                                <BoxView Grid.RowSpan="3" Grid.Column="3" WidthRequest="1" Color="#B5D7D0" />
+                                <BoxView Grid.Row="1" Grid.ColumnSpan="4" HeightRequest="1" Color="#B5D7D0" />
+                                <Path Grid.RowSpan="3" Grid.ColumnSpan="4" Stroke="{StaticResource RiderPrimary}" StrokeThickness="3"
+                                      Data="M20,96 C70,40 130,78 214,24" />
+                                <Ellipse Grid.RowSpan="3" Grid.ColumnSpan="4" WidthRequest="10" HeightRequest="10" Fill="#071A17" HorizontalOptions="Start" VerticalOptions="End" Margin="20,0,0,29" />
+                                <Ellipse Grid.RowSpan="3" Grid.ColumnSpan="4" WidthRequest="10" HeightRequest="10" Fill="{StaticResource RiderPrimary}" HorizontalOptions="End" VerticalOptions="Start" Margin="0,19,31,0" />
+                            </Grid>
+                        </Grid>
+                        <Grid ColumnDefinitions="20,*" RowDefinitions="Auto,Auto" RowSpacing="10">
+                            <Label Text="⌂" />
+                            <VerticalStackLayout Grid.Column="1">
+                                <Label Text="PICKUP" Style="{StaticResource RiderMutedLabel}" FontSize="11" />
+                                <Label Text="12B Allen Ave, Ikeja" />
+                            </VerticalStackLayout>
+                            <Label Grid.Row="1" Text="⌖" TextColor="{StaticResource RiderPrimaryDark}" />
+                            <VerticalStackLayout Grid.Row="1" Grid.Column="1">
+                                <Label Text="DROP-OFF" Style="{StaticResource RiderMutedLabel}" FontSize="11" />
+                                <Label Text="BrightWash, Allen Avenue, Ikeja" />
+                            </VerticalStackLayout>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+                <Label Text="Laundry summary" FontFamily="OpenSansSemibold" />
+                <Border Style="{StaticResource RiderCard}">
+                    <VerticalStackLayout Spacing="11">
+                        <Grid ColumnDefinitions="*,Auto"><Label Text="Bag" Style="{StaticResource RiderMutedLabel}" /><Label Grid.Column="1" Text="1 large (≈ 6 kg)" FontFamily="OpenSansSemibold" /></Grid>
+                        <Grid ColumnDefinitions="*,Auto"><Label Text="Service" Style="{StaticResource RiderMutedLabel}" /><Label Grid.Column="1" Text="Wash &amp; Iron - Express" FontFamily="OpenSansSemibold" /></Grid>
+                        <Grid ColumnDefinitions="*,Auto"><Label Text="Special" Style="{StaticResource RiderMutedLabel}" /><Label Grid.Column="1" Text="Hand wash 2 items" FontFamily="OpenSansSemibold" /></Grid>
+                        <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource RiderBorder}, Dark={StaticResource RiderBorderDark}}" />
+                        <Grid ColumnDefinitions="*,Auto"><Label Text="Pickup fee + Delivery fee" Style="{StaticResource RiderMutedLabel}" /><Label Grid.Column="1" Text="₦1,850" FontFamily="OpenSansSemibold" FontSize="17" /></Grid>
+                    </VerticalStackLayout>
+                </Border>
+                <Label Text="Progress" FontFamily="OpenSansSemibold" />
+                <Border Style="{StaticResource RiderCard}">
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding Progress}" Spacing="13">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="model:RiderProgressStep">
+                                <Grid ColumnDefinitions="30,*" ColumnSpacing="8">
+                                    <Border WidthRequest="22" HeightRequest="22" Stroke="{StaticResource RiderPrimary}" StrokeShape="RoundRectangle 11"
+                                            BackgroundColor="{StaticResource RiderPrimary}">
+                                        <Label Text="{Binding Number}" TextColor="White" FontSize="11" FontFamily="OpenSansSemibold" HorizontalOptions="Center" VerticalOptions="Center" />
+                                    </Border>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="0">
+                                        <Label Text="{Binding Title}" FontFamily="OpenSansSemibold" />
+                                        <Label Text="{Binding Time}" Style="{StaticResource RiderMutedLabel}" />
+                                    </VerticalStackLayout>
+                                </Grid>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+        <Border Grid.Row="1" Padding="18,12,18,18" Stroke="{AppThemeBinding Light={StaticResource RiderBorder}, Dark={StaticResource RiderBorderDark}}" BackgroundColor="{AppThemeBinding Light=White, Dark={StaticResource RiderPageDark}}">
+            <VerticalStackLayout Spacing="9">
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="7">
+                    <Button Text="Customer" Command="{Binding CallCustomerCommand}" Style="{StaticResource RiderOutlineButton}" />
+                    <Button Grid.Column="1" Text="Store" Command="{Binding CallStoreCommand}" Style="{StaticResource RiderOutlineButton}" />
+                    <Button Grid.Column="2" Text="Map" Command="{Binding OpenMapCommand}" Style="{StaticResource RiderOutlineButton}" />
+                </Grid>
+                <Button Text="Start pickup →" Command="{Binding StartPickupCommand}" />
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
+</ContentPage>

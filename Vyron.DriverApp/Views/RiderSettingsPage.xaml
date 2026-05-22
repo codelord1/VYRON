@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.DriverApp.ViewModels"
+             x:Class="Vyron.DriverApp.Views.RiderSettingsPage"
+             x:DataType="vm:SettingsViewModel">
+    <ScrollView>
+        <VerticalStackLayout Padding="22,24,22,28" Spacing="16">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <Border WidthRequest="42" HeightRequest="42" Stroke="Transparent" StrokeShape="RoundRectangle 21" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderCardDark}}">
+                    <Label Text="←" HorizontalOptions="Center" VerticalOptions="Center" FontSize="19" />
+                    <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding GoBackCommand}" /></Border.GestureRecognizers>
+                </Border>
+                <Label Grid.Column="1" Text="Settings" Style="{StaticResource RiderTitle}" FontSize="20" VerticalOptions="Center" />
+            </Grid>
+            <Label Text="Preferences" FontFamily="OpenSansSemibold" />
+            <Border Style="{StaticResource RiderCard}" Padding="0">
+                <VerticalStackLayout Spacing="0">
+                    <Grid Padding="15" ColumnDefinitions="40,*,Auto" ColumnSpacing="10">
+                        <Border WidthRequest="36" HeightRequest="36" Stroke="Transparent" StrokeShape="RoundRectangle 18" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderInputDark}}"><Label Text="◐" HorizontalOptions="Center" VerticalOptions="Center" /></Border>
+                        <VerticalStackLayout Grid.Column="1"><Label Text="Dark mode" FontFamily="OpenSansSemibold" /><Label Text="Use dark rider theme" Style="{StaticResource RiderMutedLabel}" /></VerticalStackLayout>
+                        <Switch Grid.Column="2" IsToggled="{Binding DarkMode}" OnColor="{StaticResource RiderPrimary}" ThumbColor="White" VerticalOptions="Center" />
+                    </Grid>
+                    <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource RiderBorder}, Dark={StaticResource RiderBorderDark}}" />
+                    <Grid Padding="15" ColumnDefinitions="40,*,Auto" ColumnSpacing="10">
+                        <Border WidthRequest="36" HeightRequest="36" Stroke="Transparent" StrokeShape="RoundRectangle 18" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderInputDark}}"><Label Text="♧" HorizontalOptions="Center" VerticalOptions="Center" /></Border>
+                        <VerticalStackLayout Grid.Column="1"><Label Text="Push notifications" FontFamily="OpenSansSemibold" /><Label Text="Job alerts, messages, payouts" Style="{StaticResource RiderMutedLabel}" /></VerticalStackLayout>
+                        <Switch Grid.Column="2" IsToggled="{Binding PushNotifications}" OnColor="{StaticResource RiderPrimary}" ThumbColor="White" VerticalOptions="Center" />
+                    </Grid>
+                    <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource RiderBorder}, Dark={StaticResource RiderBorderDark}}" />
+                    <Grid Padding="15" ColumnDefinitions="40,*,Auto" ColumnSpacing="10">
+                        <Border WidthRequest="36" HeightRequest="36" Stroke="Transparent" StrokeShape="RoundRectangle 18" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderInputDark}}"><Label Text="⌖" HorizontalOptions="Center" VerticalOptions="Center" /></Border>
+                        <VerticalStackLayout Grid.Column="1"><Label Text="Location permission" FontFamily="OpenSansSemibold" /><Label Text="Always on (required)" Style="{StaticResource RiderMutedLabel}" /></VerticalStackLayout>
+                        <Switch Grid.Column="2" IsToggled="{Binding LocationPermission}" OnColor="{StaticResource RiderPrimary}" ThumbColor="White" VerticalOptions="Center" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+            <Label Text="Account" FontFamily="OpenSansSemibold" />
+            <Border Style="{StaticResource RiderCard}" Padding="0">
+                <VerticalStackLayout>
+                    <Grid Padding="16" ColumnDefinitions="40,*,Auto"><Label Text="▱" /><Label Grid.Column="1" Text="Change password" FontFamily="OpenSansSemibold" /><Label Grid.Column="2" Text="›" /></Grid>
+                    <Grid Padding="16" ColumnDefinitions="40,*,Auto"><Label Text="▭" /><Label Grid.Column="1" Text="Payment method" FontFamily="OpenSansSemibold" /><Label Grid.Column="2" Text="›" /></Grid>
+                    <Grid Padding="16" ColumnDefinitions="40,*,Auto"><Label Text="▤" /><Label Grid.Column="1" Text="My documents" FontFamily="OpenSansSemibold" /><Label Grid.Column="2" Text="›" /></Grid>
+                </VerticalStackLayout>
+            </Border>
+            <Label Text="Legal" FontFamily="OpenSansSemibold" />
+            <Border Style="{StaticResource RiderCard}" Padding="0">
+                <VerticalStackLayout>
+                    <Grid Padding="16" ColumnDefinitions="40,*,Auto"><Label Text="◌" /><Label Grid.Column="1" Text="Privacy policy" FontFamily="OpenSansSemibold" /><Label Grid.Column="2" Text="›" /></Grid>
+                    <Grid Padding="16" ColumnDefinitions="40,*,Auto"><Label Text="▤" /><Label Grid.Column="1" Text="Terms of service" FontFamily="OpenSansSemibold" /><Label Grid.Column="2" Text="›" /></Grid>
+                    <Grid Padding="16" ColumnDefinitions="40,*,Auto"><Label Text="◎" /><Label Grid.Column="1" Text="Help center" FontFamily="OpenSansSemibold" /><Label Grid.Column="2" Text="›" /></Grid>
+                </VerticalStackLayout>
+            </Border>
+            <Label Text="App version 1.0.0 (build 284)" Style="{StaticResource RiderMutedLabel}" HorizontalOptions="Center" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

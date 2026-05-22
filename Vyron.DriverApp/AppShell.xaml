@@ -3,9 +3,33 @@
        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
        xmlns:views="clr-namespace:Vyron.DriverApp.Views"
        x:Class="Vyron.DriverApp.AppShell"
-       Shell.FlyoutBehavior="Disabled"
-       BackgroundColor="{StaticResource Dark}">
-    <ShellContent Route="main"
+       Shell.NavBarIsVisible="False"
+       Shell.FlyoutBehavior="Disabled">
+    <ShellContent Route="launch"
                   ContentTemplate="{DataTemplate views:MainPage}"
-                  Shell.NavBarIsVisible="False" />
+                  Shell.TabBarIsVisible="False" />
+    <ShellContent Route="login"
+                  ContentTemplate="{DataTemplate views:LoginPage}"
+                  Shell.TabBarIsVisible="False" />
+    <ShellContent Route="onboarding"
+                  ContentTemplate="{DataTemplate views:RiderOnboardingPage}"
+                  Shell.TabBarIsVisible="False" />
+
+    <TabBar Route="rider">
+        <Tab Route="homeTab" Title="Home" Icon="rider_home_tab.svg">
+            <ShellContent Route="home" ContentTemplate="{DataTemplate views:RiderHomePage}" />
+        </Tab>
+        <Tab Route="ordersTab" Title="Orders" Icon="rider_orders_tab.svg">
+            <ShellContent Route="orders" ContentTemplate="{DataTemplate views:AssignedOrdersPage}" />
+        </Tab>
+        <Tab Route="mapTab" Title="Map" Icon="rider_map_tab.svg">
+            <ShellContent Route="map" ContentTemplate="{DataTemplate views:RiderMapPage}" />
+        </Tab>
+        <Tab Route="earningsTab" Title="Earnings" Icon="rider_earnings_tab.svg">
+            <ShellContent Route="earnings" ContentTemplate="{DataTemplate views:EarningsPage}" />
+        </Tab>
+        <Tab Route="profileTab" Title="Profile" Icon="rider_profile_tab.svg">
+            <ShellContent Route="profile" ContentTemplate="{DataTemplate views:RiderProfilePage}" />
+        </Tab>
+    </TabBar>
 </Shell>

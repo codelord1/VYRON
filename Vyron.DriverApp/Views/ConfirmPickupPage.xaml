@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Vyron.DriverApp.ViewModels"
+             x:Class="Vyron.DriverApp.Views.ConfirmPickupPage"
+             x:DataType="vm:ConfirmPickupViewModel">
+    <Grid RowDefinitions="*,Auto">
+        <ScrollView>
+            <VerticalStackLayout Padding="22,24,22,126" Spacing="15">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                    <Border WidthRequest="42" HeightRequest="42" Stroke="Transparent" StrokeShape="RoundRectangle 21" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderCardDark}}">
+                        <Label Text="←" FontSize="20" HorizontalOptions="Center" VerticalOptions="Center" />
+                        <Border.GestureRecognizers><TapGestureRecognizer Command="{Binding GoBackCommand}" /></Border.GestureRecognizers>
+                    </Border>
+                    <Label Grid.Column="1" Text="Confirm Pickup" FontFamily="OpenSansSemibold" FontSize="20" VerticalOptions="Center" />
+                </Grid>
+                <Border Style="{StaticResource RiderCard}">
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout>
+                                <Label Text="ORDER" Style="{StaticResource RiderMutedLabel}" FontFamily="OpenSansSemibold" />
+                                <Label Text="#VY-2841" FontFamily="OpenSansSemibold" FontSize="20" />
+                            </VerticalStackLayout>
+                            <Border Grid.Column="1" Style="{StaticResource RiderChip}" Stroke="Transparent" BackgroundColor="{StaticResource RiderMint}">
+                                <HorizontalStackLayout Spacing="6"><Ellipse WidthRequest="6" HeightRequest="6" Fill="{StaticResource RiderPrimary}" VerticalOptions="Center" /><Label Text="At customer" TextColor="{StaticResource RiderDeep}" FontSize="11" FontFamily="OpenSansSemibold" /></HorizontalStackLayout>
+                            </Border>
+                        </Grid>
+                        <Grid ColumnDefinitions="40,*" ColumnSpacing="10">
+                            <Border WidthRequest="38" HeightRequest="38" Stroke="Transparent" StrokeShape="RoundRectangle 19" BackgroundColor="{StaticResource RiderMint}">
+                                <Label Text="⌖" HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
+                            <VerticalStackLayout Grid.Column="1">
+                                <Label Text="Adaeze Nwosu" FontFamily="OpenSansSemibold" />
+                                <Label Text="12B Allen Ave, Ikeja" Style="{StaticResource RiderMutedLabel}" />
+                            </VerticalStackLayout>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+                <Label Text="Photo proof" FontFamily="OpenSansSemibold" />
+                <Grid ColumnDefinitions="84,84,84" ColumnSpacing="13">
+                    <Border HeightRequest="92" Stroke="Transparent" StrokeShape="RoundRectangle 20" BackgroundColor="#075C56">
+                        <Grid Padding="8">
+                            <Border WidthRequest="18" HeightRequest="18" Stroke="Transparent" StrokeShape="RoundRectangle 9" BackgroundColor="#123D3B" HorizontalOptions="End" VerticalOptions="Start">
+                                <Label Text="×" TextColor="White" FontSize="11" HorizontalOptions="Center" VerticalOptions="Center" />
+                            </Border>
+                            <Label Text="Bag · 1.2MB" TextColor="White" FontSize="10" FontFamily="OpenSansSemibold" VerticalOptions="End" />
+                        </Grid>
+                    </Border>
+                    <Border Grid.Column="1" HeightRequest="92" StrokeDashArray="4,3" Stroke="{AppThemeBinding Light={StaticResource RiderBorder}, Dark={StaticResource RiderBorderDark}}" StrokeShape="RoundRectangle 20">
+                        <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center"><Label Text="▣" HorizontalOptions="Center" /><Label Text="Add" FontSize="12" /></VerticalStackLayout>
+                    </Border>
+                    <Border Grid.Column="2" HeightRequest="92" StrokeDashArray="4,3" Stroke="{AppThemeBinding Light={StaticResource RiderBorder}, Dark={StaticResource RiderBorderDark}}" StrokeShape="RoundRectangle 20">
+                        <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center"><Label Text="▣" HorizontalOptions="Center" /><Label Text="Add" FontSize="12" /></VerticalStackLayout>
+                    </Border>
+                </Grid>
+                <Label Text="Take at least 1 photo of the laundry bag for proof of pickup." Style="{StaticResource RiderMutedLabel}" FontSize="13" />
+                <Label Text="Bag count" FontFamily="OpenSansSemibold" />
+                <Border Style="{StaticResource RiderCard}">
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="12">
+                        <VerticalStackLayout>
+                            <Label Text="Bags collected" FontFamily="OpenSansSemibold" />
+                            <Label Text="Confirm what customer handed over" Style="{StaticResource RiderMutedLabel}" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1" Text="−" Command="{Binding RemoveBagCommand}" WidthRequest="38" HeightRequest="38" Padding="0" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderInputDark}}" TextColor="{AppThemeBinding Light={StaticResource RiderInk}, Dark={StaticResource RiderTextDark}}" VerticalOptions="Center" />
+                        <Label Grid.Column="2" Text="{Binding BagCount}" FontFamily="OpenSansSemibold" FontSize="17" VerticalOptions="Center" />
+                        <Button Grid.Column="3" Text="+" Command="{Binding AddBagCommand}" WidthRequest="38" HeightRequest="38" Padding="0" VerticalOptions="Center" />
+                    </Grid>
+                </Border>
+                <Label Text="Notes (optional)" FontFamily="OpenSansSemibold" />
+                <Border Style="{StaticResource RiderCard}" Padding="14,8" BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderInputDark}}" Stroke="Transparent">
+                    <Editor Text="{Binding Notes}" AutoSize="TextChanges" MinimumHeightRequest="68" />
+                </Border>
+                <Label Text="Customer signature" FontFamily="OpenSansSemibold" />
+                <Border Style="{StaticResource RiderCard}" Padding="14,12">
+                    <VerticalStackLayout Spacing="8">
+                        <Path Stroke="{AppThemeBinding Light={StaticResource RiderInk}, Dark={StaticResource RiderTextDark}}" StrokeThickness="1.5" HeightRequest="64" Data="M12,42 C28,10 42,63 66,35 C82,28 88,42 118,20" />
+                        <BoxView HeightRequest="1" Color="{AppThemeBinding Light={StaticResource RiderBorder}, Dark={StaticResource RiderBorderDark}}" />
+                        <Label Text="Signed by A. Nwosu · 10:42 AM" Style="{StaticResource RiderMutedLabel}" />
+                    </VerticalStackLayout>
+                </Border>
+            </VerticalStackLayout>
+        </ScrollView>
+        <Border Grid.Row="1" Padding="22,12,22,20" Stroke="{AppThemeBinding Light={StaticResource RiderBorder}, Dark={StaticResource RiderBorderDark}}" BackgroundColor="{AppThemeBinding Light=White, Dark={StaticResource RiderPageDark}}">
+            <Button Text="Confirm pickup" Command="{Binding ConfirmCommand}" />
+        </Border>
+    </Grid>
+</ContentPage>
