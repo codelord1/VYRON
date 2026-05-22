@@ -16,6 +16,12 @@ public partial class ServiceSelectionViewModel : BaseViewModel
     [ObservableProperty] private string _storeId = "";
     [ObservableProperty] private StoreDetailDto? _store;
     [ObservableProperty] private string _serviceSearchText = "";
+    [ObservableProperty] private string _selectedCategory = "All";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsOverlayVisible))]
+    [NotifyPropertyChangedFor(nameof(IsNotNavigating))]
+    private bool _isNavigating;
+    [ObservableProperty] private string _loaderText = "Opening Order Now";
 
     // Service cards with IsSelected state
     [ObservableProperty]
@@ -39,7 +45,41 @@ public partial class ServiceSelectionViewModel : BaseViewModel
 
     public bool HasDraftItems => _draft.HasItems;
     public bool HasServiceSearch => !string.IsNullOrWhiteSpace(ServiceSearchText);
-    public bool IsServiceSearchEmpty => HasServiceSearch && FilteredServiceCards.Count == 0 && !IsBusy;
+    public bool IsServiceSearchEmpty => HasServices && FilteredServiceCards.Count == 0 && !IsBusy;
+    public bool HasServices => ServiceCards.Count > 0;
+    public bool IsServicesEmpty => !IsBusy && Store != null && !HasServices;
+    public bool HasLoadError => !IsBusy && !string.IsNullOrWhiteSpace(ErrorMessage) && Store == null;
+    public bool IsOverlayVisible => IsBusy || IsNavigating;
+    public bool IsNotNavigating => !IsNavigating;
+    public string StorePickSubtitle => $"Top picks from {Store?.Name ?? "this store"}";
+    public string HeroLocationText
+    {
+        get
+        {
+            if (Store == null)
+                return "Pickup details coming soon";
+
+            var location = string.Join(", ", new[] { Store.Area, Store.City, Store.State }
+                .Where(x => !string.IsNullOrWhiteSpace(x)));
+            return string.IsNullOrWhiteSpace(location) ? "Store location available at checkout" : location;
+        }
+    }
+    public int SelectedServiceCount => _draft.Items.Count;
+    public string SelectedSummaryText => SelectedServiceCount == 0
+        ? "Choose a service to continue"
+        : $"{SelectedServiceCount} service{(SelectedServiceCount == 1 ? "" : "s")} selected";
+    public string SelectedPriceSummaryText => SelectedServiceCount switch
+    {
+        0 => "Add a service to build your estimate",
+        1 => $"From {_draft.Items[0].PriceDisplay}",
+        _ => $"Laundry subtotal: ₦{_draft.TotalLaundryCost:N0}"
+    };
+    public bool CanContinue => HasDraftItems && !IsBusy && !IsNavigating;
+    public bool IsAllCategorySelected => SelectedCategory == "All";
+    public bool IsWashCategorySelected => SelectedCategory == "Wash";
+    public bool IsIronCategorySelected => SelectedCategory == "Iron";
+    public bool IsDryCleanCategorySelected => SelectedCategory == "Dry Clean";
+    public bool IsExpressCategorySelected => SelectedCategory == "Express";
 
     public ServiceSelectionViewModel(StoreService stores, OrderDraftService draft)
     {
@@ -55,7 +95,25 @@ public partial class ServiceSelectionViewModel : BaseViewModel
             RefreshTotals();
             UpdateSelectedCards();
             OnPropertyChanged(nameof(HasDraftItems));
+            NotifySelectionSummaryChanged();
         };
+    }
+
+    protected override void OnPropertyChanged(System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+        if (e.PropertyName is nameof(IsBusy))
+        {
+            base.OnPropertyChanged(new System.ComponentModel.PropertyChangedEventArgs(nameof(IsOverlayVisible)));
+            base.OnPropertyChanged(new System.ComponentModel.PropertyChangedEventArgs(nameof(CanContinue)));
+            base.OnPropertyChanged(new System.ComponentModel.PropertyChangedEventArgs(nameof(IsServiceSearchEmpty)));
+            base.OnPropertyChanged(new System.ComponentModel.PropertyChangedEventArgs(nameof(IsServicesEmpty)));
+            base.OnPropertyChanged(new System.ComponentModel.PropertyChangedEventArgs(nameof(HasLoadError)));
+        }
+        else if (e.PropertyName is nameof(ErrorMessage))
+        {
+            base.OnPropertyChanged(new System.ComponentModel.PropertyChangedEventArgs(nameof(HasLoadError)));
+        }
     }
 
     partial void OnStoreIdChanged(string value)
@@ -78,6 +136,7 @@ public partial class ServiceSelectionViewModel : BaseViewModel
     private async Task LoadAsync()
     {
         if (!Guid.TryParse(StoreId, out var id)) return;
+        LoaderText = "Getting services ready…";
         var (data, _) = await SafeRefreshCallAsync(() => _stores.GetStoreAsync(id), "stores");
         if (data != null)
         {
@@ -89,10 +148,23 @@ public partial class ServiceSelectionViewModel : BaseViewModel
                 ServiceCards.Add(new ServiceCardViewModel(svc));
             ApplyServiceFilter();
             RefreshTotals();
+            OnPropertyChanged(nameof(HasServices));
+            OnPropertyChanged(nameof(IsServicesEmpty));
+            OnPropertyChanged(nameof(StorePickSubtitle));
+            OnPropertyChanged(nameof(HeroLocationText));
         }
     }
 
     partial void OnServiceSearchTextChanged(string value) => ApplyServiceFilter();
+    partial void OnSelectedCategoryChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsAllCategorySelected));
+        OnPropertyChanged(nameof(IsWashCategorySelected));
+        OnPropertyChanged(nameof(IsIronCategorySelected));
+        OnPropertyChanged(nameof(IsDryCleanCategorySelected));
+        OnPropertyChanged(nameof(IsExpressCategorySelected));
+        ApplyServiceFilter();
+    }
 
     private void ApplyServiceFilter()
     {
@@ -106,6 +178,8 @@ public partial class ServiceSelectionViewModel : BaseViewModel
                 Contains(card.Service.ServiceType, term) ||
                 Contains(card.Service.PricingMode, term));
         }
+        if (SelectedCategory != "All")
+            source = source.Where(card => card.Category == SelectedCategory);
 
         FilteredServiceCards.Clear();
         foreach (var card in source)
@@ -127,6 +201,13 @@ public partial class ServiceSelectionViewModel : BaseViewModel
         card.IsSelected = true;
         RefreshTotals();
         ClearMessages();
+    }
+
+    [RelayCommand]
+    private void SelectCategory(string category)
+    {
+        if (!string.IsNullOrWhiteSpace(category))
+            SelectedCategory = category;
     }
 
     /// <summary>Remove an item from the cart.</summary>
@@ -154,11 +235,15 @@ public partial class ServiceSelectionViewModel : BaseViewModel
         AmountDueNow     = _draft.AmountDueNow;
         BalanceDueLater  = _draft.BalanceDueLater;
         EstimateSummary  = _draft.Breakdown;
+        NotifySelectionSummaryChanged();
     }
 
     [RelayCommand]
     private async Task ContinueAsync()
     {
+        if (IsBusy || IsNavigating)
+            return;
+
         if (!_draft.HasItems) { SetError("Please add at least one service."); return; }
         if (_draft.Items.Any(i => !i.IsValid))
         {
@@ -170,7 +255,39 @@ public partial class ServiceSelectionViewModel : BaseViewModel
             SetError("The order estimate is not valid yet. Please review your services and fees.");
             return;
         }
-        await Shell.Current.GoToAsync($"{AppRoutes.CreateOrder}?storeId={StoreId}");
+        TapFeedback.HapticClick();
+        LoaderText = "Opening Order Now";
+        IsNavigating = true;
+        try
+        {
+            await Task.Yield();
+            await Shell.Current.GoToAsync($"{AppRoutes.CreateOrder}?storeId={StoreId}");
+        }
+        catch (Exception ex)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[ServiceSelectionViewModel] Continue navigation error: {ex}");
+#endif
+            SetError("Unable to open order details. Please try again.");
+        }
+        finally
+        {
+            IsNavigating = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task GoBackAsync() => await Shell.Current.GoToAsync("..");
+
+    [RelayCommand]
+    private async Task BrowseStoresAsync() => await Shell.Current.GoToAsync("..");
+
+    private void NotifySelectionSummaryChanged()
+    {
+        OnPropertyChanged(nameof(SelectedServiceCount));
+        OnPropertyChanged(nameof(SelectedSummaryText));
+        OnPropertyChanged(nameof(SelectedPriceSummaryText));
+        OnPropertyChanged(nameof(CanContinue));
     }
 }
 

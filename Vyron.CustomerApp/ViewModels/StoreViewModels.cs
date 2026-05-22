@@ -12,11 +12,77 @@ namespace Vyron.CustomerApp.ViewModels;
 public partial class ServiceCardViewModel : ObservableObject
 {
     public ServiceSummaryDto Service { get; }
+    public string Category => GetCategory(Service);
+    public string BadgeText => Category switch
+    {
+        "Iron" => "Fast",
+        "Dry Clean" => "Premium",
+        _ => "Popular"
+    };
+    public string BadgeIcon => Category switch
+    {
+        "Iron"      => "⚡",
+        "Dry Clean" => "👑",
+        "Express"   => "🚀",
+        _           => "★"
+    };
+    public Color BadgeBackground => Category switch
+    {
+        "Iron"      => Color.FromArgb("#FEF3C7"),   // amber-100
+        "Dry Clean" => Color.FromArgb("#EDE9FE"),   // violet-100
+        "Express"   => Color.FromArgb("#FEE2E2"),   // red-100
+        _           => Color.FromArgb("#D1FAE5")    // emerald-100 (Wash / Popular)
+    };
+    public Color BadgeForeground => Category switch
+    {
+        "Iron"      => Color.FromArgb("#92400E"),   // amber-800
+        "Dry Clean" => Color.FromArgb("#5B21B6"),   // violet-800
+        "Express"   => Color.FromArgb("#991B1B"),   // red-800
+        _           => Color.FromArgb("#065F46")    // emerald-800
+    };
+    public string Description => !string.IsNullOrWhiteSpace(Service.Description)
+        ? Service.Description!
+        : Category switch
+        {
+            "Wash" when Service.Name.Contains("iron", StringComparison.OrdinalIgnoreCase) =>
+                "Clean wash with expert ironing",
+            "Wash" => "Thorough wash for everyday clothes",
+            "Iron" => "Crisp, neat ironing for any fabric",
+            "Dry Clean" => "Deep clean for delicate and premium wear",
+            "Express" => "Fast turnaround for urgent laundry",
+            _ => "Careful laundry service from this store"
+        };
+    // 🧺 (U+1F9FA, Emoji 11.0) and 🧥 (U+1F9E5, Emoji 11.0) only render on Android 9+ (API 28+).
+    // Min SDK is API 21, so we use Emoji 1.0 equivalents to avoid tofu boxes on older devices:
+    //   Wash     → 👕 (t-shirt,  U+1F455, Emoji 1.0 — safe from Android 4.4+)
+    //   Dry Clean → 💎 (gem stone, U+1F48E, Emoji 1.0 — safe from Android 4.4+, premium feel)
+    public string ServiceGlyph => Category switch
+    {
+        "Wash"      => "👕",
+        "Iron"      => "✨",
+        "Dry Clean" => "💎",
+        "Express"   => "⚡",
+        _           => "👕"
+    };
 
     [ObservableProperty]
     private bool _isSelected;
 
     public ServiceCardViewModel(ServiceSummaryDto svc) => Service = svc;
+
+    private static string GetCategory(ServiceSummaryDto service)
+    {
+        var source = $"{service.ServiceType} {service.Name}";
+        if (source.Contains("express", StringComparison.OrdinalIgnoreCase) || service.EstimatedHours is > 0 and <= 8)
+            return "Express";
+        if (source.Contains("dry", StringComparison.OrdinalIgnoreCase) || source.Contains("clean", StringComparison.OrdinalIgnoreCase))
+            return "Dry Clean";
+        if (source.Contains("iron", StringComparison.OrdinalIgnoreCase) && !source.Contains("wash", StringComparison.OrdinalIgnoreCase))
+            return "Iron";
+        if (source.Contains("wash", StringComparison.OrdinalIgnoreCase))
+            return "Wash";
+        return "All";
+    }
 }
 
 public partial class HomeViewModel : BaseViewModel
@@ -576,10 +642,11 @@ public partial class StoresViewModel : BaseViewModel
             return;
 
         TapFeedback.HapticClick();
-        _storeNavText = "Opening Order Now…";
+        _storeNavText = "Opening Order Now";
         IsNavigating = true;
         try
         {
+            await Task.Yield();
             await Shell.Current.GoToAsync($"{AppRoutes.ServiceSelection}?storeId={store.Id}");
         }
         finally
@@ -713,11 +780,12 @@ public partial class StoreDetailsViewModel : BaseViewModel
             return;
         }
         TapFeedback.HapticClick();
-        _navActionText = "Opening Order Now…";
+        _navActionText = "Opening Order Now";
         OnPropertyChanged(nameof(OverlayText));
         IsNavigating = true;
         try
         {
+            await Task.Yield();
             await Shell.Current.GoToAsync($"{AppRoutes.ServiceSelection}?storeId={Store.Id}");
         }
         catch (Exception ex)

@@ -450,6 +450,7 @@
              programmatically from StoresPage.xaml.cs.              -->
         <Grid x:Name="LoadingOverlay"
               IsVisible="{Binding IsOverlayVisible}"
+              InputTransparent="False"
               BackgroundColor="{AppThemeBinding Light=#EEF8FAFC, Dark=#EE061B1A}">
             <VerticalStackLayout HorizontalOptions="Center"
                                  VerticalOptions="Center"
