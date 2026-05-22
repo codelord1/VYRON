@@ -35,6 +35,8 @@ public class VyronDbContext : DbContext
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<Coupon> Coupons => Set<Coupon>();
     public DbSet<CouponUsage> CouponUsages => Set<CouponUsage>();
+    public DbSet<RiderEarnings> RiderEarnings => Set<RiderEarnings>();
+    public DbSet<RiderPayout> RiderPayouts => Set<RiderPayout>();
 
     // ─── Stable seed GUIDs (same across both providers) ─────────────
     private static readonly Guid AdminUserId   = new("11111111-1111-1111-1111-111111111111");
@@ -147,6 +149,15 @@ public class VyronDbContext : DbContext
                 nameof(Order.BalanceAmount) })
                 e.Property(p).HasColumnType("decimal(18,2)");
 
+            // ─── Phase 1: rider proof, confirmation, earnings, timestamps ──
+            e.Property(x => x.PickupProofUrl).HasMaxLength(500);
+            e.Property(x => x.DeliveryProofUrl).HasMaxLength(500);
+            e.Property(x => x.PickupNotes).HasMaxLength(500);
+            e.Property(x => x.DeliveryNotes).HasMaxLength(500);
+            e.Property(x => x.FailReason).HasMaxLength(500);
+            e.Property(x => x.RiderEarningsAmount).HasColumnType("decimal(18,2)");
+            e.Property(x => x.CustomerConfirmed).HasDefaultValue(false);
+
             e.HasOne(x => x.Customer).WithMany(u => u.Orders).HasForeignKey(x => x.CustomerId)
              .OnDelete(DeleteBehavior.Restrict);
             e.HasOne(x => x.Store).WithMany(s => s.Orders).HasForeignKey(x => x.StoreId)
@@ -199,6 +210,8 @@ public class VyronDbContext : DbContext
             e.Property(x => x.TotalEarnings).HasColumnType("decimal(18,2)");
             e.Property(x => x.IsApproved).HasDefaultValue(false);
             e.Property(x => x.RejectionReason).HasMaxLength(500);
+            // ─── Phase 1: location tracking ────────────────────────────────
+            e.Property(x => x.IsOnlineOverride).HasDefaultValue(false);
             e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId)
              .OnDelete(DeleteBehavior.Restrict);
         });
@@ -500,6 +513,38 @@ public class VyronDbContext : DbContext
              .OnDelete(DeleteBehavior.Cascade);
             e.HasOne(x => x.Role).WithMany(r => r.UserRoles).HasForeignKey(x => x.RoleId)
              .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ─── RIDER EARNINGS ────────────────────────────────────────
+        m.Entity<RiderEarnings>(e =>
+        {
+            e.ToTable("RiderEarnings");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.RiderId).HasDatabaseName("IX_RiderEarnings_RiderId");
+            e.HasIndex(x => x.OrderId).HasDatabaseName("IX_RiderEarnings_OrderId");
+            e.HasIndex(x => new { x.RiderId, x.Status })
+             .HasDatabaseName("IX_RiderEarnings_RiderId_Status");
+            e.Property(x => x.EarningsType).HasMaxLength(20).IsRequired();
+            e.Property(x => x.Amount).HasColumnType("decimal(18,2)");
+            e.HasOne(x => x.Rider).WithMany().HasForeignKey(x => x.RiderId)
+             .OnDelete(DeleteBehavior.Restrict);
+            e.HasOne(x => x.Order).WithMany().HasForeignKey(x => x.OrderId)
+             .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ─── RIDER PAYOUT ───────────────────────────────────────────
+        m.Entity<RiderPayout>(e =>
+        {
+            e.ToTable("RiderPayouts");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.RiderId).HasDatabaseName("IX_RiderPayouts_RiderId");
+            e.HasIndex(x => new { x.RiderId, x.Status })
+             .HasDatabaseName("IX_RiderPayouts_RiderId_Status");
+            e.Property(x => x.Amount).HasColumnType("decimal(18,2)");
+            e.Property(x => x.PaymentRef).HasMaxLength(100);
+            e.Property(x => x.Notes).HasMaxLength(500);
+            e.HasOne(x => x.Rider).WithMany().HasForeignKey(x => x.RiderId)
+             .OnDelete(DeleteBehavior.Restrict);
         });
 
         // ─── SEED DATA ─────────────────────────────────────────────

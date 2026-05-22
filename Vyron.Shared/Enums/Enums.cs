@@ -18,7 +18,23 @@ public enum OrderStatus
     /// <summary>Pickup rider explicitly assigned; distinct from generic RiderAssigned.</summary>
     PickUpRiderAssigned = 13,
     /// <summary>Delivery rider explicitly assigned; order not yet OutForDelivery.</summary>
-    DeliveryRiderAssigned = 14
+    DeliveryRiderAssigned = 14,
+
+    // ─── Rider workflow granular states (Phase 1) ─────────────────────────────
+    /// <summary>Rider accepted the assigned job.</summary>
+    Accepted = 15,
+    /// <summary>Rider is travelling to the customer for pickup.</summary>
+    EnRouteToCustomer = 16,
+    /// <summary>Rider has arrived at the customer's location.</summary>
+    AtCustomer = 17,
+    /// <summary>Rider has dropped the laundry at the store (handoff complete).</summary>
+    DroppedAtStore = 18,
+    /// <summary>Rider has collected the cleaned laundry from the store for delivery.</summary>
+    PickedUpFromStore = 19,
+    /// <summary>Rider is travelling to the customer for delivery.</summary>
+    EnRouteToCustomerDelivery = 20,
+    /// <summary>Job failed; see Order.FailReason for details.</summary>
+    Failed = 21
 }
 
 public enum PaymentState
@@ -136,6 +152,19 @@ public enum RiderStatus
     OutForDelivery = 6,
     Suspended = 7,
     Rejected = 8
+}
+
+public enum RiderEarningsStatus
+{
+    Pending = 0,
+    Paid    = 1
+}
+
+public enum RiderPayoutStatus
+{
+    Pending   = 0,
+    Processed = 1,
+    Failed    = 2
 }
 
 public enum DatabaseProvider

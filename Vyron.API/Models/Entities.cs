@@ -227,6 +227,29 @@ public class Order
     /// <summary>Set when a processing-delay (SLA breach) notification has been sent.</summary>
     public DateTime? SlaBreachNotifiedAt { get; set; }
 
+    // ─── Rider workflow proof & confirmation (Phase 1) ────────────
+    public string? PickupProofUrl { get; set; }
+    public DateTime? PickupProofUploadedAt { get; set; }
+    public string? DeliveryProofUrl { get; set; }
+    public DateTime? DeliveryProofUploadedAt { get; set; }
+    public string? PickupNotes { get; set; }
+    public string? DeliveryNotes { get; set; }
+    public int? BagCount { get; set; }
+    public bool CustomerConfirmed { get; set; } = false;
+    public DateTime? CustomerConfirmedAt { get; set; }
+    /// <summary>Rider's cut for this job (pickup + delivery combined). Populated when job completes.</summary>
+    public decimal? RiderEarningsAmount { get; set; }
+
+    // ─── Rider workflow granular timestamps (Phase 1) ─────────────
+    public DateTime? RiderAcceptedAt { get; set; }
+    public DateTime? EnRouteToCustomerAt { get; set; }
+    public DateTime? AtCustomerAt { get; set; }
+    public DateTime? DroppedAtStoreAt { get; set; }
+    public DateTime? PickedUpFromStoreAt { get; set; }
+    public DateTime? EnRouteToDeliveryAt { get; set; }
+    public DateTime? FailedAt { get; set; }
+    public string? FailReason { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
@@ -296,6 +319,14 @@ public class Rider
     public Guid? RejectedByUserId { get; set; }
     public DateTime? RejectedAt { get; set; }
     public string? RejectionReason { get; set; }
+
+    // ─── Location tracking (Phase 1) ─────────────────────────────
+    /// <summary>Last time the rider sent any API ping (online/offline toggle or location update).</summary>
+    public DateTime? LastSeenAt { get; set; }
+    /// <summary>Last time CurrentLatitude/CurrentLongitude were updated by the rider.</summary>
+    public DateTime? LocationUpdatedAt { get; set; }
+    /// <summary>Admin can set true to allow this rider to receive jobs while Offline status.</summary>
+    public bool IsOnlineOverride { get; set; } = false;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
@@ -590,6 +621,46 @@ public class CouponUsage
     public Coupon Coupon { get; set; } = null!;
     public User Customer { get; set; } = null!;
     public Order? Order { get; set; }
+}
+
+// ─── RIDER EARNINGS ──────────────────────────────────────────────
+/// <summary>
+/// Per-job earnings record for a rider.
+/// Created when a rider confirms pickup or delivery. Marked Paid after a RiderPayout is processed.
+/// </summary>
+public class RiderEarnings
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid RiderId { get; set; }
+    public Guid OrderId { get; set; }
+    /// <summary>"Pickup" | "Delivery"</summary>
+    public string EarningsType { get; set; } = "Pickup";
+    public decimal Amount { get; set; }
+    public RiderEarningsStatus Status { get; set; } = RiderEarningsStatus.Pending;
+    public DateTime? PaidAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public Rider Rider { get; set; } = null!;
+    public Order Order { get; set; } = null!;
+}
+
+// ─── RIDER PAYOUT ─────────────────────────────────────────────────
+/// <summary>
+/// Admin-initiated payout batch to a rider. One payout may cover multiple RiderEarnings records.
+/// </summary>
+public class RiderPayout
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid RiderId { get; set; }
+    public decimal Amount { get; set; }
+    public RiderPayoutStatus Status { get; set; } = RiderPayoutStatus.Pending;
+    public string? PaymentRef { get; set; }
+    public DateTime? ProcessedAt { get; set; }
+    public Guid? ProcessedByAdminId { get; set; }
+    public string? Notes { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public Rider Rider { get; set; } = null!;
 }
 
 // ─── USER-ROLE MAPPING ─────────────────────────────────────────────
