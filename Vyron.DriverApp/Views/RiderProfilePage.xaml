@@ -68,7 +68,7 @@
                                     </HorizontalStackLayout>
                                 </Grid>
                                 <Border.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding Source={x:Reference ProfilePage}, Path=BindingContext.OpenOptionCommand}" CommandParameter="{Binding .}" />
+                                    <TapGestureRecognizer Tapped="OnOptionTapped" />
                                 </Border.GestureRecognizers>
                             </Border>
                         </DataTemplate>

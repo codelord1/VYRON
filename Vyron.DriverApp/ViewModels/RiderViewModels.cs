@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
 using Vyron.DriverApp.Models;
+using Vyron.DriverApp.Services;
 
 namespace Vyron.DriverApp.ViewModels;
 
@@ -26,9 +27,16 @@ public abstract partial class RiderViewModel : ObservableObject
             IsBusy = false;
         }
     }
+
+    protected static void ReplaceItems<T>(ObservableCollection<T> target, IEnumerable<T> source)
+    {
+        target.Clear();
+        foreach (var item in source)
+            target.Add(item);
+    }
 }
 
-public partial class LoginViewModel : RiderViewModel
+public partial class LoginViewModel(IRiderAuthService authService) : RiderViewModel
 {
     [ObservableProperty] private string _phoneOrEmail = "+234 803 412 8821";
     [ObservableProperty] private string _password = "";
@@ -38,14 +46,27 @@ public partial class LoginViewModel : RiderViewModel
     [RelayCommand]
     private async Task LoginAsync()
     {
-        if (string.IsNullOrWhiteSpace(PhoneOrEmail) || string.IsNullOrWhiteSpace(Password))
-        {
-            ErrorMessage = "Invalid credentials. Please check your phone and password.";
-            OnPropertyChanged(nameof(HasError));
+        if (IsBusy)
             return;
-        }
 
-        await NavigateAsync(RiderRoutes.Home);
+        try
+        {
+            IsBusy = true;
+            ErrorMessage = null;
+            var result = await authService.LoginAsync(PhoneOrEmail, Password, KeepSignedIn);
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.ErrorMessage;
+                return;
+            }
+
+            await Shell.Current.GoToAsync(RiderRoutes.Home);
+        }
+        finally
+        {
+            IsBusy = false;
+            OnPropertyChanged(nameof(HasError));
+        }
     }
 
     [RelayCommand]
@@ -54,17 +75,34 @@ public partial class LoginViewModel : RiderViewModel
 
 public partial class RiderOnboardingViewModel : RiderViewModel
 {
-    [ObservableProperty] private string _fullName = "Chinedu Okafor";
-    [ObservableProperty] private string _phoneNumber = "+234 803 412 8821";
-    [ObservableProperty] private string _vehiclePlate = "LAG-238-XK";
+    private readonly IRiderAuthService _authService;
+
+    [ObservableProperty] private string _fullName = "";
+    [ObservableProperty] private string _phoneNumber = "";
+    [ObservableProperty] private string _vehiclePlate = "";
     [ObservableProperty] private string _selectedVehicle = "Bike";
     public IReadOnlyList<string> Vehicles { get; } = ["Bike", "Bicycle", "Car", "Van"];
+
+    public RiderOnboardingViewModel(IRiderAuthService authService)
+    {
+        _authService = authService;
+        _ = LoadDraftAsync();
+    }
 
     [RelayCommand]
     private void SelectVehicle(string vehicle) => SelectedVehicle = vehicle;
 
     [RelayCommand]
     private async Task SubmitAsync() => await NavigateAsync(RiderRoutes.Home);
+
+    private async Task LoadDraftAsync()
+    {
+        var draft = await _authService.GetOnboardingDraftAsync();
+        FullName = draft.FullName;
+        PhoneNumber = draft.PhoneNumber;
+        VehiclePlate = draft.VehiclePlate;
+        SelectedVehicle = draft.VehicleType;
+    }
 }
 
 public partial class RiderHomeViewModel : RiderViewModel
@@ -83,11 +121,18 @@ public partial class RiderHomeViewModel : RiderViewModel
 
 public partial class AssignedOrdersViewModel : RiderViewModel
 {
-    private readonly List<RiderJobCard> _allJobs = [.. RiderSamples.Jobs];
+    private readonly IRiderJobService _jobService;
+    private readonly List<RiderJobCard> _allJobs = [];
+
     [ObservableProperty] private ObservableCollection<RiderJobCard> _jobs = [];
     [ObservableProperty] private string _searchText = "";
     [ObservableProperty] private string _selectedFilter = "All";
-    public AssignedOrdersViewModel() => ApplyFilter();
+
+    public AssignedOrdersViewModel(IRiderJobService jobService)
+    {
+        _jobService = jobService;
+        _ = LoadJobsAsync();
+    }
 
     partial void OnSearchTextChanged(string value) => ApplyFilter();
 
@@ -101,6 +146,14 @@ public partial class AssignedOrdersViewModel : RiderViewModel
     [RelayCommand]
     private async Task ViewJobAsync(RiderJobCard job) =>
         await NavigateAsync($"{RiderRoutes.OrderDetails}?jobId={Uri.EscapeDataString(job.Id)}");
+
+    private async Task LoadJobsAsync()
+    {
+        var jobs = await _jobService.GetAssignedJobsAsync();
+        _allJobs.Clear();
+        _allJobs.AddRange(jobs);
+        ApplyFilter();
+    }
 
     private void ApplyFilter()
     {
@@ -131,8 +184,18 @@ public partial class AssignedOrdersViewModel : RiderViewModel
 [QueryProperty(nameof(JobId), "jobId")]
 public partial class OrderDetailsViewModel : RiderViewModel
 {
+    private readonly IRiderJobService _jobService;
+
     [ObservableProperty] private string _jobId = "#VY-2841";
-    public ObservableCollection<RiderProgressStep> Progress { get; } = RiderSamples.Progress();
+    public ObservableCollection<RiderProgressStep> Progress { get; } = [];
+
+    public OrderDetailsViewModel(IRiderJobService jobService)
+    {
+        _jobService = jobService;
+        _ = LoadProgressAsync(JobId);
+    }
+
+    partial void OnJobIdChanged(string value) => _ = LoadProgressAsync(value);
 
     [RelayCommand] private async Task GoBackAsync() => await Shell.Current.GoToAsync("..");
     [RelayCommand] private async Task OpenMapAsync() => await NavigateAsync(RiderRoutes.Map);
@@ -141,12 +204,30 @@ public partial class OrderDetailsViewModel : RiderViewModel
         await Shell.Current.DisplayAlert("Call customer", "Calling Adaeze Nwosu.", "OK");
     [RelayCommand] private async Task CallStoreAsync() =>
         await Shell.Current.DisplayAlert("Call store", "Calling BrightWash Ikeja.", "OK");
+
+    private async Task LoadProgressAsync(string jobId)
+    {
+        var progress = await _jobService.GetProgressAsync(jobId);
+        ReplaceItems(Progress, progress);
+    }
 }
 
 public partial class RiderMapViewModel : RiderViewModel
 {
+    private readonly IRiderLocationService _locationService;
+
+    [ObservableProperty] private string _currentStop = "BrightWash - Allen Avenue, Ikeja";
+
+    public RiderMapViewModel(IRiderLocationService locationService)
+    {
+        _locationService = locationService;
+        _ = LoadStopAsync();
+    }
+
     [RelayCommand] private async Task GoBackAsync() => await Shell.Current.GoToAsync("..");
     [RelayCommand] private async Task ArriveAsync() => await NavigateAsync(RiderRoutes.ConfirmPickup);
+
+    private async Task LoadStopAsync() => CurrentStop = await _locationService.GetCurrentStopAsync();
 }
 
 public partial class ConfirmPickupViewModel : RiderViewModel
@@ -169,34 +250,52 @@ public partial class DeliveredViewModel : RiderViewModel
 
 public partial class EarningsViewModel : RiderViewModel
 {
-    public ObservableCollection<PayoutRow> Payouts { get; } = RiderSamples.Payouts();
+    private readonly IRiderEarningsService _earningsService;
+    public ObservableCollection<PayoutRow> Payouts { get; } = [];
+
+    public EarningsViewModel(IRiderEarningsService earningsService)
+    {
+        _earningsService = earningsService;
+        _ = LoadPayoutsAsync();
+    }
+
     [RelayCommand] private async Task WithdrawAsync() =>
         await Shell.Current.DisplayAlert("Withdraw", "Withdrawal connects to rider payouts when the endpoint is ready.", "OK");
+
+    private async Task LoadPayoutsAsync() => ReplaceItems(Payouts, await _earningsService.GetPayoutHistoryAsync());
 }
 
 public partial class NotificationsViewModel : RiderViewModel
 {
-    public ObservableCollection<RiderNotification> Notifications { get; } = RiderSamples.Notifications();
+    private readonly IRiderNotificationService _notificationService;
+    public ObservableCollection<RiderNotification> Notifications { get; } = [];
+
+    public NotificationsViewModel(IRiderNotificationService notificationService)
+    {
+        _notificationService = notificationService;
+        _ = LoadNotificationsAsync();
+    }
+
     [RelayCommand] private async Task GoBackAsync() => await Shell.Current.GoToAsync("..");
     [RelayCommand] private void MarkAllRead()
     {
         var read = Notifications.Select(note => note with { IsUnread = false }).ToList();
-        Notifications.Clear();
-        foreach (var note in read)
-            Notifications.Add(note);
+        ReplaceItems(Notifications, read);
     }
+
+    private async Task LoadNotificationsAsync() => ReplaceItems(Notifications, await _notificationService.GetNotificationsAsync());
 }
 
 public partial class ProfileViewModel : RiderViewModel
 {
-    public ObservableCollection<RiderOptionRow> Options { get; } =
-    [
-        new("▤", "My documents", "3 verified"),
-        new("▭", "Payment method", "GTB ****2841"),
-        new("✓", "Verification status", "Verified"),
-        new("⚙", "Settings", ""),
-        new("↪", "Log out", "", true)
-    ];
+    private readonly IRiderProfileService _profileService;
+    public ObservableCollection<RiderOptionRow> Options { get; } = [];
+
+    public ProfileViewModel(IRiderProfileService profileService)
+    {
+        _profileService = profileService;
+        _ = LoadOptionsAsync();
+    }
 
     [RelayCommand]
     private async Task OpenSettingsAsync() => await NavigateAsync(RiderRoutes.Settings);
@@ -211,6 +310,8 @@ public partial class ProfileViewModel : RiderViewModel
         else
             await Shell.Current.DisplayAlert(row.Title, $"{row.Title} is ready for backend integration.", "OK");
     }
+
+    private async Task LoadOptionsAsync() => ReplaceItems(Options, await _profileService.GetAccountOptionsAsync());
 }
 
 public partial class SettingsViewModel : RiderViewModel

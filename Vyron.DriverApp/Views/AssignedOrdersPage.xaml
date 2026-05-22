@@ -119,7 +119,7 @@
                                 <Label Text="⌁" Style="{StaticResource RiderMutedLabel}" />
                                 <Label Grid.Column="1" Text="{Binding Distance}" Style="{StaticResource RiderMutedLabel}" />
                                 <Label Grid.Column="2" Text="{Binding Eta}" Style="{StaticResource RiderMutedLabel}" />
-                                <Button Grid.Column="3" Text="View job >" Command="{Binding Source={x:Reference OrdersPage}, Path=BindingContext.ViewJobCommand}" CommandParameter="{Binding .}"
+                                <Button Grid.Column="3" Text="View job >" Clicked="OnViewJobClicked"
                                         HeightRequest="34" Padding="10,0" FontSize="12" CornerRadius="17"
                                         BackgroundColor="{AppThemeBinding Light={StaticResource RiderSoft}, Dark={StaticResource RiderInputDark}}"
                                         TextColor="{AppThemeBinding Light={StaticResource RiderInk}, Dark={StaticResource RiderTextDark}}" />

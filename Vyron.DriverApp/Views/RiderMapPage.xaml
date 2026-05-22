@@ -53,7 +53,7 @@
                             </Border>
                             <VerticalStackLayout Grid.Column="1">
                                 <Label Text="NEXT STOP" Style="{StaticResource RiderMutedLabel}" />
-                                <Label Text="BrightWash · Allen Avenue, Ikeja" FontFamily="OpenSansSemibold" />
+                                <Label Text="{Binding CurrentStop}" FontFamily="OpenSansSemibold" />
                             </VerticalStackLayout>
                         </Grid>
                     </Border>

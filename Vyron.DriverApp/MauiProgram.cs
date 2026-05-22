@@ -2,12 +2,9 @@ using CommunityToolkit.Maui;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Handlers;
 
-namespace Vyron.DriverApp;
+using Vyron.DriverApp.Services;
 
-public static class AppConstants
-{
-    public const string ApiBaseUrl = "http://10.0.2.2:5000/";
-}
+namespace Vyron.DriverApp;
 
 public static class MauiProgram
 {
@@ -34,11 +31,12 @@ public static class MauiProgram
         });
 #endif
 
-        builder.Services.AddHttpClient("VyronApi", c =>
-        {
-            c.BaseAddress = new Uri(AppConstants.ApiBaseUrl);
-            c.Timeout = TimeSpan.FromSeconds(30);
-        });
+        builder.Services.AddSingleton<IRiderAuthService, MockRiderAuthService>();
+        builder.Services.AddSingleton<IRiderJobService, MockRiderJobService>();
+        builder.Services.AddSingleton<IRiderLocationService, MockRiderLocationService>();
+        builder.Services.AddSingleton<IRiderNotificationService, MockRiderNotificationService>();
+        builder.Services.AddSingleton<IRiderEarningsService, MockRiderEarningsService>();
+        builder.Services.AddSingleton<IRiderProfileService, MockRiderProfileService>();
 
         builder.Services.AddTransient<Views.MainPage>();
         builder.Services.AddTransient<Views.LoginPage>();
